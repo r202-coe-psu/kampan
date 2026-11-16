@@ -8,11 +8,11 @@
 {% block page_actions %}
 <a href="{{ url_for('car_reservation.feedback.create_or_edit', organization_id=organization.id, preset='standard') }}"
   class="btn btn-outline" data-role="start-from-standard">
-  <i class="ph ph-clipboard-text"></i> เริ่มจากแบบประเมินมาตรฐาน
+  เริ่มจากแบบประเมินมาตรฐาน
 </a>
 <a href="{{ url_for('car_reservation.feedback.create_or_edit', organization_id=organization.id) }}"
   class="btn btn-primary">
-  <i class="ph ph-plus"></i> สร้างแบบประเมินใหม่
+  สร้างแบบประเมินใหม่
 </a>
 {% endblock %}
 
@@ -111,7 +111,6 @@
 <dialog id="delete_feedback_modal" class="modal">
   <div class="modal-box max-w-md">
     <h3 class="font-bold text-lg flex items-center gap-2 text-error">
-      <i class="ph ph-warning-circle text-2xl"></i>
       ยืนยันการลบแบบประเมิน
     </h3>
     <p class="py-4">
@@ -122,7 +121,7 @@
       {{ delete_form.csrf_token }}
       <button type="button" class="btn btn-ghost" onclick="delete_feedback_modal.close()">ยกเลิก</button>
       <button type="submit" class="btn btn-error">
-        <i class="ph ph-trash"></i> ลบ
+        ลบ
       </button>
     </form>
   </div>

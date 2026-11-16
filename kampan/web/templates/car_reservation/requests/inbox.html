@@ -7,14 +7,14 @@
 {% set key = step_key(reservation) %}
 {% set detail_url = url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) %}
 {% if key == 'dispatcher' %}
-<a class="btn btn-success {% if block %}btn-md btn-block{% else %}btn-sm{% endif %}" data-role="dispatch-link"{% if block %} style="grid-column: 1 / -1"{% endif %} href="{{ detail_url }}"><i class="ph ph-user"></i> จัดรถ</a>
+<a class="btn btn-success {% if block %}btn-md btn-block{% else %}btn-sm{% endif %}" data-role="dispatch-link"{% if block %} style="grid-column: 1 / -1"{% endif %} href="{{ detail_url }}">จัดรถ</a>
 {% elif key %}
 {% set approve_id = 'quick-approve-' ~ reservation.id ~ suffix %}
 {% set deny_id = 'quick-deny-' ~ reservation.id ~ suffix %}
 <button type="button" class="btn btn-success {% if block %}btn-md btn-block{% else %}btn-sm{% endif %}" data-role="quick-approve"
-        onclick="document.getElementById('{{ approve_id }}').showModal()"><i class="ph ph-check"></i> อนุมัติ</button>
+        onclick="document.getElementById('{{ approve_id }}').showModal()">อนุมัติ</button>
 <button type="button" class="btn btn-error btn-outline {% if block %}btn-md btn-block{% else %}btn-sm{% endif %}" data-role="quick-deny"
-        onclick="document.getElementById('{{ deny_id }}').showModal()"><i class="ph ph-x"></i> ไม่อนุมัติ</button>
+        onclick="document.getElementById('{{ deny_id }}').showModal()">ไม่อนุมัติ</button>
 {% for dialog_id, route, title, confirm, button_class in [
   (approve_id, 'approve', 'อนุมัติคำขอ', 'ยืนยันอนุมัติ', 'btn-success'),
   (deny_id, 'deny', 'ไม่อนุมัติคำขอ', 'ยืนยันไม่อนุมัติ', 'btn-error')] %}
@@ -114,7 +114,7 @@
           <div class="mt-2 grid grid-cols-2 gap-2">{{ QuickActions(reservation, '-m', block=True) }}</div>
           <div class="card-actions mt-2">
             <a class="btn btn-sm btn-primary"
-               href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}"><i class="ph ph-eye"></i> ดูรายละเอียด</a>
+               href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">ดูรายละเอียด</a>
           </div>
         </div>
       </div>

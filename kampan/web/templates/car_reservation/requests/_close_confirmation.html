@@ -2,24 +2,24 @@
 {% if close_status %}
 <section class="card bg-base-100 border border-base-300 shadow-sm" data-role="close-confirmation" data-status="{{ close_status }}">
   <div class="card-body gap-3">
-    <h2 class="card-title text-lg"><i class="ph ph-clock-check text-primary"></i> ยืนยันเวลาปิดงาน</h2>
+    <h2 class="card-title text-lg">ยืนยันเวลาปิดงาน</h2>
     <dl class="grid grid-cols-1 gap-2 sm:grid-cols-2">
       <div><dt class="font-semibold">เวลาเริ่มงานที่บันทึก</dt><dd>{{ reservation.started_at.strftime('%d/%m/%Y %H:%M') + ' น.' if reservation.started_at else '-' }}</dd></div>
       <div><dt class="font-semibold">เวลาปิดงานที่บันทึก</dt><dd>{{ reservation.completed_at.strftime('%d/%m/%Y %H:%M') }} น.</dd></div>
     </dl>
     {% if close_status == 'confirmed' %}
-    <p class="text-success" data-role="close-confirmation-result"><i class="ph ph-check-circle"></i> ผู้ขอยืนยันว่าเวลาถูกต้อง</p>
+    <p class="text-success" data-role="close-confirmation-result">ผู้ขอยืนยันว่าเวลาถูกต้อง</p>
     {% elif close_status == 'disputed' %}
     <div class="alert alert-warning" role="alert" data-role="close-confirmation-result">
       <div>
-        <p><i class="ph ph-warning"></i> ผู้ขอแจ้งว่าเวลาไม่ถูกต้อง เวลาสิ้นสุดจริง {{ reservation.close_reported_end.strftime('%d/%m/%Y %H:%M') }} น.</p>
+        <p>ผู้ขอแจ้งว่าเวลาไม่ถูกต้อง เวลาสิ้นสุดจริง {{ reservation.close_reported_end.strftime('%d/%m/%Y %H:%M') }} น.</p>
         {% if reservation.close_dispute_note %}<p>{{ reservation.close_dispute_note }}</p>{% endif %}
       </div>
     </div>
     {% elif close_status == 'auto_confirmed' %}
-    <p class="text-base-content/70" data-role="close-confirmation-result"><i class="ph ph-clock"></i> ยืนยันอัตโนมัติ (ไม่มีการตอบภายใน {{ close_confirmation_days }} วันหลังปิดงาน)</p>
+    <p class="text-base-content/70" data-role="close-confirmation-result">ยืนยันอัตโนมัติ (ไม่มีการตอบภายใน {{ close_confirmation_days }} วันหลังปิดงาน)</p>
     {% elif close_status == 'pending' %}
-    <p class="text-base-content/70" data-role="close-confirmation-result"><i class="ph ph-hourglass"></i> รอผู้ขอยืนยัน (ไม่ตอบภายใน {{ close_confirmation_days }} วันหลังปิดงานถือว่ายืนยันอัตโนมัติ)</p>
+    <p class="text-base-content/70" data-role="close-confirmation-result">รอผู้ขอยืนยัน (ไม่ตอบภายใน {{ close_confirmation_days }} วันหลังปิดงานถือว่ายืนยันอัตโนมัติ)</p>
     {% endif %}
     {% if can_confirm_close %}
     <form method="post" class="flex flex-col gap-2" data-role="close-confirmation-form"

@@ -3,7 +3,6 @@
 {% macro ListHeader(title, total, icon=None) %}
 <div class="flex flex-wrap items-center justify-between gap-2">
   <h2 class="card-title text-lg">
-    {% if icon %}<i class="ph {{ icon }} text-primary"></i>{% endif %}
     {{ title }}
   </h2>
   <p class="text-sm text-base-content/60" data-role="list-count">ทั้งหมด {{ total }} รายการ</p>

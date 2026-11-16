@@ -10,7 +10,7 @@
 
 {% block page_actions %}
 <a href="{{ url_for('car_reservation.feedback.index', organization_id=organization.id) }}" class="btn btn-ghost btn-sm">
-	<i class="ph ph-arrow-left"></i> กลับไปแบบประเมินทั้งหมด
+	กลับไปแบบประเมินทั้งหมด
 </a>
 {% endblock %}
 
@@ -51,7 +51,7 @@
 			<div class="card-body gap-4">
 				<div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
 					<h2 id="questions-builder-title" class="card-title text-xl">ออกแบบคำถาม</h2>
-					<span class="badge badge-primary badge-soft self-start sm:self-auto">เพิ่มและลบคำถามได้ตามต้องการ</span>
+					<p class="text-sm text-base-content/60">เพิ่มและลบคำถามได้ตามต้องการ</p>
 				</div>
 				<div id="questionsContainer" class="flex flex-col rounded-box border border-base-300 bg-base-100">
 				</div>
@@ -66,19 +66,19 @@
 			<p class="mb-3 text-sm font-semibold text-base-content/70">เพิ่มประเภทคำถาม</p>
 			<div class="flex flex-wrap gap-2">
 				<button type="button" class="btn btn-outline btn-primary" onclick="addQuestion('score')">
-					<i class="ph ph-star text-lg"></i> คะแนน (1-5)
+					คะแนน (1-5)
 				</button>
 				<button type="button" class="btn btn-outline btn-primary" onclick="addQuestion('text')">
-					<i class="ph ph-text-t text-lg"></i> ข้อความสั้น
+					ข้อความสั้น
 				</button>
 				<button type="button" class="btn btn-outline btn-primary" onclick="addQuestion('boolean')">
-					<i class="ph ph-toggle-left text-lg"></i> ใช่/ไม่ใช่
+					ใช่/ไม่ใช่
 				</button>
 				<button type="button" class="btn btn-outline btn-primary" onclick="addQuestion('single_choice')">
-					<i class="ph ph-radio-button text-lg"></i> เลือกข้อเดียว
+					เลือกข้อเดียว
 				</button>
 				<button type="button" class="btn btn-outline btn-primary" onclick="addQuestion('multiple_choice')">
-					<i class="ph ph-check-square text-lg"></i> เลือกหลายข้อ
+					เลือกหลายข้อ
 				</button>
 			</div>
 		</div>
@@ -86,7 +86,7 @@
 			<a href="{{ url_for('car_reservation.feedback.index', organization_id=organization.id) }}"
 				class="btn btn-ghost">ยกเลิก</a>
 			<button type="submit" class="btn btn-primary w-full sm:w-auto" onclick="prepareSubmit(event)">
-				<i class="ph ph-floppy-disk"></i> บันทึกข้อมูล
+				บันทึกข้อมูล
 			</button>
 		</div>
 	</form>
@@ -123,11 +123,11 @@
 	}
 
 	const typeIcons = {
-		'score': '<i class="ph ph-star text-primary"></i>',
-		'text': '<i class="ph ph-text-t text-primary"></i>',
-		'boolean': '<i class="ph ph-toggle-left text-primary"></i>',
-		'single_choice': '<i class="ph ph-radio-button text-primary"></i>',
-		'multiple_choice': '<i class="ph ph-check-square text-primary"></i>'
+		'score': '',
+		'text': '',
+		'boolean': '',
+		'single_choice': '',
+		'multiple_choice': ''
 	};
 
 	const typeLabels = {
@@ -169,7 +169,7 @@
                     <div class="mt-4 border-l-2 border-primary/20 pl-4">
                         ${choicesItems}
                         <button type="button" class="btn btn-ghost btn-sm mt-2 rounded-lg text-primary hover:bg-primary/10" onclick="addChoice(${index})">
-                            <i class="ph ph-plus"></i> เพิ่มตัวเลือก
+                            เพิ่มตัวเลือก
                         </button>
                     </div>
                 `;
@@ -202,7 +202,7 @@
                                 </label>
                             </div>
                             <div class="h-6 w-px bg-base-300 sm:h-px sm:w-8"></div>
-	                            <button type="button" class="btn btn-ghost btn-sm rounded-lg text-error h-10 px-2" onclick="removeQuestion(${index})" title="ลบคำถาม">
+	                            <button type="button" class="btn btn-ghost btn-sm text-error h-10 px-2" onclick="removeQuestion(${index})" title="ลบคำถาม">
                                 <i class="ph ph-trash text-lg"></i>
                             </button>
                         </div>

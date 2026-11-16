@@ -28,11 +28,11 @@
         <video class="w-full rounded-box bg-base-300 aspect-[4/3] object-cover" autoplay playsinline muted></video>
         <img class="w-full rounded-box aspect-[4/3] object-cover hidden" alt="{{ label }}">
         <canvas class="hidden"></canvas>
-        <button type="button" class="btn btn-secondary btn-lg w-full" data-action="shoot">
-          <i class="ph ph-camera"></i> ถ่ายรูป
+        <button type="button" class="btn btn-primary btn-lg w-full" data-action="shoot">
+          ถ่ายรูป
         </button>
         <button type="button" class="btn btn-ghost btn-lg w-full hidden" data-action="retake">
-          <i class="ph ph-arrow-counter-clockwise"></i> ถ่ายใหม่
+          ถ่ายใหม่
         </button>
         {% for error in field.errors %}<span class="fieldset-label text-error text-sm">{{ error }}</span>{% endfor %}
       </fieldset>

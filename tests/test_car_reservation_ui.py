@@ -440,48 +440,53 @@ def test_detail_audit_details_modal_lists_what_changed_from_old_to_new(world):
     assert find(dialog, "form", "modal-backdrop", method="dialog")
 
 
-def action_card(doc):
-    cards = find(doc, "div", "card", data_role="action-card")
-    return cards[0] if cards else None
+def action_bar(doc):
+    """แถบปุ่มดำเนินการที่หัวหน้า (ข้างปุ่มดูตัวอย่าง PDF) ไม่มีการ์ดดำเนินการด้านล่างแล้ว"""
+    assert not find(doc, "div", "card", data_role="action-card")
+    return find(doc, "div", data_role="action-bar")[0]
 
 
-def test_detail_puts_approve_and_deny_together_in_one_action_card_for_the_current_approver(world):
+def test_detail_puts_approve_and_deny_buttons_in_the_header_and_the_approve_form_in_a_modal(world):
     reservation = world.reservation()
     approve_action = f"{BASE}/requests/{reservation.id}/approve?organization_id={world.org.id}"
 
-    card = action_card(detail(world, world.dispatcher, reservation))
+    doc = detail(world, world.dispatcher, reservation)
+    bar = action_bar(doc)
 
-    assert card is not None
-    approve_form = find(card, "form", action=approve_action)[0]
-    assert find(approve_form, "button", "btn-success", type="submit")
-    deny = [b for b in find(card, "button") if words(b) == "ไม่อนุมัติ"]
-    assert len(deny) == 1 and "deny-modal" in deny[0].get("onclick")
-    assert not find(card, "button", data_role="open-cancel")
+    approve = find(bar, "button", data_role="open-approve")
+    deny = find(bar, "button", data_role="open-deny")
+    assert [words(b) for b in approve] == ["อนุมัติ"] and "approve-modal" in approve[0].get("onclick")
+    assert [words(b) for b in deny] == ["ไม่อนุมัติ"] and "deny-modal" in deny[0].get("onclick")
+    modal = find(doc, "dialog", "modal", id="approve-modal")[0]
+    assert find(find(modal, "form", action=approve_action)[0], "button", "btn-success", type="submit")
+    assert not find(bar, "button", data_role="open-cancel")
 
 
-def test_detail_action_card_offers_the_requester_only_the_cancel_action(world):
+def test_detail_header_offers_the_requester_only_the_cancel_action(world):
     reservation = world.reservation()
 
-    card = action_card(detail(world, world.staff, reservation))
+    bar = action_bar(detail(world, world.staff, reservation))
 
-    assert card is not None
-    assert [words(b) for b in find(card, "button", data_role="open-cancel")] == ["ยกเลิกคำขอ"]
-    assert not find(card, "button", "btn-success")
+    assert [words(b) for b in find(bar, "button", data_role="open-cancel")] == ["ยกเลิกคำขอ"]
+    assert not find(bar, "button", data_role="open-approve")
 
 
-def test_detail_action_card_offers_the_dispatcher_to_acknowledge_a_cancel_request(world):
+def test_detail_header_offers_the_dispatcher_to_acknowledge_a_cancel_request(world):
     reservation = world.reservation(status="cancel_requested", car=world.car)
 
-    card = action_card(detail(world, world.dispatcher, reservation))
+    bar = action_bar(detail(world, world.dispatcher, reservation))
 
-    assert card is not None
-    assert [words(b) for b in find(card, "button", type="submit") if "รับทราบ" in words(b)] == ["รับทราบการยกเลิก"]
+    assert [words(b) for b in find(bar, "button", type="submit") if "รับทราบ" in words(b)] == ["รับทราบการยกเลิก"]
 
 
-def test_detail_has_no_action_card_when_the_viewer_can_do_nothing(world):
+def test_detail_header_has_no_action_buttons_when_the_viewer_can_do_nothing(world):
     reservation = world.reservation()
 
-    assert action_card(detail(world, world.admin, reservation)) is None
+    bar = action_bar(detail(world, world.admin, reservation))
+
+    assert not find(bar, "button", data_role="open-approve")
+    assert not find(bar, "button", data_role="open-cancel")
+    assert not find(bar, "a", data_role="edit-request")
 
 
 @pytest.mark.parametrize(

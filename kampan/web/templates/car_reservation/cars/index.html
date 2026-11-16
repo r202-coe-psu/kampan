@@ -10,7 +10,7 @@
 
 {% block page_actions %}
 <a class="btn btn-primary" data-role="add-car" href="{{ url_for('car_reservation.cars.create_or_edit', organization_id=organization.id) }}">
-  <i class="ph ph-plus"></i> เพิ่มรถ
+  เพิ่มรถ
 </a>
 {% endblock %}
 
@@ -41,14 +41,14 @@
             <td>{{ car.get_vehicle_type_display() or '-' }}</td>
             <td>{% if car.seat_count %}{{ car.seat_count }} ที่นั่ง{% else %}-{% endif %}</td>
             <td>
-              <span class="badge badge-soft badge-sm {{ 'badge-success' if car.status == 'active' else 'badge-ghost' }}">{{ car.get_status_display() }}</span>
+              <span class="badge badge-soft badge-sm tone-deep-success {{ 'badge-success' if car.status == 'active' else 'badge-ghost' }}">{{ car.get_status_display() }}</span>
             </td>
             <td>{{ car.last_mileage | format_number if car.last_mileage else 0 }} กม.</td>
             <td>
               <div class="flex items-center justify-end gap-2">
                 <a class="btn btn-sm btn-primary"
                    href="{{ url_for('car_reservation.cars.create_or_edit', car_id=car.id, organization_id=organization.id) }}">
-                  <i class="ph ph-pen"></i> แก้ไข
+                  แก้ไข
                 </a>
                 {{ DeactivateButton(car, organization) }}
               </div>
@@ -66,14 +66,14 @@
           <div class="flex min-w-0 flex-1 flex-col gap-1">
             <div class="flex items-start justify-between gap-2">
               <p class="font-semibold">{{ car.license_plate }}</p>
-              <span class="badge badge-soft badge-sm {{ 'badge-success' if car.status == 'active' else 'badge-ghost' }}">{{ car.get_status_display() }}</span>
+              <span class="badge badge-soft badge-sm tone-deep-success {{ 'badge-success' if car.status == 'active' else 'badge-ghost' }}">{{ car.get_status_display() }}</span>
             </div>
             <p class="text-sm">{{ car.get_vehicle_type_display() or '-' }}{% if car.seat_count %} · {{ car.seat_count }} ที่นั่ง{% endif %}</p>
             <p class="text-sm text-base-content/60">ไมล์สุดท้าย {{ car.last_mileage | format_number if car.last_mileage else 0 }} กม.</p>
             <div class="card-actions mt-2 items-center">
               <a class="btn btn-sm btn-primary"
                  href="{{ url_for('car_reservation.cars.create_or_edit', car_id=car.id, organization_id=organization.id) }}">
-                <i class="ph ph-pen"></i> แก้ไข
+                แก้ไข
               </a>
               {{ DeactivateButton(car, organization) }}
             </div>

@@ -8,7 +8,7 @@
 {% block page_actions %}
 <a class="btn btn-primary" data-role="new-request"
    href="{{ url_for('car_reservation.requests.create', organization_id=organization.id) }}">
-  <i class="ph ph-plus"></i> ยื่นคำขอ
+  ยื่นคำขอ
 </a>
 {% endblock %}
 
@@ -16,9 +16,9 @@
 <div class="card bg-base-100 border border-base-300 shadow-sm">
   <div class="card-body gap-4 p-4 sm:p-6">
     <ul class="flex flex-wrap items-center gap-2 text-sm" aria-label="คำอธิบายสี">
-      <li class="badge badge-soft badge-warning tone-deep-success gap-1.5"><span class="size-2 rounded-full bg-warning"></span> รออนุมัติ</li>
-      <li class="badge badge-soft badge-success tone-deep-success gap-1.5"><span class="size-2 rounded-full bg-success"></span> อนุมัติแล้ว</li>
-      <li class="badge badge-soft badge-neutral gap-1.5"><span class="size-2 rounded-full bg-neutral"></span> เสร็จสิ้น</li>
+      <li class="flex items-center gap-1.5 text-base-content/80"><span class="size-2 rounded-full bg-warning"></span> รออนุมัติ</li>
+      <li class="flex items-center gap-1.5 text-base-content/80"><span class="size-2 rounded-full bg-success"></span> อนุมัติแล้ว</li>
+      <li class="flex items-center gap-1.5 text-base-content/80"><span class="size-2 rounded-full bg-neutral"></span> เสร็จสิ้น</li>
     </ul>
     <div id="calendar" class="tone-deep-success"></div>
   </div>

@@ -5,14 +5,14 @@
 			<img id="qr-modal-img" src="" alt="QR Code" class="w-56 h-56 object-contain">
 		</div>
 		<p class="text-base-content/50 text-sm text-center">
-			<i class="ph ph-scan"></i> สแกน QR Code เพื่อส่งคำประเมิน
+			สแกน QR Code เพื่อส่งคำประเมิน
 		</p>
 		<div class="modal-action w-full flex gap-2 justify-center">
 			<button id="qr-copy-btn" class="btn btn-outline" style="display: none;">
-				<i class="ph ph-copy"></i> คัดลอกลิ้งก์
+				คัดลอกลิ้งก์
 			</button>
 			<a id="qr-download-btn" href="#" download="qrcode.png" class="btn btn-primary">
-				<i class="ph ph-download-simple"></i> ดาวน์โหลด
+				ดาวน์โหลด
 			</a>
 			<button class="btn btn-ghost" onclick="document.getElementById('qr-modal').close()">
 				ปิด
@@ -63,11 +63,11 @@
 		if (feedbackUrl) {
 			copyBtn.style.display = 'inline-flex';
 			copyBtn.onclick = function () {
-				const iconHTML = '<i class="ph ph-copy"></i> คัดลอกลิ้งก์';
+				const iconHTML = 'คัดลอกลิ้งก์';
 				copyText(feedbackUrl).then(() => {
-					copyBtn.innerHTML = '<i class="ph ph-check text-success"></i> คัดลอกแล้ว';
+					copyBtn.innerHTML = 'คัดลอกแล้ว';
 				}).catch(() => {
-					copyBtn.innerHTML = '<i class="ph ph-x text-error"></i> คัดลอกไม่สำเร็จ';
+					copyBtn.innerHTML = 'คัดลอกไม่สำเร็จ';
 				}).finally(() => {
 					setTimeout(() => copyBtn.innerHTML = iconHTML, 2000);
 				});

@@ -2,12 +2,12 @@
 {% if finance_documents %}
 <div class="card bg-base-100 border border-base-300 shadow-sm" data-role="finance-documents">
   <div class="card-body gap-3">
-    <h2 class="card-title text-lg"><i class="ph ph-file-pdf text-primary"></i> เอกสารเบิกค่าใช้จ่ายพนักงานขับรถ</h2>
+    <h2 class="card-title text-lg">เอกสารเบิกค่าใช้จ่ายพนักงานขับรถ</h2>
     <div class="flex flex-wrap gap-2">
       {% for doc, label in finance_documents %}
       <a class="btn btn-primary btn-soft" data-role="finance-document" data-doc="{{ doc }}"
          href="{{ url_for('car_reservation.requests.finance_document', request_id=reservation.id, doc=doc, organization_id=organization.id) }}">
-        <i class="ph ph-download-simple"></i> {{ label }}
+        {{ label }}
       </a>
       {% endfor %}
     </div>

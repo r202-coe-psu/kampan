@@ -339,13 +339,13 @@ def test_the_attention_circle_to_the_physical_director_is_ticked_only_when_the_r
     assert len(ticked) > len(plain)  # เครื่องหมายถูกเป็นเส้นที่วาดเพิ่ม (ตำแหน่งตรวจดูด้วยตา)
 
 
-def test_detail_page_offers_the_print_button_only_to_users_who_may_print(world):
+def test_detail_page_offers_the_pdf_preview_only_to_users_who_may_print(world):
     reservation = world.reservation("domestic")
     url = f"{BASE}/{reservation.id}?organization_id={world.org.id}"
 
     for user, offered in ((world.requester, True), (world.stranger, False)):
         html = world.client_for(user).get(url).get_data(as_text=True)
-        assert ("พิมพ์ใบขอใช้รถ (PDF)" in html) is offered
+        assert ('data-role="preview-paper"' in html) is offered
 
 
 @pytest.mark.parametrize(

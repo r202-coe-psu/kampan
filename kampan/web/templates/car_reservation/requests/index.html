@@ -9,7 +9,7 @@
 
 {% block page_actions %}
 <a class="btn btn-primary" data-open-new-request href="{{ url_for('car_reservation.requests.create', organization_id=organization.id) }}">
-  <i class="ph ph-plus"></i> ยื่นคำขอ
+  ยื่นคำขอ
 </a>
 {% endblock %}
 
@@ -67,7 +67,7 @@
           </div>
           <p class="text-sm text-base-content/70">{{ reservation.get_request_type_display() }}</p>
           <div class="flex items-center justify-between gap-2 text-sm text-base-content/60">
-            <span><i class="ph ph-calendar-blank"></i> {{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</span>
+            <span>{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</span>
             {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
           </div>
         </div>

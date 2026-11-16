@@ -7,12 +7,10 @@
 
 {% block page_actions %}
 <a href="{{ url_for('car_reservation.feedback.index', organization_id=organization.id) }}" class="btn btn-ghost btn-sm gap-2">
-	<i class="ph ph-arrow-left text-base"></i>
 	กลับไปหน้าแบบประเมิน
 </a>
 <a href="{{ url_for('car_reservation.feedback.create_or_edit', template_id=template.id, organization_id=organization.id) }}"
 	class="btn btn-ghost btn-sm gap-2">
-	<i class="ph ph-pencil-simple text-base"></i>
 	แก้ไขแบบประเมิน
 </a>
 {% endblock %}
@@ -117,13 +115,11 @@
 
 			<div class="flex shrink-0 gap-2">
 				<button type="submit" class="btn btn-primary gap-2">
-					<i class="ph ph-magnifying-glass text-base"></i>
 					ค้นหา
 				</button>
 				{% if car_id or car_reservation_id %}
 				<a href="{{ url_for('car_reservation.feedback.view_responses', template_id=template.id, organization_id=organization.id) }}"
 					class="btn btn-ghost gap-2">
-					<i class="ph ph-x text-base"></i>
 					ล้างตัวกรอง
 				</a>
 				{% endif %}
@@ -150,10 +146,10 @@
 			</div>
 			<div class="flex shrink-0 items-center gap-2 md:pl-4">
 				<span
-					class="badge {{ 'badge-neutral' if selected_trip.status == 'completed' else 'badge-success' }} badge-sm">
+					class="badge badge-soft badge-sm {{ 'badge-neutral' if selected_trip.status == 'completed' else 'badge-success tone-deep-success' }}">
 					{{ selected_trip.status_display }}
 				</span>
-				<span class="badge badge-outline badge-sm tabular-nums">{{ selected_trip.response_count }} ผลตอบรับ</span>
+				<span class="badge badge-ghost badge-sm tabular-nums">{{ selected_trip.response_count }} ผลตอบรับ</span>
 			</div>
 		</div>
 	</section>
@@ -175,7 +171,7 @@
 		{% if car_id or car_reservation_id %}
 		<a href="{{ url_for('car_reservation.feedback.view_responses', template_id=template.id, organization_id=organization.id) }}"
 			class="btn btn-primary btn-sm mt-6 gap-2">
-			<i class="ph ph-arrows-out text-base"></i> ดูผลตอบรับทั้งหมด
+			ดูผลตอบรับทั้งหมด
 		</a>
 		{% endif %}
 	</section>
@@ -369,13 +365,12 @@
 							{% if not row.trip_id %}
 							<span class="text-xs text-base-content/30">&mdash;</span>
 							{% elif car_reservation_id == row.trip_id %}
-							<span class="badge badge-primary badge-sm gap-1.5">
-								<i class="ph ph-check text-xs"></i> กำลังดูอยู่
+							<span class="badge badge-soft badge-neutral badge-sm">
+								กำลังดูอยู่
 							</span>
 							{% else %}
 							<a href="{{ url_for('car_reservation.feedback.view_responses', template_id=template.id, organization_id=organization.id, car_id=car_id, car_reservation_id=row.trip_id) }}"
 								class="btn btn-primary btn-soft btn-sm gap-1.5">
-								<i class="ph ph-chart-bar text-base"></i>
 								ดูเที่ยวนี้
 							</a>
 							{% endif %}

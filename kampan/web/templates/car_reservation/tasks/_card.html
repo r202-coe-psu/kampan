@@ -22,7 +22,7 @@
     <div class="card-actions justify-end">
       {% if task.id in blocked_by %}
       <button type="button" class="btn btn-disabled btn-lg w-full sm:w-auto" disabled>
-        <i class="ph ph-lock"></i> ปิดงานก่อนหน้าให้เสร็จก่อน
+        ปิดงานก่อนหน้าให้เสร็จก่อน
       </button>
       <p class="w-full text-right text-sm text-base-content/70">
         ต้องปิดงาน: {{ blocked_by[task.id].location }} ({{ blocked_by[task.id].departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.) ก่อน
@@ -32,14 +32,14 @@
             action="{{ url_for('car_reservation.tasks.start', task_id=task.id, organization_id=organization.id) }}">
         {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
         <button type="submit" class="btn btn-primary btn-lg w-full sm:w-auto">
-          <i class="ph ph-play-circle"></i> เริ่มงาน
+          เริ่มงาน
         </button>
       </form>
       {% else %}
       <p class="w-full text-sm text-base-content/70">เริ่มงานเมื่อ {{ task.started_at.strftime('%d/%m/%Y %H:%M') }} น.</p>
       <a class="btn btn-primary btn-lg w-full sm:w-auto"
          href="{{ url_for('car_reservation.tasks.close', task_id=task.id, organization_id=organization.id) }}">
-        <i class="ph ph-check-circle"></i> ปิดงาน
+        ปิดงาน
       </a>
       {% endif %}
     </div>

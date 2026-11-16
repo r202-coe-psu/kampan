@@ -6,7 +6,7 @@
       onsubmit="return confirm('ปิดใช้งานรถ {{ car.license_plate }} ใช่หรือไม่');">
   {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
   <button type="submit" class="btn btn-sm btn-error btn-outline">
-    <i class="ph ph-prohibit"></i> ปิดใช้งาน
+    ปิดใช้งาน
   </button>
 </form>
 {% endif %}
