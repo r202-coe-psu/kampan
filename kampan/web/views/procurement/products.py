@@ -1,6 +1,5 @@
 import logging
 import datetime
-from collections import Counter
 from decimal import Decimal
 from io import BytesIO
 
@@ -67,6 +66,16 @@ def calculate_months_days(start_date, end_date):
 
 # สถานะการต่ออายุที่กรองในรายการ MA ได้ (แบบร่างแยกอยู่ที่ปุ่ม "แบบร่าง")
 FILTERABLE_RENEWAL_STATUSES = ("review", "renewal-requested", "renewed", "disactive")
+# ค่าตั้งต้นของตัวกรองเมื่อยังไม่ได้เลือก (เลือก "ทั้งหมด" ส่งค่าว่างมา จึงไม่ใช้ค่าตั้งต้น)
+DEFAULT_USAGE_FILTER = "in_use"
+DEFAULT_RENEWAL_FILTER = "review"
+
+
+def _usage_q(usage_status: str):
+    """in_use รวมแถวที่ยังไม่มี usage_status (ยังไม่ถูกคำนวณ) เพื่อไม่ให้ตัวกรองตั้งต้นซ่อนรายการเก่า"""
+    if usage_status == "in_use":
+        return Q(usage_status="in_use") | Q(usage_status=None)
+    return Q(usage_status=usage_status)
 
 
 def search_procurements(procurements, organization, text: str):
@@ -99,8 +108,10 @@ def index():
     today = datetime.date.today()
     category = request.args.get("category")
     payment_status = request.args.get("payment_status")
-    usage_status = request.args.get("usage_status")
-    renewal_status = request.args.get("renewal_status")
+    usage_status = request.args.get("usage_status", DEFAULT_USAGE_FILTER)
+    renewal_status = request.args.get("renewal_status", DEFAULT_RENEWAL_FILTER)
+    form.usage_status.data = usage_status
+    form.renewal_status.data = renewal_status
     upload_success = request.args.get("upload_success", "")
 
     only_my_division = request.args.get("division") == "mine"
@@ -108,6 +119,7 @@ def index():
 
     # แบบร่างแยกออกจากตาราง แสดงเป็นตัวเลือกตอนกด "เพิ่ม MA" (เฉพาะแบบร่างที่ผู้ใช้แก้ไขได้)
     can_edit = ma_permissions.edit_checker(organization)
+    can_approve = ma_permissions.can_approve_renewal(organization)
     drafts = [
         draft
         for draft in visible_qs.filter(status="draft", parent_procurement=None).order_by("-updated_date").limit(50)
@@ -127,8 +139,12 @@ def index():
 
     # ตัวนับสถานะนับจาก MA ที่เห็นทั้งหมด ไม่ขึ้นกับคำค้นหรือ filter
     statuses = payment_statuses(visible_qs.scalar("id"), organization, today)
-    status_count = Counter(statuses.values())
-    status_count = {status: status_count.get(status, 0) for status, _ in models.PAYEMENT_STATUS_CHOICES}
+    status_count = {
+        "in_use": visible_qs.filter(_usage_q("in_use")).count(),
+        "expired": visible_qs.filter(usage_status="expired").count(),
+        "renewal-requested": visible_qs.filter(status="renewal-requested").count(),
+        "upcoming": visible_qs.filter(usage_status="upcoming").count(),
+    }
 
     procurement_qs = search_procurements(visible_qs, organization, request.args.get("name"))
     if category:
@@ -138,9 +154,12 @@ def index():
         procurement_qs = procurement_qs.filter(
             id__in=[procurement_id for procurement_id, status in statuses.items() if status == payment_status]
         )
-    if usage_status in dict(models.USAGE_STATUS_CHOICES):
-        procurement_qs = procurement_qs.filter(usage_status=usage_status)
-    if renewal_status in FILTERABLE_RENEWAL_STATUSES:
+    # "รอใช้งาน" ของสถานะการต่ออายุคือรายการที่ยังไม่เริ่มใช้งาน จึงไม่ซ้อนกับตัวกรองการใช้งาน
+    if usage_status in dict(models.USAGE_STATUS_CHOICES) and renewal_status != "waiting":
+        procurement_qs = procurement_qs.filter(_usage_q(usage_status))
+    if renewal_status == "waiting":
+        procurement_qs = procurement_qs.filter(usage_status="upcoming")
+    elif renewal_status in FILTERABLE_RENEWAL_STATUSES:
         procurement_qs = procurement_qs.filter(status__in=renewal_status_statuses(renewal_status))
 
     sort = resolve_sort("created_desc")
@@ -164,6 +183,8 @@ def index():
         upload_success=upload_success,
         status_count=status_count,
         can_edit=can_edit,
+        can_request_renewal=ma_permissions.renewal_request_checker(organization),
+        can_renew=lambda item: can_approve and ma_permissions.renewal_requested_as(item, "renew"),
         drafts=drafts,
         my_division=ma_permissions.my_division_filter(organization),
         only_my_division=only_my_division,
@@ -227,7 +248,6 @@ def _reminder_settings_data(item, include_custom_dates: bool = True) -> dict:
         "payment_reminder_offsets": [
             value for value in item.payment_reminder_offsets or [] if value in dict(models.PAYMENT_REMINDER_OFFSET_CHOICES)
         ],
-        "reminder_offsets_days": [str(days) for days in item.reminder_offsets_days or []],
     }
     if include_custom_dates:
         data["custom_reminder_dates"] = [format_thai_date_input(value) for value in item.custom_reminder_dates or []]
@@ -516,7 +536,7 @@ def _build_items(form, organization, existing_items, user, is_draft=False, fallb
         item.expiry_reminder_offsets = list(data.expiry_reminder_offsets.data or [])
         # จ่ายครั้งเดียว: ช่องเตือนล่วงหน้าถูกซ่อน (ไม่ส่งค่ามา) จึงไม่มีช่วงล่วงหน้า เตือนเฉพาะวันครบกำหนด
         item.payment_reminder_offsets = list(data.payment_reminder_offsets.data or []) if data.installment_mode.data else []
-        item.reminder_offsets_days = data.get_reminder_offsets_days()
+        # reminder_offsets_days (จำนวนวันที่เคยกรอกเอง) ไม่มีช่องในฟอร์มแล้ว จึงไม่แตะค่าเดิมที่เก็บไว้
         item.custom_reminder_dates = data.get_custom_reminder_dates()
         was_paying = item.pays_in_installments()
         item.installment_mode = bool(data.installment_mode.data)

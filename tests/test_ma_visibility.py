@@ -201,7 +201,7 @@ def test_staff_creator_sees_own_ma_without_being_responsible(world, client_for):
     client = client_for(world.staff_none)
 
     assert client.get(_detail(world, own)).status_code == 200
-    assert "[TEST] MA-ที่ฉันสร้าง" in client.get(_url(LIST_PAGES["products"], world.org)).get_data(as_text=True)
+    assert "[TEST] MA-ที่ฉันสร้าง" in client.get(_url(LIST_PAGES["products"], world.org) + "&usage_status=&renewal_status=").get_data(as_text=True)
 
 
 @pytest.mark.parametrize(

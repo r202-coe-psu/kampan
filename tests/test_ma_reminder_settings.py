@@ -12,7 +12,7 @@ import pytest
 
 from kampan import models
 
-DEFAULTS = ["3m", "2m", "1m", "15d", "7d"]
+DEFAULTS = ["3m", "2m", "1m", "15d", "7d", "3d"]
 
 
 @pytest.fixture
@@ -77,19 +77,19 @@ def test_create_form_checks_default_offsets_for_expiry_and_payment(world, client
     assert _checked_values(html, "items-__I__-expiry_reminder_offsets") == DEFAULTS
 
 
-def test_create_saves_checked_offsets_custom_days_and_thai_dates(world, client):
+def test_create_saves_checked_offsets_and_thai_dates_ignoring_custom_days(world, client):
     response = _create(
         client,
         world,
         _form(
             world,
-            expiry_reminder_offsets=["6m", "1m"],
+            expiry_reminder_offsets=["6m", "1m", "3d"],
             installment_mode="y",
             payment_reminder_offsets=["7d"],
             **{
+                # ช่องกำหนดเองถูกนำออกจากฟอร์ม: ค่าที่ส่งมาถูกเมิน ไม่ถูกเก็บ
                 "reminder_offsets_days-0": "45",
                 "reminder_offsets_days-3": "10",
-                "reminder_offsets_days-4": "",
                 "custom_reminder_dates-0": "28/05/2570",
                 "custom_reminder_dates-2": "1/4/2571",
             },
@@ -98,9 +98,9 @@ def test_create_saves_checked_offsets_custom_days_and_thai_dates(world, client):
 
     assert response.status_code == 302, response.get_data(as_text=True)
     item = models.ProcurementItem.objects.get()
-    assert item.expiry_reminder_offsets == ["6m", "1m"]
+    assert item.expiry_reminder_offsets == ["6m", "1m", "3d"]
     assert item.payment_reminder_offsets == ["7d"]
-    assert item.reminder_offsets_days == [45, 10]
+    assert item.reminder_offsets_days == []
     assert item.custom_reminder_dates == [datetime.datetime(2027, 5, 28), datetime.datetime(2028, 4, 1)]
 
 
@@ -110,26 +110,6 @@ def test_unchecking_all_offsets_is_kept(world, client):
     assert response.status_code == 302
     item = models.ProcurementItem.objects.get()
     assert item.expiry_reminder_offsets == [] and item.payment_reminder_offsets == []
-
-
-@pytest.mark.parametrize(
-    "days, message",
-    [
-        (["0"], "จำนวนวันเตือนต้องเป็นจำนวนเต็ม 1–730 (0)"),
-        (["731"], "จำนวนวันเตือนต้องเป็นจำนวนเต็ม 1–730 (731)"),
-        (["-5"], "จำนวนวันเตือนต้องเป็นจำนวนเต็ม 1–730 (-5)"),
-        (["abc"], "จำนวนวันเตือนต้องเป็นจำนวนเต็ม 1–730 (abc)"),
-        (["45", "45"], "จำนวนวันเตือนซ้ำ (45)"),
-    ],
-)
-def test_invalid_custom_days_rejected(world, client, days, message):
-    data = _form(world, **{f"reminder_offsets_days-{index}": value for index, value in enumerate(days)})
-
-    response = _create(client, world, data)
-
-    assert response.status_code == 200
-    assert message in response.get_data(as_text=True)
-    assert models.ProcurementItem.objects.count() == 0
 
 
 @pytest.mark.parametrize(
@@ -160,7 +140,7 @@ def test_edit_form_shows_saved_settings_with_buddhist_year(world, client):
             expiry_reminder_offsets=["2m"],
             installment_mode="y",
             payment_reminder_offsets=["7d", "5d"],
-            **{"reminder_offsets_days-0": "45", "custom_reminder_dates-0": "28/05/2570"},
+            **{"custom_reminder_dates-0": "28/05/2570"},
         ),
     )
     procurement = models.Procurement.objects.get()
@@ -172,7 +152,7 @@ def test_edit_form_shows_saved_settings_with_buddhist_year(world, client):
 
     assert _checked_values(html, "items-0-expiry_reminder_offsets") == ["2m"]
     assert _checked_values(html, "items-0-payment_reminder_offsets") == ["7d", "5d"]
-    assert _input_values(html, "items-0-reminder_offsets_days") == ["45"]
+    assert "reminder_offsets_days" not in html
     assert _input_values(html, "items-0-custom_reminder_dates") == ["28/05/2570"]
 
 
@@ -183,10 +163,11 @@ def test_detail_page_shows_reminder_settings(world, client):
         _form(
             world,
             expiry_reminder_offsets=["2m"],
-            **{"reminder_offsets_days-0": "45", "custom_reminder_dates-0": "28/05/2570"},
+            **{"custom_reminder_dates-0": "28/05/2570"},
         ),
     )
     procurement = models.Procurement.objects.get()
+    models.ProcurementItem.objects.update(set__reminder_offsets_days=[45])  # ค่าเดิมที่เคยกรอกไว้ก่อนนำช่องออก
 
     html = client.get(f"/procurement/payment/{procurement.id}?organization_id={world.org.id}").get_data(as_text=True)
 
@@ -194,7 +175,7 @@ def test_detail_page_shows_reminder_settings(world, client):
     assert "60 วัน" in html and "45 วัน" in html and "28/05/2570" in html
 
 
-def test_renew_copies_offsets_and_custom_days_but_not_custom_dates(world, client):
+def test_renew_copies_offsets_but_not_custom_dates_and_offers_no_custom_days_box(world, client):
     old = models.Procurement(
         psu_disbursement_number="PSU-OLD",
         name="[TEST] MA เดิม",
@@ -228,7 +209,7 @@ def test_renew_copies_offsets_and_custom_days_but_not_custom_dates(world, client
 
     assert _checked_values(html, "items-0-expiry_reminder_offsets") == ["6m"]
     assert _checked_values(html, "items-0-payment_reminder_offsets") == ["5d"]
-    assert _input_values(html, "items-0-reminder_offsets_days") == ["45"]
+    assert "reminder_offsets_days" not in html
     assert _input_values(html, "items-0-custom_reminder_dates") == []
 
 
@@ -242,3 +223,67 @@ def test_toggle_off_item_stores_no_payment_offsets_and_form_places_them_under_in
     # ช่องเตือนจ่ายงวดอยู่ใต้ส่วนการจ่ายเงิน (ต่อจากปุ่มเพิ่มงวด) ไม่ได้อยู่ในส่วนตั้งค่าการแจ้งเตือน
     assert page.index("data-action=\"add-installment\"") < page.index("data-payment-offsets")
     assert page.index("data-payment-offsets") < page.index("ตั้งค่าการแจ้งเตือน")
+
+
+# --- ปรับหน้าตั้งค่าการแจ้งเตือน (2026-11-16) -----------------------------------
+
+
+def _create_page(client, world):
+    html = client.get(f"/procurement/products/create?organization_id={world.org.id}").get_data(as_text=True)
+    return re.sub(r"<template.*?</template>", "", html, flags=re.S)
+
+
+def test_expiry_offsets_offer_3_days_after_7(world, client):
+    page = _create_page(client, world)
+
+    assert re.findall(r'name="items-0-expiry_reminder_offsets" value="(\w+)"', page) == [
+        "6m", "5m", "4m", "3m", "2m", "1m", "15d", "7d", "3d",
+    ]
+    assert dict(models.REMINDER_OFFSET_CHOICES)["3d"] == "3 วัน"
+    # ค่าเริ่มต้นติ๊ก 3 วันด้วย
+    assert _checked_values(page, "items-0-expiry_reminder_offsets") == DEFAULTS
+
+
+def test_custom_days_box_is_gone_from_the_form(world, client):
+    page = _create_page(client, world)
+
+    assert "reminder_offsets_days" not in page
+    assert "กำหนดเอง" not in page and "1–730" not in page
+    # วันที่เตือนเจาะจงยังอยู่
+    assert "items-0-custom_reminder_dates" in page or "custom_reminder_dates" in page
+
+
+def test_reminder_settings_section_is_open_by_default(world, client):
+    page = _create_page(client, world)
+
+    heading = page.index("ตั้งค่าการแจ้งเตือน")
+    details_tag = re.match(r"<details[^>]*>", page[page.rindex("<details", 0, heading):]).group(0)
+    assert re.search(r"\bopen\b", details_tag), details_tag
+
+
+def test_expiry_offsets_use_the_same_pill_design_as_payment_offsets(world, client):
+    page = _create_page(client, world)
+
+    def block(marker):
+        start = page.index(marker)
+        return page[start : page.index("</div>", start)]
+
+    expiry, payment = block("data-expiry-offsets"), block("data-payment-offsets")
+    pill = 'class="flex items-center gap-2 py-1 px-3 rounded-full border border-base-300 cursor-pointer"'
+    assert expiry.count(pill) == 9 and payment.count(pill) == 3
+    # หัวข้อและคำอธิบายแบบเดียวกัน: ข้อความหัวข้อ + ตัวเลือกเป็นแคปซูล + คำอธิบายเล็กใต้ตัวเลือก
+    assert "เตือนหมดอายุล่วงหน้า" in page and "ก่อนวันที่สิ้นสุดของรายการย่อย" in page
+
+
+def test_disbursement_date_is_labelled_vanthi_beikjai(world, client):
+    page = _create_page(client, world)
+
+    assert re.search(r"วันที่เบิกจ่าย", page)
+    assert not re.search(r">\s*ลงวันที่\s*<", page)
+
+
+def test_category_choices_put_rental_right_under_service():
+    assert [value for value, _ in models.MA_CATEGORY_CHOICES] == [
+        "ma", "service", "rental", "software", "intangible", "product",
+    ]
+    assert dict(models.MA_CATEGORY_CHOICES)["rental"] == "เช่า"

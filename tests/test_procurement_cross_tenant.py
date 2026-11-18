@@ -827,9 +827,15 @@ def test_detail_shows_renewal_buttons_only_to_permitted_users(
 
     assert response.status_code == 200
     html = response.data.decode("utf-8")
-    assert ('id="request_renew_modal"' in html) is sees_request  # ผู้รับผิดชอบ: ขอ / เปลี่ยนคำขอ
+    assert 'id="request_renew_modal"' not in html  # ปุ่มขอต่ออายุ / ไม่ต่ออายุอยู่ที่หน้ารายการ MA เท่านั้น
     assert ('id="non_renewal_modal"' in html) is sees_approve  # admin: อนุมัติไม่ต่ออายุ
     assert f"/procurement/products/{procurement_a.id}/renew?" not in html  # ต่ออายุได้เมื่อขอต่ออายุเท่านั้น
+
+    # หน้ารายการ MA: ผู้รับผิดชอบเห็นปุ่มขอ / เปลี่ยนคำขอ
+    listing = client.get(
+        f"/procurement/products?usage_status=&renewal_status=&organization_id={world.org_a.id}"
+    ).data.decode("utf-8")
+    assert ('data-request-renewal-open' in listing) is sees_request
 
 
 @pytest.mark.parametrize("status", ["//evil.example.com", "/\\evil.example.com", "https://evil.example.com"])

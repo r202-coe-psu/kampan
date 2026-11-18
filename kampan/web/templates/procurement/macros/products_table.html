@@ -1,21 +1,21 @@
 {% from "procurement/macros/status_badges.html" import usage_badge, renewal_badge %}
-{% macro render_products_table(procurements, organization, today, can_edit) %}
+{% macro render_products_table(procurements, organization, today, can_edit, can_renew=none, can_request_renewal=none) %}
 {% set status_badges = {
   "overdue": ("badge-outline badge-error", "border-l-error"),
   "upcoming": ("badge-outline badge-warning", "border-l-warning"),
   "paid": ("badge-outline badge-success", "border-l-success"),
 } %}
-<table class="table w-full table-fixed">
+<table class="table w-full min-w-[1100px] [&_td]:align-top [&_td]:py-3">
   <thead class="bg-base-200 text-base-content/70">
     <tr>
-      <th class="font-semibold text-base w-[20%]">MA</th>
-      <th class="font-semibold text-base w-[19%]">ชื่อโครงการ</th>
-      <th class="font-semibold text-base text-center w-[9%]">เวลาคงเหลือ</th>
-      <th class="font-semibold text-base text-center w-[13%]">ผู้รับผิดชอบ / ฝ่าย</th>
-      <th class="font-semibold text-base text-center w-[8%]">ยอดเงินรวม</th>
-      <th class="font-semibold text-base text-center w-[11%]">การจ่ายเงิน</th>
-      <th class="font-semibold text-base text-center w-[11%]">สถานะ</th>
-      <th class="font-semibold text-base text-center w-[9%]"><span class="sr-only">จัดการ</span></th>
+      <th class="font-semibold text-base min-w-[180px]">ชื่อโครงการ</th>
+      <th class="font-semibold text-base min-w-[150px]">ชื่อรายการย่อย</th>
+      <th class="font-semibold text-base text-center min-w-[140px]">ผู้รับผิดชอบ</th>
+      <th class="font-semibold text-base text-center min-w-[130px]">ระยะเวลาคงเหลือ</th>
+      <th class="font-semibold text-base text-center min-w-[140px]">การจ่ายเงิน</th>
+      <th class="font-semibold text-base text-center min-w-[105px]">สถานะการใช้งาน</th>
+      <th class="font-semibold text-base text-center min-w-[150px]">สถานะการต่ออายุ</th>
+      <th class="font-semibold text-base text-center min-w-[112px]"><span class="sr-only">จัดการ</span></th>
     </tr>
   </thead>
   <tbody>
@@ -30,8 +30,8 @@
     {% set split = namespace(any=false) %}
     {% for p_item in sub_items_list %}{% if p_item.pays_in_installments() %}{% set split.any = true %}{% endif %}{% endfor %}
     <tr class="border-l-4 {% if is_draft %}border-l-warning bg-warning/10 hover:bg-warning/15{% else %}{{ badge[1] }} hover:bg-base-200/40{% endif %} transition-colors">
-      <td class="align-top">
-        <div class="flex items-center gap-2">
+      <td class="[overflow-wrap:anywhere]">
+        <div class="flex flex-wrap items-center gap-x-2">
           <span class="text-xs text-base-content/60 font-mono">ม.อ.เบิกจ่าย {{ item.psu_disbursement_number or "-" }}</span>
           {% if is_draft %}
             <span class="badge badge-warning badge-xs font-bold gap-1 px-1.5 py-0.5 shadow-2xs">
@@ -58,13 +58,19 @@
           {% endfor %}
         </div>
       </td>
-      <td class="align-top font-medium break-words">
+      <td class="font-medium [overflow-wrap:anywhere]">
         <div class="space-y-1">
           {% if item.parent_procurement %}
             <a href="{{ url_for('procurement.payment.index', procurement_id=item.parent_procurement.id, organization_id=organization.id) }}"
                class="font-semibold text-base text-base-content hover:text-primary link link-hover block leading-snug">
               {{ item.parent_procurement.name }}
             </a>
+          {% elif sub_items_list and not is_draft %}
+            {% for sub in sub_items_list[:2] %}
+              <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
+                 class="font-semibold text-base text-base-content hover:text-primary leading-snug link link-hover block">{{ sub.name }}</a>
+            {% endfor %}
+            {% if sub_items_list|length > 2 %}<span class="badge badge-ghost badge-sm">+{{ sub_items_list|length - 2 }} รายการ</span>{% endif %}
           {% else %}
             {% if is_draft %}
               {% if can_edit(item) %}
@@ -85,25 +91,11 @@
         </div>
         <div class="text-xs text-base-content/60 mt-1 break-words">{{ item.company }}</div>
       </td>
-      <td class="text-center">
-        <div class="text-base font-semibold text-base-content">
-          {% if item.is_expired %}
-            <span class="text-error">หมดอายุแล้ว</span>
-          {% elif item.duration_months is not none and item.duration_days is not none %}
-            {{ item.duration_months }} เดือน {{ item.duration_days }} วัน
-          {% else %}
-            -
-          {% endif %}
-        </div>
-        {% if item.get_end_date() %}
-          <div class="text-xs text-base-content/60">สิ้นสุด {{ item.get_end_date() | format_thai_date }}</div>
-        {% endif %}
-      </td>
       <td>
         <div class="flex flex-wrap gap-1 justify-center">
           {% set members = item.get_responsible_members() %}
           {% for member in members[:2] %}
-            <span class="badge badge-outline badge-primary font-medium">{{ member.display_user_fullname() }}</span>
+            <span class="badge badge-outline badge-primary font-medium h-auto min-h-6 py-1 whitespace-normal text-center leading-snug max-w-full">{{ member.display_user_fullname() }}</span>
           {% else %}
             <span class="text-base-content/30 text-sm">-</span>
           {% endfor %}
@@ -116,11 +108,21 @@
         </div>
       </td>
       <td class="text-center">
-        <span class="text-sm font-semibold text-base-content whitespace-nowrap">
-          {{ item.total_amount | format_amount if item.total_amount is not none else '0' }}
-        </span>
-        {% if not is_draft and installment_count > 0 and split.any %}
-          <div class="text-xs text-base-content/60 whitespace-nowrap">จ่ายแล้ว {{ paid_count }}/{{ installment_count }} งวด</div>
+        <div class="text-sm text-base-content whitespace-nowrap" data-remaining-time>
+          {% if item.is_expired %}
+            <span class="text-error font-semibold">หมดอายุแล้ว</span>
+          {% elif item.duration_months is not none and item.duration_days is not none %}
+            <span class="font-semibold">{{ item.duration_months }} เดือน {{ item.duration_days }} วัน</span>
+          {% else %}
+            -
+          {% endif %}
+        </div>
+        {# รอใช้งาน: แสดงวันเริ่มต้นการใช้งานด้วย #}
+        {% if item.usage_status == "upcoming" and item.get_start_date() %}
+          <div class="text-sm text-info font-medium whitespace-nowrap" data-start-date>เริ่ม {{ item.get_start_date() | format_thai_date }}</div>
+        {% endif %}
+        {% if item.get_end_date() %}
+          <div class="text-sm text-base-content/60 whitespace-nowrap">สิ้นสุด {{ item.get_end_date() | format_thai_date }}</div>
         {% endif %}
       </td>
       <td class="text-center">
@@ -199,20 +201,28 @@
           <i class="ph ph-file-dashed text-base"></i> แบบร่าง
         </span>
         {% else %}
-        <div class="flex flex-col items-center gap-1">
-          <div class="flex flex-col items-center gap-0.5">
-            <span class="text-[11px] text-base-content/60">การใช้งาน</span>
-            {{ usage_badge(item, "badge-sm") }}
-          </div>
-          <div class="flex flex-col items-center gap-0.5">
-            <span class="text-[11px] text-base-content/60">การต่ออายุ</span>
-            {{ renewal_badge(item, "badge-sm") }}
-          </div>
-        </div>
+          {{ usage_badge(item, "badge-md") }}
         {% endif %}
       </td>
       <td class="text-center">
-        <div class="flex flex-wrap gap-1.5 justify-center items-center">
+        {% if not is_draft %}
+          {{ renewal_badge(item, "badge-md") }}
+          {# ผู้รับผิดชอบขอต่ออายุ / ไม่ต่ออายุได้ที่นี่เท่านั้น (กดแล้วมีหน้าต่างยืนยันเสมอ) · เปลี่ยนคำขอได้จนกว่าพัสดุจะอนุมัติ #}
+          {% if can_request_renewal and can_request_renewal(item) %}
+            {% set current_request = item.renewal_request if item.status == "renewal-requested" else none %}
+            <div class="mt-2 max-w-[170px] mx-auto" data-renewal-request-actions>
+              <button type="button" class="btn btn-sm w-full gap-1 whitespace-nowrap {{ 'btn-warning' if current_request else 'btn-primary' }}" data-request-renewal-open
+                      data-current-request="{{ current_request or '' }}"
+                      data-request-url="{{ url_for('procurement.requisitions.request_renewal', requisition_procurement_id=item.id, organization_id=organization.id) }}"
+                      data-request-name="{{ item.name }}" onclick="openRenewalRequest(this)">
+                <i class="ph ph-arrows-left-right"></i> {{ "เปลี่ยนคำขอ" if current_request else "ขอต่ออายุ / ไม่ต่ออายุ" }}
+              </button>
+            </div>
+          {% endif %}
+        {% endif %}
+      </td>
+      <td class="text-center">
+        <div class="flex flex-nowrap gap-1.5 justify-center items-center" data-row-actions>
           {% if is_draft %}
             {% if can_edit(item) %}
             <div class="tooltip tooltip-left" data-tip="แก้ไขต่อ (แบบร่าง)">
@@ -237,6 +247,15 @@
                 <i class="ph ph-magnifying-glass text-lg"></i>
               </a>
             </div>
+            {% if can_renew and can_renew(item) %}
+            <div class="tooltip tooltip-left" data-tip="ต่ออายุ MA">
+              <button type="button" class="btn btn-outline btn-success btn-sm btn-circle" aria-label="ต่ออายุ MA" data-action="renew-ma"
+                      data-renew-url="{{ url_for('procurement.products.renew', procurement_id=item.id, organization_id=organization.id) }}"
+                      data-renew-name="{{ item.name }}" onclick="openRenewConfirm(this)">
+                <i class="ph ph-arrows-clockwise text-lg"></i>
+              </button>
+            </div>
+            {% endif %}
             {% if can_edit(item) %}
             {# MA ที่มีรายการย่อยเดียว (เช่น สัญญาย่อย) กดแก้ไขแล้วไปแก้รายการย่อยนั้นโดยตรง · หลายรายการ (สัญญาหลัก) แก้เฉพาะหัว #}
             {% set sole_item = sub_items_list[0] if sub_items_list|length == 1 else none %}
@@ -269,6 +288,7 @@
                 {% endif %}
               {% endif %}
             </div>
+            <div class="text-sm text-base-content/70">ยอดเงินรวม <span class="font-semibold text-primary" data-total-amount>{{ item.total_amount | format_amount if item.total_amount is not none else '0' }}</span> บาท</div>
             {% if is_draft %}
               {% if can_edit(item) %}
               <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"
@@ -331,12 +351,12 @@
                 <thead class="bg-base-200/60 text-base-content/70">
                   <tr>
                     <th class="w-16">งวดที่</th>
-                    <th class="w-32">วันครบกำหนด</th>
-                    <th class="w-36">สถานะการจ่าย</th>
+                    <th class="w-32">วันที่ครบกำหนด</th>
+                    <th class="w-36">สถานะการจ่ายเงิน</th>
                     <th class="w-32 text-right">ยอดที่ต้องจ่าย (บาท)</th>
-                    <th class="w-32">วันที่จ่าย</th>
-                    <th class="w-36">เลขที่เอกสาร</th>
-                    <th class="w-32 text-right">ยอดที่จ่าย (บาท)</th>
+                    <th class="w-36">เลขที่ มอ เบิกจ่าย</th>
+                    <th class="w-32">วันที่เบิกจ่าย</th>
+                    <th class="w-32 text-right">ยอดเงิน (บาท)</th>
                     {% if can_edit(item) and not is_draft %}<th class="w-24 text-center">จัดการ</th>{% endif %}
                   </tr>
                 </thead>
@@ -368,16 +388,16 @@
                         <span class="text-base-content/30">-</span>
                       {% endif %}
                     </td>
-                    <td class="whitespace-nowrap">
-                      {% if installment.paid_date %}
-                        <span class="text-success font-semibold">{{ installment.paid_date | format_thai_date }}</span>
+                    <td>
+                      {% if installment.payment_number %}
+                        <span class="font-mono text-xs font-semibold text-base-content">{{ installment.payment_number }}</span>
                       {% else %}
                         <span class="text-base-content/30">-</span>
                       {% endif %}
                     </td>
-                    <td>
-                      {% if installment.payment_number %}
-                        <span class="font-mono text-xs font-semibold text-base-content">{{ installment.payment_number }}</span>
+                    <td class="whitespace-nowrap">
+                      {% if installment.paid_date %}
+                        <span class="text-success font-semibold">{{ installment.paid_date | format_thai_date }}</span>
                       {% else %}
                         <span class="text-base-content/30">-</span>
                       {% endif %}
@@ -428,6 +448,73 @@
     {% endfor %}
   </tbody>
 </table>
+{% if can_request_renewal %}
+<dialog id="renewal_request_modal" class="modal text-left">
+  <div class="modal-box">
+    <h3 class="text-lg font-bold mb-4" id="renewal_request_title">ขอต่ออายุ / ไม่ต่ออายุ</h3>
+    <div class="bg-base-200 p-3 rounded-lg mb-4"><p class="font-semibold" id="renewal_request_name"></p></div>
+    <p class="text-sm mb-2" id="renewal_request_current"></p>
+    <form method="post" id="renewal_request_form" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="grid gap-2 mb-4">
+        <label class="flex items-start gap-3 p-3 rounded-lg border border-base-300 cursor-pointer has-[:checked]:border-success has-[:checked]:bg-success/10">
+          <input type="radio" name="request" value="renew" class="radio radio-success mt-0.5" data-renewal-choice>
+          <span><span class="font-semibold block"><i class="ph ph-arrows-clockwise"></i> ขอต่ออายุ</span><span class="text-sm text-base-content/60">เจ้าหน้าที่พัสดุจะอนุมัติและดำเนินการต่ออายุ</span></span>
+        </label>
+        <label class="flex items-start gap-3 p-3 rounded-lg border border-base-300 cursor-pointer has-[:checked]:border-error has-[:checked]:bg-error/10">
+          <input type="radio" name="request" value="stop" class="radio radio-error mt-0.5" data-renewal-choice>
+          <span><span class="font-semibold block"><i class="ph ph-x"></i> ขอไม่ต่ออายุ</span><span class="text-sm text-base-content/60">เจ้าหน้าที่พัสดุอนุมัติแล้ว MA จะย้ายไปรายการไม่ต่ออายุ</span></span>
+        </label>
+      </div>
+      <div role="alert" class="alert alert-info alert-soft mb-4"><i class="ph ph-info"></i><span class="text-sm">เปลี่ยนคำขอได้จนกว่าเจ้าหน้าที่พัสดุจะอนุมัติ</span></div>
+      <div class="modal-action">
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('renewal_request_modal').close()">ยกเลิก</button>
+        <button type="submit" class="btn btn-primary" id="renewal_request_submit" disabled>ยืนยัน</button>
+      </div>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+<script>
+  var RENEWAL_LABEL = {renew: 'ขอต่ออายุ', stop: 'ขอไม่ต่ออายุ'};
+  function openRenewalRequest(button) {
+    var current = button.dataset.currentRequest || '';
+    document.getElementById('renewal_request_name').textContent = button.dataset.requestName;
+    document.getElementById('renewal_request_form').action = button.dataset.requestUrl;
+    document.getElementById('renewal_request_current').textContent = current ? 'คำขอปัจจุบัน: ' + RENEWAL_LABEL[current] + ' · เลือกคำขอใหม่แล้วกดยืนยัน' : 'เลือกคำขอ แล้วกดยืนยัน';
+    var submit = document.getElementById('renewal_request_submit');
+    submit.disabled = true;
+    document.querySelectorAll('[data-renewal-choice]').forEach(function (radio) {
+      radio.checked = false;
+      radio.disabled = radio.value === current;
+      radio.closest('label').classList.toggle('opacity-50', radio.disabled);
+      radio.onchange = function () { submit.disabled = false; };
+    });
+    document.getElementById('renewal_request_modal').showModal();
+  }
+</script>
+{% endif %}
+{% if can_renew %}
+<dialog id="renew_confirm_modal" class="modal text-left">
+  <div class="modal-box">
+    <h3 class="text-lg font-bold mb-4"><i class="ph ph-arrows-clockwise mr-2"></i>ยืนยันการต่ออายุ MA</h3>
+    <p class="py-2">ผู้รับผิดชอบขอต่ออายุ MA นี้ คุณต้องการอนุมัติและดำเนินการต่ออายุใช่หรือไม่?</p>
+    <div class="bg-base-200 p-3 rounded-lg mb-4"><p class="font-semibold" id="renew_confirm_name"></p></div>
+    <div class="modal-action">
+      <form method="dialog"><button class="btn btn-outline">ยกเลิก</button></form>
+      <a id="renew_confirm_link" href="#" class="btn btn-success text-white"><i class="ph ph-arrows-clockwise mr-1"></i>ยืนยัน</a>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+<script>
+  function openRenewConfirm(button) {
+    document.getElementById('renew_confirm_name').textContent = button.dataset.renewName;
+    document.getElementById('renew_confirm_link').href = button.dataset.renewUrl;
+    document.getElementById('renew_confirm_modal').showModal();
+  }
+</script>
+{% endif %}
 
 <!-- Modals for Request Renewal, Delete Draft, and Quick Payment -->
 {% for item in procurements %}

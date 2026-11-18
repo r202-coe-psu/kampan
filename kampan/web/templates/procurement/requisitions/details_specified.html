@@ -1,4 +1,5 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
+{% from 'procurement/components/back_button.html' import ma_back_button %}
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}ระบุรายละเอียด{% endblock %}
@@ -23,7 +24,7 @@
         item.requisition.requisition_code }}</span>
       </p>
     </div>
-    {{ renderer.render_back_button(url_for('procurement.requisition_timeline.index', organization_id=organization.id), extra_classes="ml-auto") }}
+    {{ ma_back_button(url_for('procurement.requisition_timeline.index', organization_id=organization.id), extra_classes="ml-auto") }}
   </div>
 
   <form id="details-specified-form"
@@ -194,7 +195,7 @@
       </div>
     {% else %}
       <div class="flex justify-end gap-3 mt-8">
-        {{ renderer.render_back_button(url_for('procurement.requisition_timeline.index', organization_id=organization.id)) }}
+        {{ ma_back_button(url_for('procurement.requisition_timeline.index', organization_id=organization.id)) }}
       </div>
     {% endif %}
   </form>

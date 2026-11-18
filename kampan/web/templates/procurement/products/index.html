@@ -103,42 +103,40 @@
 
     <!-- Statistics Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 items-center">
-      <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='overdue') }}"
-         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-        <div class="card-body p-4 items-center text-center">
-          <i class="ph ph-warning-circle text-3xl text-error"></i>
-          <div class="font-bold text-error text-3xl leading-none">{{ status_count['overdue'] }}</div>
-          <div class="font-semibold text-sm text-error">เลยกำหนด</div>
-          <div class="text-xs text-base-content/50">เลยกำหนดชำระแล้ว</div>
-        </div>
-      </a>
-      <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='upcoming') }}"
-         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-        <div class="card-body p-4 items-center text-center">
-          <i class="ph ph-clock text-3xl text-warning"></i>
-          <div class="font-bold text-warning text-3xl leading-none">{{ status_count['upcoming'] }}</div>
-          <div class="font-semibold text-sm text-warning">ใกล้ครบกำหนด</div>
-          <div class="text-xs text-base-content/50">ครบกำหนดใน 30 วัน</div>
-        </div>
-      </a>
-      <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='paid') }}"
-         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+      <a href="{{ url_for('procurement.products.index', organization_id=organization.id, usage_status='in_use', renewal_status='') }}"
+         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer" data-status-card="in_use">
         <div class="card-body p-4 items-center text-center">
           <i class="ph ph-check-circle text-3xl text-success"></i>
-          <div class="font-bold text-success text-3xl leading-none">{{ status_count['paid'] }}</div>
-          <div class="font-semibold text-sm text-success">ชำระครบ</div>
-          <div class="text-xs text-base-content/50">ชำระเงินครบถ้วนแล้ว</div>
+          <div class="font-bold text-success text-3xl leading-none">{{ status_count['in_use'] }}</div>
+          <div class="font-semibold text-sm text-success">กำลังใช้งาน</div>
+          <div class="text-xs text-base-content/50">อยู่ในช่วงระยะเวลาใช้งาน</div>
         </div>
       </a>
-      <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='unpaid') }}"
-         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+      <a href="{{ url_for('procurement.products.index', organization_id=organization.id, usage_status='expired', renewal_status='') }}"
+         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer" data-status-card="expired">
         <div class="card-body p-4 items-center text-center">
-          <i class="ph ph-x-circle text-3xl text-base-content/40"></i>
-          <div class="font-bold text-base-content/60 text-3xl leading-none">
-            {{ status_count['unpaid'] }}
-          </div>
-          <div class="font-semibold text-sm text-base-content/60">ยังไม่ชำระ</div>
-          <div class="text-xs text-base-content/50">ยังไม่ชำระเงิน</div>
+          <i class="ph ph-warning-circle text-3xl text-error"></i>
+          <div class="font-bold text-error text-3xl leading-none">{{ status_count['expired'] }}</div>
+          <div class="font-semibold text-sm text-error">หมดอายุ</div>
+          <div class="text-xs text-base-content/50">เลยวันสิ้นสุดแล้ว</div>
+        </div>
+      </a>
+      <a href="{{ url_for('procurement.products.index', organization_id=organization.id, usage_status='', renewal_status='renewal-requested') }}"
+         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer" data-status-card="renewal-requested">
+        <div class="card-body p-4 items-center text-center">
+          <i class="ph ph-arrows-clockwise text-3xl text-warning"></i>
+          <div class="font-bold text-warning text-3xl leading-none">{{ status_count['renewal-requested'] }}</div>
+          <div class="font-semibold text-sm text-warning">รอต่ออายุ</div>
+          <div class="text-xs text-base-content/50">ผู้รับผิดชอบขอต่ออายุแล้ว</div>
+        </div>
+      </a>
+      <a href="{{ url_for('procurement.products.index', organization_id=organization.id, usage_status='', renewal_status='waiting') }}"
+         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer" data-status-card="upcoming">
+        <div class="card-body p-4 items-center text-center">
+          <i class="ph ph-clock text-3xl text-info"></i>
+          <div class="font-bold text-info text-3xl leading-none">{{ status_count['upcoming'] }}</div>
+          <div class="font-semibold text-sm text-info">รอใช้งาน</div>
+          <div class="text-xs text-base-content/50">ยังไม่ถึงวันเริ่มใช้งาน</div>
         </div>
       </a>
     </div>
@@ -147,7 +145,7 @@
     <div class="card bg-white border border-base-300 shadow-sm">
       <div class="card-body p-0">
         <div class="overflow-x-auto">
-          {{ render_products_table(procurements, organization, today, can_edit) }}
+          {{ render_products_table(procurements, organization, today, can_edit, can_renew, can_request_renewal) }}
         </div>
       </div>
     </div>

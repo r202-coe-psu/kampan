@@ -1,6 +1,6 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
+{% from 'procurement/components/back_button.html' import ma_back_button %}
 {% from 'procurement/macros/ma_form.html' import input_field, field_errors, item_card, installment_row, date_picker %}
-{% from '/base/components/buttons.html' import RenderBackButton %}
 
 {% set page_title = "แก้ไขรายการย่อย" if mode == "item" else "แก้ไข MA" if procurement and procurement.pk else ("ต่ออายุ MA" if renew_from else "เพิ่ม MA") %}
 {% block title %}{{ page_title }}{% endblock %}
@@ -11,7 +11,7 @@
 {% set mode = mode or 'full' %}
 {% set back_url = url_for('procurement.products.index', organization_id=organization.id) if (is_edit and procurement.status == 'draft') else url_for('procurement.payment.index', procurement_id=procurement.id, organization_id=organization.id) if is_edit else (url_for('procurement.payment.index', procurement_id=renew_from.id, organization_id=organization.id) if renew_from else url_for('procurement.products.index', organization_id=organization.id)) %}
 <div class="mb-4">
-  {{ RenderBackButton(back_url) }}
+  {{ ma_back_button(back_url) }}
 </div>
 <div class="w-full bg-base-100 shadow-lg rounded-xl p-4 md:p-8">
   <div class="flex items-center mb-6">
@@ -173,7 +173,7 @@
     // แถวย่อยที่ได้จากแม่แบบของรายการใหม่ใช้ index 0 จึงเริ่มนับที่ 1 อย่างน้อย
     let nextSubItemIndex = Math.max(maxIndex(/-sub_items-(\d+)-/) + 1, 1);
     const MAX_SUB_ITEMS = 100;
-    let nextListRowIndex = maxIndex(/-(?:reminder_offsets_days|custom_reminder_dates)-(\d+)$/) + 1;
+    let nextListRowIndex = maxIndex(/-custom_reminder_dates-(\d+)$/) + 1;
 
     // เงินคำนวณเป็นสตางค์ (จำนวนเต็ม) เลี่ยง float · server เป็นตัวตัดสินสุดท้าย
     function parseSatang(value) {

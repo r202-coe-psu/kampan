@@ -93,21 +93,22 @@
   </fieldset>
 {% endmacro %}
 
-{% macro offset_checkboxes(field, hint) %}
-  <fieldset class="fieldset w-full">
-    <legend class="fieldset-legend">{{ field.label.text }}</legend>
-    <p class="text-sm text-base-content/70">{{ hint }}</p>
-    <div class="flex flex-wrap gap-x-4 gap-y-1">
+{# ช่วงเตือนล่วงหน้าแบบแคปซูล หน้าตาเดียวกับ "เตือนจ่ายงวดล่วงหน้า" (data_attr ใช้เป็นจุดอ้างอิงใน test/JS) #}
+{% macro offset_checkboxes(field, hint, data_attr) %}
+  <div class="flex flex-col gap-2 w-full">
+    <span class="text-sm font-medium text-base-content">{{ field.label.text }}</span>
+    <div class="flex flex-wrap gap-2" {{ data_attr }}>
       {% for value, label in field.choices %}
-        <label class="flex items-center gap-2 py-1 cursor-pointer">
+        <label class="flex items-center gap-2 py-1 px-3 rounded-full border border-base-300 cursor-pointer">
           <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" name="{{ field.name }}" value="{{ value }}"
                  {% if value in (field.data or []) %}checked{% endif %} />
           <span class="text-sm">{{ label }}</span>
         </label>
       {% endfor %}
     </div>
+    <p class="text-xs text-base-content/60">{{ hint }}</p>
     {{ field_errors(field) }}
-  </fieldset>
+  </div>
 {% endmacro %}
 
 {% macro list_row(name, value="", placeholder="", inputmode="text", has_error=False) %}
@@ -240,9 +241,7 @@
 
 {% macro item_card(f, removable=True, numbered=True) %}
   {% set prefix = f.item_id.name[:-("item_id"|length)] %}
-  {% set custom_days = f.reminder_offsets_days.data | select | list %}
   {% set custom_dates = f.custom_reminder_dates.data | select | list %}
-  {% set reminder_has_error = (f.expiry_reminder_offsets.errors or f.payment_reminder_offsets.errors or f.reminder_offsets_days.errors or f.custom_reminder_dates.errors) | length > 0 %}
   <div class="ma-item card bg-base-100 border border-base-300 transition-all shadow-xs" data-prefix="{{ prefix }}"{% if f.item_id.data %} id="item-{{ f.item_id.data }}"{% endif %}>
     {# Card Header: Always visible, clickable to toggle collapse/expand #}
     <div class="card-header p-4 md:px-8 flex items-center justify-between gap-3 border-b border-base-300 bg-base-200/30 rounded-t-xl cursor-pointer select-none" data-action="toggle-collapse-item">
@@ -418,13 +417,12 @@
         </button>
       </section>
 
-      {# 5. ตั้งค่าการแจ้งเตือน: ใช้ค่าเริ่มต้นได้เลย พับไว้ #}
-      {% set reminder_summary = "เตือนหมดอายุ " ~ (f.expiry_reminder_offsets.data or [])|length ~ " ช่วง" ~ (" · เตือนจ่ายงวด " ~ (f.payment_reminder_offsets.data or [])|length ~ " ช่วง" if f.installment_mode.data else "") ~ (" · เพิ่มเอง " ~ (custom_days|length + custom_dates|length) ~ " รายการ" if (custom_days or custom_dates) else "") ~ " (ค่าเริ่มต้น 90/60/30 วัน และ 15/7 วัน · เตือนจ่ายงวดตั้งที่ส่วนการจ่ายเงิน)" %}
-      {% call collapsible("ph-bell-ringing", "ตั้งค่าการแจ้งเตือน", reminder_summary, reminder_has_error or custom_days or custom_dates) %}
+      {# 5. ตั้งค่าการแจ้งเตือน: ใช้ค่าเริ่มต้นได้เลย เปิดไว้เป็นค่าเริ่มต้น (ผู้ใช้พับเองได้) #}
+      {% set reminder_summary = "เตือนหมดอายุ " ~ (f.expiry_reminder_offsets.data or [])|length ~ " ช่วง" ~ (" · เตือนจ่ายงวด " ~ (f.payment_reminder_offsets.data or [])|length ~ " ช่วง" if f.installment_mode.data else "") ~ (" · เพิ่มเอง " ~ custom_dates|length ~ " รายการ" if custom_dates else "") ~ " (ค่าเริ่มต้น 90/60/30 วัน และ 15/7/3 วัน · เตือนจ่ายงวดตั้งที่ส่วนการจ่ายเงิน)" %}
+      {% call collapsible("ph-bell-ringing", "ตั้งค่าการแจ้งเตือน", reminder_summary, True) %}
         <p class="text-sm text-base-content/70">ส่งอีเมลถึงผู้รับผิดชอบรายการนี้ 1 ฉบับต่อทุกช่วงที่ติ๊ก และอีก 1 ฉบับในวันสิ้นสุด</p>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
-          {{ offset_checkboxes(f.expiry_reminder_offsets, "ก่อนวันที่สิ้นสุดของรายการย่อย") }}
-          {{ list_rows(f.reminder_offsets_days, "เช่น 45", "จำนวนวันก่อนวันที่สิ้นสุด (1–730 วัน) เพิ่มจากช่วงที่ติ๊ก", "เพิ่มจำนวนวัน", inputmode="numeric") }}
+          {{ offset_checkboxes(f.expiry_reminder_offsets, "ก่อนวันที่สิ้นสุดของรายการย่อย", "data-expiry-offsets") }}
           {{ list_rows(f.custom_reminder_dates, "28/05/2570", "วว/ดด/ปปปป ปี พ.ศ. ส่งเตือนในวันนั้น", "เพิ่มวันที่") }}
         </div>
       {% endcall %}

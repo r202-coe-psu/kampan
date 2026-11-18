@@ -23,7 +23,9 @@
 
 {% macro renewal_badge(procurement, size="badge-md", show_request=true) %}
   {% set status = procurement.get_renewal_status() %}
-  <span class="badge {{ size }} {{ renewal_badge_classes.get(status, 'badge-ghost') }} whitespace-nowrap px-2" data-renewal-status="{{ status }}">{{ procurement.get_renewal_status_label() }}</span>
+  {# ยังไม่ถึงวันเริ่มใช้งานและยังไม่มีการดำเนินการต่ออายุ (เช่น รายการใหม่ที่ต่ออายุแล้ว) แสดงเป็น "รอใช้งาน" #}
+  {% set waiting = status == "review" and procurement.usage_status == "upcoming" %}
+  <span class="badge {{ size }} {{ 'badge-info' if waiting else renewal_badge_classes.get(status, 'badge-ghost') }} whitespace-nowrap px-2" data-renewal-status="{{ 'waiting' if waiting else status }}">{{ 'รอใช้งาน' if waiting else procurement.get_renewal_status_label() }}</span>
   {% if show_request and status == "renewal-requested" and procurement.renewal_request %}
     <span class="text-[11px] text-base-content/60 whitespace-nowrap">({{ renewal_request_labels.get(procurement.renewal_request) }})</span>
   {% endif %}

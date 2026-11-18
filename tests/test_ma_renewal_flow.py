@@ -139,8 +139,8 @@ def test_legacy_status_values_are_read_as_review_and_still_filter_and_render(wor
     detail = client.get(f"/procurement/payment/{legacy['pending'].id}?{_q(world.org)}").get_data(as_text=True)
 
     assert "[TEST] เดิม active" in html and "[TEST] เดิม pending" in html
-    assert 'data-renewal-status="review"' in detail and "รอตรวจสอบ" in detail
-    assert legacy["pending"].get_renewal_status_label() == "รอตรวจสอบ"
+    assert 'data-renewal-status="review"' in detail and "รอตรวจสอบเอกสาร" in detail
+    assert legacy["pending"].get_renewal_status_label() == "รอตรวจสอบเอกสาร"
 
 
 # ---------------------------------------------------------------------------
@@ -347,7 +347,8 @@ def test_list_renders_both_badges_and_filters_by_each_status(world, client_for, 
     client = client_for(world.admin)
 
     def names(**query):
-        params = "&".join(f"{key}={value}" for key, value in query.items())
+        # ตัวกรองตั้งต้นคือ กำลังใช้งาน + รอตรวจสอบเอกสาร จึงส่งค่าว่าง (ทั้งหมด) ให้ทุกตัวกรองที่ไม่ได้ระบุ
+        params = "&".join(f"{key}={value}" for key, value in {"usage_status": "", "renewal_status": "", **query}.items())
         html = client.get(f"/procurement/products?{params}&{_q(world.org)}").get_data(as_text=True)
         return {name for name in ("AAA", "BBB", "CCC") if f"[TEST] {name}" in html}, html
 

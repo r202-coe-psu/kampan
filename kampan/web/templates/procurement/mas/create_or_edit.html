@@ -1,4 +1,5 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
+{% from 'procurement/components/back_button.html' import ma_back_button %}
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}{{ 'แก้ไข' if mas else 'เพิ่ม' }}โครงการ MAS{% endblock %}
@@ -6,7 +7,7 @@
 
 {% block content %}
   <div class="mb-4">
-    {{ renderer.render_back_button(url_for('procurement.mas.index', organization_id=organization.id)) }}
+    {{ ma_back_button(url_for('admin.mas.index', organization_id=organization.id)) }}
   </div>
   <div class="card bg-white shadow-xl rounded-xl p-6 md:p-10">
     <div class="flex items-center mb-8 gap-4">

@@ -1,3 +1,20 @@
+{# แท็บของระบบจัดการ MA: เป็นตัวกรองของหน้ารายการบำรุงรักษา (products.index) · ตั้งต้น = กำลังใช้งาน + รอตรวจสอบเอกสาร #}
+{% set ma_tabs = [
+  ("review", "รอตรวจสอบเอกสาร", "ph-file-magnifying-glass", {"usage_status": "in_use", "renewal_status": "review"}),
+  ("renewal-requested", "รอต่ออายุ", "ph-arrows-clockwise", {"usage_status": "", "renewal_status": "renewal-requested"}),
+  ("renewed", "ต่ออายุแล้ว", "ph-check-circle", {"usage_status": "", "renewal_status": "renewed"}),
+  ("disactive", "ไม่ต่ออายุ", "ph-x-circle", {"usage_status": "", "renewal_status": "disactive"}),
+  ("waiting", "รอใช้งาน", "ph-clock", {"usage_status": "", "renewal_status": "waiting"}),
+] %}
+{% set ma_usage = request.args.get("usage_status", "in_use") %}
+{% set ma_renewal = request.args.get("renewal_status", "review") %}
+{% set ma_tab = none %}
+{% if '/procurement/products' in request.path %}
+  {% if ma_usage == "" and ma_renewal == "" %}{% set ma_tab = "all" %}
+  {% elif ma_renewal == "review" and ma_usage == "in_use" %}{% set ma_tab = "review" %}
+  {% elif ma_usage == "" and ma_renewal in ("renewal-requested", "renewed", "disactive", "waiting") %}{% set ma_tab = ma_renewal %}
+  {% endif %}
+{% endif %}
 {% from '/base/html-renderer.html' import dropdown_select_control %}
 <div class="drawer-side shadow">
   <label for="drawer-menu" aria-label="close sidebar" class="drawer-overlay h-full"></label>
@@ -79,22 +96,35 @@
                     <span class="truncate">ระบบการจัดการ MA</span>
                   </summary>
                   <ul class="w-full">
+                    {# รายการบำรุงรักษา = MA ทั้งหมด (ไม่กรอง) · แท็บของเจ้าหน้าที่พัสดุด้านล่างเป็นตัวกรองของหน้าเดียวกัน #}
                     <li class="w-full">
-                      <a class="{{ 'menu-active' if '/procurement/products' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
-                        href="{{ url_for('procurement.products.index', organization_id=organization.id) }}"
-                        title="รายการบำรุงรักษา">
+                      <a class="{{ 'menu-active' if ma_tab == 'all' else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                        href="{{ url_for('procurement.products.index', organization_id=organization.id, usage_status='', renewal_status='') }}"
+                        title="รายการบำรุงรักษา (MA ทั้งหมด)">
                         <i class="ph ph-shopping-cart flex-shrink-0"></i>
                         <span class="truncate">รายการบำรุงรักษา</span>
                       </a>
                     </li>
+                  </ul>
+                </details>
+              </li>
+              <li class="w-full">
+                <details open>
+                  <summary class="w-full whitespace-nowrap overflow-hidden">
+                    <i class="ph ph-clipboard-text flex-shrink-0"></i>
+                    <span class="truncate">งานเจ้าหน้าที่พัสดุ</span>
+                  </summary>
+                  <ul class="w-full">
+                    {% for tab_key, tab_label, tab_icon, tab_args in ma_tabs %}
                     <li class="w-full">
-                      <a class="{{ 'menu-active' if '/procurement/requisitions/non-renewal' in request.path  else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
-                        href="{{ url_for('procurement.requisitions.non_renewal', organization_id=organization.id) }}"
-                        title="รายการ MA ไม่ต่ออายุ">
-                        <i class="ph ph-x-circle flex-shrink-0"></i>
-                        <span class="truncate">รายการ MA ไม่ต่ออายุ</span>
+                      <a class="{{ 'menu-active' if ma_tab == tab_key else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                        href="{{ url_for('procurement.products.index', organization_id=organization.id, **tab_args) }}"
+                        title="{{ tab_label }}" data-ma-tab="{{ tab_key }}">
+                        <i class="ph {{ tab_icon }} flex-shrink-0"></i>
+                        <span class="truncate">{{ tab_label }}</span>
                       </a>
                     </li>
+                    {% endfor %}
                   </ul>
                 </details>
               </li>

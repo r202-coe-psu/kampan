@@ -285,7 +285,7 @@ def test_create_ma_duplicates_child_procurements_with_parent_reference(world, cl
     assert master.name in child_html
 
     # Products table shows child items separated and excludes master container
-    table_html = client.get(f"/procurement/products?{_q(world.org)}").get_data(as_text=True)
+    table_html = client.get(f"/procurement/products?usage_status=&renewal_status=&{_q(world.org)}").get_data(as_text=True)
     assert "ชื่อโครงการ" in table_html
     assert master.name in table_html
     # ป้าย "สัญญาย่อย" ไม่แสดงในตารางแล้ว ปุ่มแสดงงวดการจ่ายอยู่ในคอลัมน์ชื่อโครงการแทน
@@ -359,11 +359,12 @@ def test_edit_buttons_in_detail_page(world, client_for, existing_ma):
     edit_url = f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}"
     item_edit_url = f"{edit_url}&amp;item_id={item.id}"
     detail_url = f"/procurement/payment/{existing_ma.id}?{_q(world.org)}"
-    # 1. Editor (admin or responsible) sees edit buttons
+    # 1. แก้ไขทำที่หน้ารายการ MA เท่านั้น: หน้ารายละเอียดไม่มีปุ่มแก้ไข ส่วนหน้ารายการมีปุ่มแก้ไขที่ไปหน้าแก้ไข
     editor_client = client_for(world.admin)
     detail_html = editor_client.get(detail_url).get_data(as_text=True)
-    assert item_edit_url in detail_html  # "แก้ไข" ของรายการ -> โหมดแก้รายการเดียว
-    assert edit_url in detail_html  # "แก้ไข MA" -> โหมดแก้เฉพาะหัว
+    assert item_edit_url not in detail_html and edit_url not in detail_html
+    list_html = editor_client.get(f"/procurement/products?usage_status=&renewal_status=&{_q(world.org)}").get_data(as_text=True)
+    assert f"/procurement/products/{existing_ma.id}/edit" in list_html
 
     # Item edit form shows only that item; header edit form has no item cards
     edit_form_html = editor_client.get(f"{edit_url}&item_id={item.id}").get_data(as_text=True)
@@ -382,7 +383,7 @@ def test_non_renewal_workflow_from_detail_page(world, client_for, existing_ma):
     """ขอไม่ต่ออายุ (ผู้รับผิดชอบ) → อนุมัติ (admin) → หน้าไม่ต่ออายุ"""
     admin = client_for(world.admin)
     responsible = client_for(world.responsible)
-    products_url = f"/procurement/products?{_q(world.org)}"
+    products_url = f"/procurement/products?usage_status=&renewal_status=&{_q(world.org)}"
     detail_url = f"/procurement/payment/{existing_ma.id}?{_q(world.org)}"
     non_renewal_url = f"/procurement/requisitions/non-renewal?{_q(world.org)}"
 
@@ -390,7 +391,7 @@ def test_non_renewal_workflow_from_detail_page(world, client_for, existing_ma):
     assert "request-renewal" not in admin.get(products_url).get_data(as_text=True)
 
     # 2. รอตรวจสอบ: ผู้รับผิดชอบเห็นปุ่มขอ (modal ยืนยัน) ส่วน admin ยังไม่เห็นปุ่มอนุมัติ
-    assert 'id="request_stop_modal"' in responsible.get(detail_url).get_data(as_text=True)
+    assert 'data-request-renewal-open' in responsible.get(products_url).get_data(as_text=True)
     assert 'id="non_renewal_modal"' not in admin.get(detail_url).get_data(as_text=True)
 
     # 3. ผู้รับผิดชอบกดขอไม่ต่ออายุ
@@ -419,47 +420,55 @@ def test_non_renewal_workflow_from_detail_page(world, client_for, existing_ma):
 
 
 def test_detail_page_renewal_button_visibility(world, client_for, existing_ma):
+    """ปุ่มขอต่ออายุ / ไม่ต่ออายุ (ผู้รับผิดชอบ) อยู่ที่หน้ารายการ MA เท่านั้น · ปุ่มอนุมัติของ admin อยู่ที่หน้ารายละเอียด"""
     detail_url = f"/procurement/payment/{existing_ma.id}?{_q(world.org)}"
+    list_url = f"/procurement/products?usage_status=&renewal_status=&{_q(world.org)}"
+    opener = 'data-request-renewal-open'
 
     def page(user):
         return client_for(user).get(detail_url).get_data(as_text=True)
 
-    # รอตรวจสอบ: เฉพาะผู้รับผิดชอบเห็นปุ่มขอ (admin / ผู้สร้าง / ผู้ดูที่แก้ไม่ได้ไม่เห็น)
-    assert 'id="request_renew_modal"' in page(world.responsible)
+    def listing(user):
+        return client_for(user).get(list_url).get_data(as_text=True)
+
+    # รอตรวจสอบ: เฉพาะผู้รับผิดชอบเห็นปุ่มขอที่หน้ารายการ (admin / ผู้สร้าง / ผู้ดูที่แก้ไม่ได้ไม่เห็น) และหน้ารายละเอียดไม่มีปุ่มขอ
+    html = listing(world.responsible)
+    assert opener in html and 'id="renewal_request_modal"' in html
+    assert "request_renew_modal" not in page(world.responsible)
     for user in (world.admin, world.creator, world.head):
-        html = page(user)
-        assert 'id="request_renew_modal"' not in html and 'id="non_renewal_modal"' not in html
+        assert opener not in listing(user)
+        assert 'id="non_renewal_modal"' not in page(user)
 
     # รอต่ออายุ (ขอไม่ต่ออายุ): เฉพาะ admin เห็นปุ่มอนุมัติ ผู้รับผิดชอบเปลี่ยนคำขอเป็นต่ออายุได้เท่านั้น (ไม่เห็นปุ่มซ้ำ)
     models.Procurement.objects(id=existing_ma.id).update(set__status="renewal-requested", set__renewal_request="stop")
     assert 'id="non_renewal_modal"' in page(world.admin)
-    html = page(world.responsible)
-    assert 'id="request_renew_modal"' in html and 'id="request_stop_modal"' not in html
-    assert 'id="non_renewal_modal"' not in html
+    html = listing(world.responsible)
+    assert opener in html and 'data-current-request="stop"' in html
+    assert 'id="non_renewal_modal"' not in page(world.responsible)
     for user in (world.creator, world.head):
-        html = page(user)
-        assert 'id="non_renewal_modal"' not in html and 'id="request_stop_modal"' not in html
+        assert opener not in listing(user)
+        assert 'id="non_renewal_modal"' not in page(user)
 
     # admin ยืนยันแล้ว (ไม่ต่ออายุ / ต่ออายุแล้ว): ไม่เห็นปุ่มใดเลย แม้เป็น admin หรือผู้รับผิดชอบ
     for status in ("disactive", "renewed"):
         models.Procurement.objects(id=existing_ma.id).update(set__status=status)
         for user in (world.admin, world.responsible):
-            html = page(user)
-            for modal in ("non_renewal_modal", "request_stop_modal", "request_renew_modal"):
-                assert f'id="{modal}"' not in html
+            assert 'id="non_renewal_modal"' not in page(user)
+            html = listing(user)
+            assert opener not in html
 
 
 def test_products_table_sub_items_toggle_and_quick_pay(world, client_for, existing_ma):
     client = client_for(world.admin)
-    products_url = f"/procurement/products?{_q(world.org)}"
+    products_url = f"/procurement/products?usage_status=&renewal_status=&{_q(world.org)}"
 
     # 1. Products page has toggle button and sub-items expandable row
     html = client.get(products_url).get_data(as_text=True)
     assert f'id="btn_toggle_{existing_ma.id}"' in html
     assert f'id="sub_items_{existing_ma.id}"' in html
     assert "งวดการจ่ายเงิน" in html
-    # แบ่งจ่ายเป็นงวด (1 งวด): แสดงความคืบหน้าเป็นงวด
-    assert "จ่ายแล้ว 0/1 งวด" in html
+    # ยอดเงินรวมย้ายไปอยู่ในส่วนขยายงวดการจ่ายเงิน
+    assert "data-total-amount" in html
     assert "รายการย่อย (1)" not in html
     item = existing_ma.get_items()[0]
     assert item.name in html
@@ -565,7 +574,7 @@ def test_create_ma_save_as_draft(world, client_for):
         assert child.status == "draft"
 
     # Drafts are no longer rows of the table: they are offered from the "เพิ่ม MA" menu
-    index_res = client.get(f"/procurement/products?{_q(world.org)}")
+    index_res = client.get(f"/procurement/products?usage_status=&renewal_status=&{_q(world.org)}")
     assert index_res.status_code == 200
     index_html = index_res.get_data(as_text=True)
     assert "แบบร่างที่ค้างอยู่" in index_html
@@ -695,7 +704,7 @@ def test_installment_table_shows_due_amount_column(world, client_for):
     assert res.status_code == 302
 
     # Check products table
-    idx = client.get(f"/procurement/products?{_q(world.org)}")
+    idx = client.get(f"/procurement/products?usage_status=&renewal_status=&{_q(world.org)}")
     assert idx.status_code == 200
     assert "ยอดที่ต้องจ่าย (บาท)" in idx.text
 
@@ -709,3 +718,20 @@ def test_installment_table_shows_due_amount_column(world, client_for):
 
 
 
+
+
+def test_procurement_staff_cannot_request_even_if_responsible(world, client_for, existing_ma):
+    """เจ้าหน้าที่พัสดุ (admin) อนุมัติอย่างเดียว: แม้เป็นผู้รับผิดชอบก็ไม่เห็นปุ่มและขอผ่าน POST ไม่ได้"""
+    from kampan.web.views.procurement import ma_permissions
+
+    item = existing_ma.get_items()[0]
+    item.responsible_by = list(item.responsible_by) + [world.role_admin]
+    existing_ma.save()
+    models.Procurement.objects(id=existing_ma.id).update(set__status="review")
+    existing_ma.reload()
+    admin = client_for(world.admin)
+    admin.post(f"/procurement/requisitions/{existing_ma.id}/renewal-request?{_q(world.org)}", data={"request": "renew"})
+    existing_ma.reload()
+    assert existing_ma.status != "renewal-requested"
+    html = admin.get(f"/procurement/products?usage_status=&renewal_status=&{_q(world.org)}").get_data(as_text=True)
+    assert "data-request-renewal-open" not in html

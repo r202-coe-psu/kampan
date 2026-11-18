@@ -9,7 +9,6 @@ from kampan.models.procurement import (
     MAX_INSTALLMENTS_PER_ITEM,
     MAX_SUB_ITEMS_MESSAGE,
     MAX_SUB_ITEMS_PER_ITEM,
-    MAX_REMINDER_OFFSET_DAYS,
     check_item_sum,
 )
 from kampan.utils.date_utils import parse_thai_date
@@ -82,7 +81,6 @@ class OffsetCheckboxField(fields.SelectMultipleField):
             raise ValidationError("ช่วงเตือนไม่ถูกต้อง")
 
 
-OFFSET_DAYS_MESSAGE = f"จำนวนวันเตือนต้องเป็นจำนวนเต็ม 1–{MAX_REMINDER_OFFSET_DAYS}"
 
 
 def _filled(field_list) -> list[str]:
@@ -159,8 +157,7 @@ class ProcurementItemForm(Form):
     payment_reminder_offsets = OffsetCheckboxField(
         "เตือนจ่ายงวดล่วงหน้า", choices=models.PAYMENT_REMINDER_OFFSET_CHOICES
     )
-    # ช่องว่างไม่นับ (แถวที่ยังไม่กรอก)
-    reminder_offsets_days = fields.FieldList(fields.StringField(), label="เตือนหมดอายุล่วงหน้า (วัน) กำหนดเอง")
+    # ช่องว่างไม่นับ (แถวที่ยังไม่กรอก) ช่องกำหนดจำนวนวันเอง (reminder_offsets_days) นำออกจากฟอร์มแล้ว (2026-11-16)
     custom_reminder_dates = fields.FieldList(fields.StringField(), label="วันที่เตือนเจาะจง (พ.ศ.)")
     # เปิด = แบ่งจ่ายเป็นงวด (กรอกวันครบกำหนดเอง) ปิด = จ่ายครั้งเดียว งวดเดียวครบกำหนดในวันสิ้นสุด (ระบบตั้งให้)
     installment_mode = fields.BooleanField("แบ่งจ่ายเป็นงวด")
@@ -191,15 +188,6 @@ class ProcurementItemForm(Form):
         if len(field.entries) > MAX_INSTALLMENTS_PER_ITEM:
             raise ValidationError(MAX_INSTALLMENTS_MESSAGE)
 
-    def validate_reminder_offsets_days(self, field):
-        days = []
-        for text in _filled(field):
-            if not text.isdigit() or not 1 <= int(text) <= MAX_REMINDER_OFFSET_DAYS:
-                raise ValidationError(f"{OFFSET_DAYS_MESSAGE} ({text})")
-            if int(text) in days:
-                raise ValidationError(f"จำนวนวันเตือนซ้ำ ({text})")
-            days.append(int(text))
-
     def validate_custom_reminder_dates(self, field):
         dates = []
         for text in _filled(field):
@@ -210,10 +198,6 @@ class ProcurementItemForm(Form):
             if value in dates:
                 raise ValidationError(f"วันที่เตือนซ้ำ ({text})")
             dates.append(value)
-
-    def get_reminder_offsets_days(self) -> list[int]:
-        """จำนวนวันที่กรอกเอง (เรียกหลัง validate ผ่านแล้ว)"""
-        return [int(text) for text in _filled(self.reminder_offsets_days)]
 
     def get_custom_reminder_dates(self) -> list[datetime.datetime]:
         """วันที่เตือนเจาะจงเป็น ค.ศ. เที่ยงคืน (เรียกหลัง validate ผ่านแล้ว)"""
@@ -236,7 +220,7 @@ class ProcurementHeaderForm(FlaskForm):
         validators=[validators.Optional(), validators.Length(max=128)],
     )
     disbursement_date = DateInputField(
-        "ลงวันที่",
+        "วันที่เบิกจ่าย",
         validators=[validators.Optional()],
     )
     name = fields.StringField(
@@ -430,6 +414,8 @@ def sort_field() -> fields.SelectField:
 
 # สถานะการต่ออายุที่กรองในรายการ MA ได้ (ไม่มีแบบร่าง และไม่แสดงค่าเดิม active / pending แยก)
 RENEWAL_FILTER_STATUSES = ("review", "renewal-requested", "renewed", "disactive")
+# "waiting" ไม่ใช่ค่าที่เก็บ: รายการที่ยังไม่ถึงวันเริ่มใช้งาน (รอใช้งาน เช่น รายการใหม่ที่ต่ออายุแล้ว)
+RENEWAL_FILTER_WAITING = ("waiting", "รอใช้งาน")
 
 
 class ProductFilterForm(FlaskForm):
@@ -455,7 +441,8 @@ class ProductFilterForm(FlaskForm):
     renewal_status = fields.SelectField(
         "สถานะการต่ออายุ",
         choices=[("", "ทั้งหมด")]
-        + [(value, label) for value, label in models.RENEWAL_STATUS_CHOICES if value in RENEWAL_FILTER_STATUSES],
+        + [(value, label) for value, label in models.RENEWAL_STATUS_CHOICES if value in RENEWAL_FILTER_STATUSES]
+        + [RENEWAL_FILTER_WAITING],
         validators=[validators.Optional()],
     )
     sort = sort_field()

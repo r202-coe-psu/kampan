@@ -40,6 +40,19 @@
     </div>
   </div>
   {% include "/procurement/base/sidebar-procurement.html" %}
+  <script>
+    // ปุ่มย้อนกลับ (components/back_button.html): กลับหน้าก่อนหน้าเสมอ ไม่มีหน้าก่อนหน้าในเว็บเดียวกันจึงใช้ลิงก์สำรอง
+    document.addEventListener('click', function (event) {
+      var link = event.target.closest('[data-ma-back]');
+      if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.button) return;
+      var sameSite = false;
+      try { sameSite = !!document.referrer && new URL(document.referrer).origin === window.location.origin; } catch (e) {}
+      if (sameSite && window.history.length > 1) {
+        event.preventDefault();
+        window.history.back();
+      }
+    });
+  </script>
   {% for category, message in get_flashed_messages(with_categories=true) %}
   {{ render_toast(message, category) }}
   {% endfor %}

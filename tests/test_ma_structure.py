@@ -1035,7 +1035,8 @@ def test_detail_hides_edit_and_pay_buttons_from_viewer(world, client_for, existi
 
     assert viewer_response.status_code == 200
     assert edit_url not in viewer_html and "/pay?" not in viewer_html
-    assert edit_url in editor_html and "/pay?" in editor_html
+    # แก้ไข MA ทำที่หน้ารายการ MA เท่านั้น หน้ารายละเอียดมีแค่ปุ่มจ่าย
+    assert edit_url not in editor_html and "/pay?" in editor_html
 
 
 # ---------------------------------------------------------------------------
@@ -1632,7 +1633,7 @@ def test_create_form_category_options_order_and_no_material(world, client_for):
 
     values = re.findall(r'data-value="([^"]*)"', menu)
 
-    assert values == ["ma", "service", "software", "intangible", "product", "rental"]
+    assert values == ["ma", "service", "rental", "software", "intangible", "product"]
     assert "วัสดุ" not in menu
 
 

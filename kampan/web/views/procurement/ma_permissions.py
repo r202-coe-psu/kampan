@@ -70,23 +70,28 @@ def can_edit_procurement(procurement, organization, user=None) -> bool:
     return edit_checker(organization, user)(procurement)
 
 
-def can_request_renewal(procurement, organization, user=None) -> bool:
-    """ผู้รับผิดชอบรายการย่อยของ MA นี้เท่านั้นที่กดขอต่ออายุ / ไม่ต่ออายุได้ (ผู้สร้าง, admin, คนอื่นที่แก้ได้ไม่ใช่)
+def renewal_request_checker(organization, user=None) -> Callable[[models.Procurement], bool]:
+    """คืนฟังก์ชันตรวจว่าขอต่ออายุ / ไม่ต่ออายุได้ไหม (ค้นสมาชิกครั้งเดียว ใช้ซ้ำได้ทั้งหน้ารายการ)
+    ผู้รับผิดชอบรายการย่อยของ MA นี้เท่านั้นที่ขอได้ (ผู้สร้าง, admin, คนอื่นที่แก้ได้ไม่ใช่)
     และต้องเป็นสถานะรอตรวจสอบหรือรอต่ออายุ ไม่ใช่แบบร่าง / ต่ออายุแล้ว / ไม่ต่ออายุ / สัญญาหลักที่แยกสัญญาย่อย
-    (อ้างอิงอย่างเดียว)"""
-    # รอตรวจสอบ (ขอครั้งแรก) หรือรอต่ออายุ (เปลี่ยนคำขอ ต่ออายุ <-> ไม่ต่ออายุ ได้จนกว่า admin จะอนุมัติ)
-    if (
-        not organization
-        or procurement.get_renewal_status() not in ("review", "renewal-requested")
-        or procurement.is_renewed()
-    ):
-        return False
-    if _reference_id(procurement, "organization") != organization.id or procurement.has_child_procurements():
-        return False
-    member = get_member(organization, user)
-    if member is None:
-        return False
-    return any(member.id in item.get_responsible_ids() for item in procurement.get_items())
+    (อ้างอิงอย่างเดียว) · admin (เจ้าหน้าที่พัสดุ) ขอไม่ได้ · รอต่ออายุเปลี่ยนคำขอ ต่ออายุ <-> ไม่ต่ออายุ ได้จนกว่า admin จะอนุมัติ"""
+    member = get_member(organization, user) if organization else None
+    if member is None or can_approve_renewal(organization, user):
+        # เจ้าหน้าที่พัสดุ (admin) อนุมัติอย่างเดียว ขอ / เปลี่ยนคำขอไม่ได้ แม้เป็นผู้รับผิดชอบรายการ
+        return lambda procurement: False
+
+    def _can_request(procurement) -> bool:
+        if procurement.get_renewal_status() not in ("review", "renewal-requested") or procurement.is_renewed():
+            return False
+        if _reference_id(procurement, "organization") != organization.id or procurement.has_child_procurements():
+            return False
+        return any(member.id in item.get_responsible_ids() for item in procurement.get_items())
+
+    return _can_request
+
+
+def can_request_renewal(procurement, organization, user=None) -> bool:
+    return renewal_request_checker(organization, user)(procurement)
 
 
 def can_approve_renewal(organization, user=None) -> bool:

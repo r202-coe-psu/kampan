@@ -283,16 +283,12 @@ def test_non_renewal_row_numbers_continue_across_pages(world):
 
 
 def _status_counts(response) -> dict:
+    """ตัวเลขบนการ์ดสรุป 4 ใบ: กำลังใช้งาน / หมดอายุ / รอต่ออายุ / รอใช้งาน"""
     html = response.get_data(as_text=True)
     counts = {}
-    for status, css in [
-        ("overdue", "text-error"),
-        ("upcoming", "text-warning"),
-        ("paid", "text-success"),
-        ("unpaid", "text-base-content/60"),
-    ]:
-        match = re.search(rf'font-bold {re.escape(css)} text-3xl leading-none">\s*(\d+)\s*<', html)
-        counts[status] = int(match.group(1))
+    for key in ("in_use", "expired", "renewal-requested", "upcoming"):
+        match = re.search(rf'data-status-card="{key}".*?text-3xl leading-none">\s*(\d+)\s*<', html, re.S)
+        counts[key] = int(match.group(1))
     return counts
 
 
@@ -316,9 +312,6 @@ def test_products_status_counts_and_filter_follow_worst_unpaid_installment(world
         installments=[_installment(-20, paid=True, paid_by=paid_by), _installment(30), _installment(-2)],
     )
 
-    response = _get(world, PRODUCTS)
-
-    assert _status_counts(response) == {"overdue": 3, "upcoming": 1, "paid": 1, "unpaid": 1}
     expected_by_filter = {
         "overdue": {overdue.name, worst_item.name, out_of_order.name},
         "upcoming": {upcoming.name},
@@ -326,10 +319,8 @@ def test_products_status_counts_and_filter_follow_worst_unpaid_installment(world
         "unpaid": {unpaid.name},
     }
     for status, expected in expected_by_filter.items():
-        filtered = _get(world, PRODUCTS, payment_status=status)
+        filtered = _get(world, PRODUCTS, payment_status=status, usage_status="", renewal_status="")
         assert set(_shown_mas(filtered)) == expected, status
-        # ตัวนับนับจาก MA ที่เห็นทั้งหมด ไม่ขึ้นกับ filter
-        assert _status_counts(filtered) == {"overdue": 3, "upcoming": 1, "paid": 1, "unpaid": 1}
 
 
 def test_non_renewal_page_sorts_by_latest_end_date_first(world):
@@ -584,3 +575,68 @@ def test_due_asc_sorts_by_nearest_unpaid_installment_not_by_end_date(world, path
     first_page = _shown_mas(_get(world, path, sort="due_asc", per_page=3))
     second_page = _shown_mas(_get(world, path, sort="due_asc", per_page=3, page=2))
     assert first_page + second_page == shown and second_page == [c.name]
+
+
+def test_products_cards_count_usage_and_renewal_and_default_filters(world):
+    in_use = _create_ma(world, end_in_days=60, status="review")
+    expired = _create_ma(world, end_in_days=-5, status="review")
+    waiting = _create_ma(world, end_in_days=60, status="review")
+    requested = _create_ma(world, end_in_days=60, status="renewal-requested")
+    models.Procurement.objects(id=in_use.id).update(set__usage_status="in_use")
+    models.Procurement.objects(id=expired.id).update(set__usage_status="expired")
+    models.Procurement.objects(id=waiting.id).update(set__usage_status="upcoming")
+    models.Procurement.objects(id=requested.id).update(set__usage_status="in_use")
+
+    response = _get(world, PRODUCTS)
+
+    assert _status_counts(response) == {"in_use": 2, "expired": 1, "renewal-requested": 1, "upcoming": 1}
+    # ตั้งต้น: กำลังใช้งาน + รอตรวจสอบเอกสาร
+    assert set(_shown_mas(response)) == {in_use.name}
+    assert set(_shown_mas(_get(world, PRODUCTS, usage_status="", renewal_status=""))) == {
+        in_use.name,
+        expired.name,
+        waiting.name,
+        requested.name,
+    }
+    assert set(_shown_mas(_get(world, PRODUCTS, usage_status="", renewal_status="waiting"))) == {waiting.name}
+    assert set(_shown_mas(_get(world, PRODUCTS, usage_status="", renewal_status="renewal-requested"))) == {requested.name}
+
+
+def test_sidebar_has_filter_tabs_for_procurement_staff(world):
+    html = _get(world, PRODUCTS, usage_status="", renewal_status="renewal-requested").get_data(as_text=True)
+
+    for key, label in [
+        ("review", "รอตรวจสอบเอกสาร"),
+        ("renewal-requested", "รอต่ออายุ"),
+        ("renewed", "ต่ออายุแล้ว"),
+        ("disactive", "ไม่ต่ออายุ"),
+        ("waiting", "รอใช้งาน"),
+    ]:
+        assert f'data-ma-tab="{key}"' in html and label in html
+    # แท็บที่ตรงกับตัวกรองปัจจุบันเป็น active และ "รายการบำรุงรักษา" ชี้ไปที่ MA ทั้งหมด (ไม่กรอง)
+    assert re.search(r'menu-active[^>]*\n?[^>]*data-ma-tab="renewal-requested"', html)
+    assert "usage_status=&amp;renewal_status=" in html
+
+
+def test_waiting_ma_shows_its_start_date_in_remaining_time_cell(world):
+    waiting = _create_ma(world, end_in_days=60, status="review")
+    other = _create_ma(world, end_in_days=60, status="review")
+    models.Procurement.objects(id=waiting.id).update(set__usage_status="upcoming")
+    models.Procurement.objects(id=other.id).update(set__usage_status="in_use")
+
+    html = _get(world, PRODUCTS, usage_status="", renewal_status="").get_data(as_text=True)
+
+    assert html.count("data-start-date") == 1
+
+
+def test_confirm_dialogs_are_rendered_once_outside_the_hidden_installment_rows(world):
+    """dialog ที่อยู่ในแถวงวดที่ซ่อนอยู่เปิดไม่ได้ (showModal ไม่ทำงาน) จึงต้องมีชุดเดียวหลังตาราง"""
+    _create_mas(world, 3, status="review")
+    admin_html = _get(world, PRODUCTS, usage_status="", renewal_status="").get_data(as_text=True)
+    responsible_html = world.client().get(_url(PRODUCTS, world.org, usage_status="", renewal_status="")).get_data(as_text=True)
+
+    for html in (admin_html, responsible_html):
+        assert html.count('id="renew_confirm_modal"') <= 1 and html.count('id="renewal_request_modal"') <= 1
+        for dialog_id in ("renew_confirm_modal", "renewal_request_modal"):
+            if f'id="{dialog_id}"' in html:
+                assert html.index(f'id="{dialog_id}"') > html.rindex('id="sub_items_')

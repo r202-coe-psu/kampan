@@ -150,6 +150,18 @@ def test_item_edit_page_shows_only_that_item_without_header_details_and_no_add_r
     assert 'data-action="add-item"' not in html and 'data-action="remove-item"' not in html
 
 
+def test_item_edit_keeps_custom_reminder_days_saved_before_the_box_was_removed(world, client_for, two_item_ma):
+    first, second = two_item_ma.get_items()
+    second.update(set__reminder_offsets_days=[45, 10])
+    data = ma_form([_item_fields(second, note="แก้แล้ว")], total_amount="1.00", version=two_item_ma.get_version())
+
+    response = client_for(world.admin).post(_edit_url(world, two_item_ma, second), data=data)
+
+    assert response.status_code == 302
+    second.reload()
+    assert second.reminder_offsets_days == [45, 10]  # ฟอร์มไม่มีช่องนี้แล้ว การบันทึกต้องไม่ล้างค่าเดิม
+
+
 def test_item_edit_changes_only_that_item_and_recomputes_total(world, client_for, two_item_ma):
     first, second = two_item_ma.get_items()
     data = ma_form(
@@ -415,7 +427,7 @@ def test_detail_page_shows_delete_dialog_and_disables_when_not_allowed(world, cl
     assert f"/items/{second.id}/delete" in html
     assert f'id="delete_item_modal_{first.id}"' not in html  # มีงวดจ่ายแล้ว: ปุ่มถูก disable พร้อมเหตุผล
     assert "รายการนี้มีงวดที่จ่ายแล้ว ลบไม่ได้" in html
-    assert f"item_id={second.id}" in html  # ปุ่มแก้ไขของแต่ละรายการเข้าโหมดแก้รายการเดียว
+    assert f"/edit?{_q(world.org)}&amp;item_id={second.id}" not in html  # แก้ไขรายการทำที่หน้ารายการ MA เท่านั้น
 
     only = client.get(f"/procurement/payment/{existing_ma.id}?{_q(world.org)}").get_data(as_text=True)
     assert "delete_item_modal_" not in only

@@ -103,6 +103,13 @@ def test_default_expiry_offsets_fire_on_calendar_month_dates(world):
     assert _triggers(datetime.date(2027, 5, 31)) == [("expiry", datetime.date(2027, 5, 31), "due")]
 
 
+def test_expiry_offset_3d_fires_three_days_before_the_end_date(world):
+    _ma(world, _item(world, expiry_reminder_offsets=["3d"]))  # end_date 31/05/2570
+
+    assert _triggers(datetime.date(2027, 5, 27)) == []
+    assert _triggers(datetime.date(2027, 5, 28), "expiry") == [("expiry", datetime.date(2027, 5, 28), "3d")]
+
+
 def _log(world, reminder_item, kind, trigger, status="sent", **fields):
     return models.ReminderLog(
         organization=world.org,

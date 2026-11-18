@@ -1,6 +1,6 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
+{% from 'procurement/components/back_button.html' import ma_back_button %}
 {% from '/base/html-renderer.html' import date_field %}
-{% from '/base/components/buttons.html' import RenderBackButton %}
 {% from 'procurement/macros/renew_check.html' import renew_check_dialog, renew_check_script %}
 {% from 'procurement/macros/status_badges.html' import usage_badge, renewal_badge %}
 
@@ -51,23 +51,9 @@
 <div class="container mx-auto px-3 md:px-4 lg:px-0 py-4 md:py-6 space-y-6">
   <!-- Top Navigation Bar -->
   <div class="flex flex-wrap items-center justify-between gap-3">
-    {{ RenderBackButton(url_for('procurement.products.index', organization_id=organization.id)) }}
+    {{ ma_back_button(url_for('procurement.products.index', organization_id=organization.id)) }}
     <div class="flex flex-wrap items-center gap-2">
-      {# ผู้รับผิดชอบขอ (สถานะรอตรวจสอบ) · เจ้าหน้าที่พัสดุ (admin) อนุมัติ (สถานะรอต่ออายุ ตามที่ขอ) #}
-      {# ขณะรอต่ออายุ ผู้รับผิดชอบเปลี่ยนคำขอได้จนกว่า admin จะอนุมัติ (แสดงเฉพาะปุ่มของคำขออีกแบบ) #}
-      {% set current_request = procurement.renewal_request if procurement.status == "renewal-requested" else none %}
-      {% if can_request_renewal and current_request != "renew" %}
-        <button type="button" onclick="document.getElementById('request_renew_modal').showModal()"
-                class="btn btn-success btn-sm text-white shadow-xs gap-1.5">
-          <i class="ph ph-arrows-clockwise text-base"></i> {{ "เปลี่ยนเป็นขอต่ออายุ" if current_request else "ขอต่ออายุ" }}
-        </button>
-      {% endif %}
-      {% if can_request_renewal and current_request != "stop" %}
-        <button type="button" onclick="document.getElementById('request_stop_modal').showModal()"
-                class="btn btn-error btn-sm text-white shadow-xs gap-1.5">
-          <i class="ph ph-x text-base"></i> {{ "เปลี่ยนเป็นขอไม่ต่ออายุ" if current_request else "ขอไม่ต่ออายุ" }}
-        </button>
-      {% endif %}
+      {# ขอต่ออายุ / ไม่ต่ออายุ (ผู้รับผิดชอบ) ทำที่หน้ารายการ MA เท่านั้น · หน้านี้มีเฉพาะปุ่มอนุมัติของเจ้าหน้าที่พัสดุ #}
       {% if can_approve_renew %}
         <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id) }}"
            data-renew-check="renew_check_{{ procurement.id }}"
@@ -81,12 +67,7 @@
           <i class="ph ph-x text-base"></i> อนุมัติไม่ต่ออายุ
         </button>
       {% endif %}
-      {% if can_edit %}
-        <a href="{{ url_for('procurement.products.edit', procurement_id=procurement.id, organization_id=organization.id) }}"
-           class="btn btn-primary btn-sm shadow-xs gap-1.5">
-          <i class="ph ph-pencil-simple text-base"></i> แก้ไข MA
-        </a>
-      {% endif %}
+      {# แก้ไข MA ทำได้เฉพาะที่หน้ารายการ MA (products.index) #}
     </div>
   </div>
 
@@ -311,10 +292,6 @@
         <div class="flex items-center gap-2">
           {{ payment_badge(item.get_payment_status(today)) }}
           {% if can_edit %}
-            <a href="{{ url_for('procurement.products.edit', procurement_id=procurement.id, organization_id=organization.id, item_id=item.id) }}"
-               class="btn btn-outline btn-primary btn-xs gap-1">
-              <i class="ph ph-pencil-simple"></i> แก้ไข
-            </a>
             {% set delete_block = procurement.get_item_delete_block(item) %}
             {% if delete_block %}
               <span class="inline-flex items-center gap-1">
@@ -768,36 +745,6 @@
     {% endif %}
   {% endfor %}
 
-{% if can_request_renewal %}
-  {% for request_value, title, button_class, icon, question, note in [
-    ("renew", "ยืนยันการขอต่ออายุ", "btn-success", "ph-arrows-clockwise", "คุณต้องการขอต่ออายุ MA นี้ใช่หรือไม่?", "เจ้าหน้าที่พัสดุจะเป็นผู้อนุมัติและดำเนินการต่ออายุ"),
-    ("stop", "ยืนยันการขอไม่ต่ออายุ", "btn-error", "ph-x", "คุณต้องการขอไม่ต่ออายุ MA นี้ใช่หรือไม่?", "ต้องรอเจ้าหน้าที่พัสดุอนุมัติ MA จึงจะย้ายไปรายการ MA ไม่ต่ออายุ"),
-  ] if procurement.renewal_request != request_value or procurement.status != "renewal-requested" %}
-  <dialog id="request_{{ request_value }}_modal" class="modal">
-    <div class="modal-box">
-      <h3 class="text-lg font-bold mb-4"><i class="ph {{ icon }} mr-2"></i>{{ title }}</h3>
-      <p class="py-2">{{ question }}</p>
-      <div class="bg-base-200 p-3 rounded-lg mb-4">
-        <p class="font-semibold">{{ procurement.name }}</p>
-        <p class="text-sm text-base-content/60">เลขที่ ม.อ.เบิกจ่าย: {{ procurement.psu_disbursement_number or '-' }}</p>
-      </div>
-      <div role="alert" class="alert alert-info alert-soft mb-4">
-        <i class="ph ph-info"></i>
-        <span class="text-sm">{{ note }}</span>
-      </div>
-      <div class="modal-action">
-        <form method="dialog"><button class="btn btn-outline">ยกเลิก</button></form>
-        <form method="post" action="{{ url_for('procurement.requisitions.request_renewal', requisition_procurement_id=procurement.id, organization_id=organization.id) }}">
-          {{ form.hidden_tag() }}
-          <input type="hidden" name="request" value="{{ request_value }}">
-          <button type="submit" class="btn {{ button_class }} text-white"><i class="ph {{ icon }} mr-1"></i>ยืนยัน</button>
-        </form>
-      </div>
-    </div>
-    <form method="dialog" class="modal-backdrop"><button>close</button></form>
-  </dialog>
-  {% endfor %}
-{% endif %}
 {% if can_approve_stop %}
   <dialog id="non_renewal_modal" class="modal">
     <div class="modal-box">
