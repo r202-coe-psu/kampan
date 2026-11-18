@@ -15,6 +15,7 @@ BaseOrderItemForm = model_form(
         "status",
         "created_by",
         "sent_item_date",
+        "organization",
     ],
     field_args={
         "description": {"label": "วัตถุประสงค์"},

@@ -8,7 +8,9 @@ from flask import (
     session,
     flash,
     abort,
+    g,
 )
+from bson import ObjectId
 from flask_login import login_required, current_user
 
 import datetime
@@ -245,7 +247,11 @@ def force_send_email(order_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    order = models.OrderItem.objects(id=order_id).first()
+    if not g.organization or not ObjectId.is_valid(order_id):
+        abort(404)
+    order = models.OrderItem.objects(id=order_id, organization=g.organization).first()
+    if not order:
+        abort(404)
     order.status = "confirmed"
     order.save()
     job = redis_rq.redis_queue.queue.enqueue(

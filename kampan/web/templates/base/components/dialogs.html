@@ -4,7 +4,8 @@ header="ยืนยัน",
 body="",
 cancel="ยกเลิก",
 submit="ยืนยัน",
-redirect="") %}
+redirect="",
+post=False) %}
 <dialog class="modal {{ id }}">
   <div class=" modal-box">
     <div class="text-2xl text-success font-bold">
@@ -36,7 +37,8 @@ header="ลบข้อมูล",
 body="",
 cancel="ยกเลิก",
 submit="ยืนยัน",
-redirect="") %}
+redirect="",
+post=False) %}
 <dialog class="modal {{ id }}">
   <div class=" modal-box">
     <div class="text-2xl text-error font-bold">
@@ -45,6 +47,21 @@ redirect="") %}
     <p>
       {{ body | safe }}
     </p>
+    {% if post %}
+    {# เปลี่ยนสถานะ/ลบข้อมูลต้องเป็น POST + CSRF: redirect คือ URL ปลายทางของ action #}
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn">{{ cancel | safe }}</button>
+      </form>
+      <form method="post" action="{{ redirect }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-error">
+          {{ submit | safe }}
+          <i class="ph ph-check"></i>
+        </button>
+      </form>
+    </div>
+    {% else %}
     <form method="dialog">
       <div class="modal-action">
 
@@ -58,6 +75,7 @@ redirect="") %}
       </div>
 
     </form>
+    {% endif %}
   </div>
 </dialog>
 {% endmacro%}

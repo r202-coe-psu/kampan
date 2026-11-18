@@ -12,6 +12,7 @@ BaseWarehouseForm = model_form(
         "created_date",
         "updated_date",
         "owner",
+        "organization",
     ],
     field_args={
         "name": {"label": "ชื่อคลังวัสดุ"},

@@ -1,0 +1,10 @@
+{# ปุ่มย้อนกลับของระบบจัดการ MA: พาไปหน้าที่เคยอยู่ก่อนหน้าเสมอ (history.back) ใช้ร่วมกันทุกหน้า
+   fallback_url ใช้เมื่อไม่มีหน้าก่อนหน้าในเว็บเดียวกัน (เช่น เปิดลิงก์ตรง) · สคริปต์จับคลิกอยู่ใน procurement/base/default-procurement-page.html #}
+{% macro ma_back_button(fallback_url, label="ย้อนกลับ", extra_classes="") %}
+<a href="{{ fallback_url }}" data-ma-back
+   class="btn btn-ghost btn-sm gap-2 text-base-content/80 hover:text-base-content hover:bg-base-200 border border-base-300 shadow-xs transition-colors {{ extra_classes }}"
+   aria-label="{{ label }}">
+  <i class="ph ph-arrow-left text-base"></i>
+  <span>{{ label }}</span>
+</a>
+{% endmacro %}

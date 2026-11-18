@@ -1,0 +1,47 @@
+{# แถบตัวกรองของหน้ารายการ MA ทุกหน้า: ค้นหา (เต็มความกว้าง) + เรียงลำดับ → ตัวกรองย่อย → จำนวนผลลัพธ์ / ล้าง / ค้นหา
+   ใช้ {% call filter_bar(...) %} ใส่ตัวกรองย่อยเป็น fieldset (filter_field / filter_text / filter_date) ใน caller
+   ส่งแบบ GET เสมอ ทุก query string (รวม sort, division, page ถูกรีเซ็ตเป็นหน้า 1) #}
+{% from '/base/html-renderer.html' import dropdown_select, date_field %}
+{% from 'procurement/macros/division_filter.html' import my_division_checkbox %}
+
+{% macro filter_bar(organization, search_field, search_placeholder, sort_field, total, reset_url, my_division=None, only_my_division=False) %}
+  <form method="get" id="ma_filter_form" class="bg-base-100 border border-base-300 rounded-box p-4 md:p-5 flex flex-col gap-4 mb-6">
+    <input type="hidden" name="organization_id" value="{{ organization.id }}" />
+    <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_16rem] gap-x-4 gap-y-3 items-end">
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">{{ search_field.label.text }}</legend>
+        <label class="input w-full">
+          <i class="ph ph-magnifying-glass text-base-content/60"></i>
+          <input type="search" name="{{ search_field.name }}" value="{{ search_field.data or '' }}" maxlength="128"
+                 placeholder="{{ search_placeholder }}" aria-label="{{ search_field.label.text }}" />
+        </label>
+      </fieldset>
+      {{ dropdown_select(sort_field, submit_on_change=True) }}
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-3 items-end">
+      {{ caller() }}
+      {{ my_division_checkbox(my_division, only_my_division) }}
+    </div>
+    <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-base-300">
+      <p class="text-sm text-base-content/70" role="status">พบ <span class="font-semibold text-base-content">{{ total }}</span> รายการ</p>
+      <div class="flex flex-wrap gap-2">
+        <a href="{{ reset_url }}" class="btn btn-ghost btn-sm"><i class="ph ph-x"></i> ล้างตัวกรอง</a>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="ph ph-funnel"></i> ใช้ตัวกรอง</button>
+      </div>
+    </div>
+  </form>
+{% endmacro %}
+
+{# ช่องข้อความ DaisyUI (fieldset + legend) #}
+{% macro filter_text(field, placeholder="") %}
+  <fieldset class="fieldset">
+    <legend class="fieldset-legend">{{ field.label.text }}</legend>
+    <input type="text" name="{{ field.name }}" id="{{ field.id }}" value="{{ field.data or '' }}" maxlength="128"
+           placeholder="{{ placeholder }}" class="input w-full" />
+  </fieldset>
+{% endmacro %}
+
+{# วันที่ปี พ.ศ. (Cally) ค่าที่ส่งเป็น ISO #}
+{% macro filter_date(field) %}
+  {{ date_field(field, clearable=True, fixed_popover=True, auto_init=False, buddhist=True, placeholder_text="เลือกวันที่") }}
+{% endmacro %}

@@ -11,13 +11,15 @@ from flask import (
 )
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
-from kampan.web import acl, forms, redis_rq
+from kampan.web import acl, feature_flags, forms, redis_rq
 from kampan import models, utils
+from kampan.utils.money import money_sum
 
 import mongoengine as me
 import datetime
 
 module = Blueprint("mas", __name__, url_prefix="/mas")
+module.before_request(feature_flags.abort_if_requisition_disabled)
 
 
 @module.route("/")
@@ -47,9 +49,9 @@ def index():
 
     page = request.args.get("page", default=1, type=int)
     paginated_mas = Pagination(mas, page=page, per_page=20)
-    total_amount = sum(m.amount or 0 for m in mas)
-    total_remaining = sum(m.remaining_amount or 0 for m in mas)
-    total_reservable = sum(m.reservable_amount or 0 for m in mas)
+    total_amount = money_sum(m.amount for m in mas)
+    total_remaining = money_sum(m.remaining_amount for m in mas)
+    total_reservable = money_sum(m.reservable_amount for m in mas)
 
     return render_template(
         "procurement/mas/index.html",

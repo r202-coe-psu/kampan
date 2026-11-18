@@ -39,7 +39,7 @@
         <td class="table-style" data-label="Locker">{{ item_position.locker }}</td>
         <td class="table-style" data-label="modal-action">
           <a class="btn btn-primary btn-circle"
-            href="{{ url_for('item_positions.edit', item_position_id=item_position.id, organization_id=organization.id) }}">
+            href="{{ url_for('item_positions.add_or_edit', item_position_id=item_position.id, organization_id=organization.id) }}">
             <i class="ph ph-pen"></i> แก้ไข
           </a>
           <a class="btn btn-error btn-circle" onclick="showDeleteModal('{{ item_position.id }}')">

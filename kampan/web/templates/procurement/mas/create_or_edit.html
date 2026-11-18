@@ -1,10 +1,14 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
+{% from 'procurement/components/back_button.html' import ma_back_button %}
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}{{ 'แก้ไข' if mas else 'เพิ่ม' }}โครงการ MAS{% endblock %}
 {% block dashboard_title %}{{ 'แก้ไข' if mas else 'เพิ่ม' }}โครงการ MAS{% endblock %}
 
 {% block content %}
+  <div class="mb-4">
+    {{ ma_back_button(url_for('admin.mas.index', organization_id=organization.id)) }}
+  </div>
   <div class="card bg-white shadow-xl rounded-xl p-6 md:p-10">
     <div class="flex items-center mb-8 gap-4">
       <div class="w-14 h-14 bg-primary/10 rounded-lg flex items-center justify-center">

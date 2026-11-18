@@ -23,6 +23,8 @@ class ExportFile(me.Document):
         required=True, default=datetime.datetime.now, auto_now=True
     )
     created_by = me.ReferenceField("User", dbref=True, required=True)
+    # ไม่บังคับ เพื่อให้เอกสารเก่าที่ยังไม่มี organization โหลดได้
+    organization = me.ReferenceField("Organization", dbref=True)
     updated_date = me.DateTimeField(
         required=True, default=datetime.datetime.now, auto_now=True
     )
