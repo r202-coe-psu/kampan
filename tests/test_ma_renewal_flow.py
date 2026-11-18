@@ -380,7 +380,7 @@ def test_detail_shows_both_badges(world, client_for, existing_ma):
 def test_non_renewal_list_still_lists_disactive(world, client_for, existing_ma):
     _set(existing_ma, "disactive", "stop")
 
-    html = client_for(world.admin).get(f"/procurement/requisitions/non-renewal?{_q(world.org)}").get_data(as_text=True)
+    html = client_for(world.admin).get(f"/procurement/products?usage_status=&renewal_status=disactive&{_q(world.org)}").get_data(as_text=True)
 
     assert existing_ma.name in html
 

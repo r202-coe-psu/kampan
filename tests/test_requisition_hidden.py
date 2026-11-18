@@ -250,7 +250,6 @@ def test_old_renewal_action_still_works_when_flag_on(world, client_for, set_flag
 @pytest.mark.parametrize(
     "path",
     (
-        "/procurement/requisitions/non-renewal",
         "/procurement/products",
         "/procurement/products/create",
         "/procurement/payment/{procurement_id}",
@@ -304,7 +303,7 @@ def test_sidebar_hides_requisition_menus_when_flag_off(world, client_for, set_fl
     # เมนูของระบบ MA ยังอยู่ครบ
     for link in (
         "/procurement/products?",
-        "/procurement/requisitions/non-renewal?",
+        "renewal_status=disactive",
         "/admin/upload_files/?",
         "/procurement/manuals",
         "/select_system?",
@@ -347,7 +346,7 @@ def test_select_system_card_unchanged_when_flag_on(world, client_for, set_flag):
     "enabled, expected_path",
     [(False, "/procurement/products"), (True, "/procurement/requisitions/renewal_requested")],
 )
-@pytest.mark.parametrize("current_path", ("/procurement/requisitions/non-renewal", "/procurement/products"))
+@pytest.mark.parametrize("current_path", ("/procurement/products",))
 def test_switch_organization_lands_on_procurement_home(app, world, create_org, set_flag, enabled, expected_path, current_path):
     set_flag(enabled)
     other_org = create_org("[TEST] Other Org")

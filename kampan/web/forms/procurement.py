@@ -446,26 +446,3 @@ class ProductFilterForm(FlaskForm):
         validators=[validators.Optional()],
     )
     sort = sort_field()
-
-
-class NonRenewalFilterForm(FlaskForm):
-    """ตัวกรองหน้ารายการไม่ต่ออายุ (query string ทั้งหมดเป็น GET จึงไม่ใช้ CSRF)"""
-
-    class Meta:
-        csrf = False
-
-    name = fields.StringField(
-        "ค้นหา",
-        validators=[validators.Optional(), validators.Length(max=128)],
-    )
-    category = fields.SelectField(
-        "ประเภท",
-        choices=[("", "ทั้งหมด")] + models.MA_CATEGORY_CHOICES,
-        validators=[validators.Optional()],
-    )
-    company = fields.StringField("บริษัท", validators=[validators.Optional(), validators.Length(max=128)])
-    # choices เติมจากสมาชิกของหน่วยงานที่กำลังดูอยู่ (view)
-    responsible = fields.SelectField("ผู้รับผิดชอบ", choices=[("", "ทั้งหมด")], validators=[validators.Optional()])
-    end_from = DateInputField("สิ้นสุดตั้งแต่", validators=[validators.Optional()])
-    end_to = DateInputField("สิ้นสุดถึง", validators=[validators.Optional()])
-    sort = sort_field()

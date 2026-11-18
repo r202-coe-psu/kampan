@@ -276,11 +276,11 @@ def test_renewal_requested_action_own_org_post_creates_requisition(world, client
     assert requisitions[0].purchaser.id == world.role_admin_a.id
 
 
-@pytest.mark.parametrize("path", ["/procurement/requisitions/non-renewal", "/procurement/requisitions/renewal_requested"])
+@pytest.mark.parametrize("path", ["/procurement/products?usage_status=&renewal_status=disactive", "/procurement/requisitions/renewal_requested"])
 def test_list_pages_still_get(world, client_for, path):
     client = client_for(world.admin_a)
 
-    response = client.get(f"{path}?organization_id={world.org_a.id}")
+    response = client.get(f"{path}{'&' if '?' in path else '?'}organization_id={world.org_a.id}")
 
     assert response.status_code == 200
 
@@ -847,18 +847,20 @@ def test_pay_installment_rejects_external_next_url(world, client_for, status):
 
 
 def test_renewal_lists_show_sub_contracts_not_parent(world, client_for):
-    """สัญญาหลักที่แยกสัญญาย่อยแล้วเป็นแค่ข้อมูลอ้างอิง หน้ารายการแสดงเฉพาะสัญญาย่อย"""
-    path, status = "/procurement/requisitions/non-renewal", "disactive"
+    """สัญญาหลักที่แยกสัญญาย่อยแล้วเป็นแค่ข้อมูลอ้างอิง หน้ารายการแสดงเฉพาะสัญญาย่อย (แถวของสัญญาหลักไม่ถูกแสดง)"""
+    status = "disactive"
     parent = _make_procurement(world.org_a, world.admin_a, name="Parent MA", status=status)
     child = _make_procurement(world.org_a, world.admin_a, name="Child MA", status=status)
     child.parent_procurement = parent
     child.save()
     client = client_for(world.admin_a)
 
-    html = client.get(f"{path}?organization_id={world.org_a.id}").data.decode("utf-8")
+    html = client.get(
+        f"/procurement/products?usage_status=&renewal_status=disactive&organization_id={world.org_a.id}"
+    ).data.decode("utf-8")
 
-    assert "Child MA" in html
-    assert "Parent MA" not in html
+    assert f'id="sub_items_{child.id}"' in html
+    assert f'id="sub_items_{parent.id}"' not in html
 
 
 def test_products_list_has_no_request_renewal(world, client_for):

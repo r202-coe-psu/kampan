@@ -142,7 +142,6 @@ def test_posting_an_image_to_the_form_is_ignored(world, client_for):
         "/procurement/products/{id}/renew?{q}",
         "/procurement/payment/{id}?{q}",
         "/procurement/products?{q}",
-        "/procurement/requisitions/non-renewal?{q}",
         "/admin/upload_files/create?{q}",
     ],
 )
@@ -385,7 +384,6 @@ def test_non_renewal_workflow_from_detail_page(world, client_for, existing_ma):
     responsible = client_for(world.responsible)
     products_url = f"/procurement/products?usage_status=&renewal_status=&{_q(world.org)}"
     detail_url = f"/procurement/payment/{existing_ma.id}?{_q(world.org)}"
-    non_renewal_url = f"/procurement/requisitions/non-renewal?{_q(world.org)}"
 
     # 1. ตารางรายการ MA ไม่มีปุ่มขอต่ออายุ
     assert "request-renewal" not in admin.get(products_url).get_data(as_text=True)
@@ -414,8 +412,9 @@ def test_non_renewal_workflow_from_detail_page(world, client_for, existing_ma):
     existing_ma.reload()
     assert existing_ma.status == "disactive"
 
-    # 5. ขึ้นหน้าไม่ต่ออายุ และปุ่มหายจากหน้ารายละเอียด
-    assert existing_ma.name in admin.get(non_renewal_url).get_data(as_text=True)
+    # 5. ขึ้นในรายการที่กรอง "ไม่ต่ออายุ" และปุ่มหายจากหน้ารายละเอียด
+    filtered = admin.get(f"/procurement/products?usage_status=&renewal_status=disactive&{_q(world.org)}")
+    assert existing_ma.name in filtered.get_data(as_text=True)
     assert 'id="non_renewal_modal"' not in admin.get(detail_url).get_data(as_text=True)
 
 

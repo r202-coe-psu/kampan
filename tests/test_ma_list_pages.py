@@ -19,13 +19,10 @@ import pytest
 from kampan import models
 
 PRODUCTS = "/procurement/products"
-NON_RENEWAL = "/procurement/requisitions/non-renewal"
-LIST_PAGES = [PRODUCTS, NON_RENEWAL]
+LIST_PAGES = [PRODUCTS]
 
 
 def _status_for_path(path):
-    if path == NON_RENEWAL:
-        return "disactive"
     return "active"
 
 TODAY = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -240,48 +237,6 @@ def test_invalid_per_page_falls_back_to_at_least_one_row(world, path):
         assert len(_shown_mas(response)) == 1
 
 
-def test_non_renewal_is_paginated_and_keeps_filters_in_page_links(world):
-    mine = _ma_names(
-        _create_ma(world, end_in_days=10 + index, status="disactive", responsible=world.admin_role)
-        for index in range(3)
-    )
-    others = _ma_names(_create_mas(world, 2, status="disactive"))
-
-    first = _get(world, NON_RENEWAL, division="mine", per_page=2)
-    html = first.get_data(as_text=True)
-
-    assert first.status_code == 200
-    assert _shown_mas(first) == [mine[2], mine[1]]
-    assert "3 รายการ" in html
-    page_two_links = [
-        link
-        for link in re.findall(r'href="([^"]*non-renewal[^"]*)"', html)
-        if "page=2" in link.replace("&amp;", "&").split("?")[1].split("&")
-    ]
-    assert page_two_links
-    for link in page_two_links:
-        params = link.replace("&amp;", "&").split("?")[1].split("&")
-        assert "division=mine" in params and "per_page=2" in params and f"organization_id={world.org.id}" in params
-
-    second = _get(world, NON_RENEWAL, division="mine", per_page=2, page=2)
-    assert _shown_mas(second) == [mine[0]]
-    assert not set(others) & set(_shown_mas(second))
-
-
-def test_non_renewal_row_numbers_continue_across_pages(world):
-    _create_mas(world, 3, status="disactive", responsible=world.admin_role)
-
-    html = _get(world, NON_RENEWAL, per_page=2, page=2).get_data(as_text=True)
-
-    row_numbers = re.findall(r'rounded-full flex items-center justify-center text-sm font-bold">\s*(\d+)\s*<', html)
-    assert row_numbers == ["3"]
-
-
-# ---------------------------------------------------------------------------
-# ตัวนับสถานะและการเรียง
-# ---------------------------------------------------------------------------
-
-
 def _status_counts(response) -> dict:
     """ตัวเลขบนการ์ดสรุป 4 ใบ: กำลังใช้งาน / หมดอายุ / รอต่ออายุ / รอใช้งาน"""
     html = response.get_data(as_text=True)
@@ -323,14 +278,6 @@ def test_products_status_counts_and_filter_follow_worst_unpaid_installment(world
         assert set(_shown_mas(filtered)) == expected, status
 
 
-def test_non_renewal_page_sorts_by_latest_end_date_first(world):
-    in_10 = _create_ma(world, end_in_days=10, status="disactive")
-    two_items = _create_ma(world, items=[(50, [_installment(50)]), (5, [_installment(5)])], status="disactive")
-    in_40 = _create_ma(world, end_in_days=40, status="disactive")
-
-    assert _shown_mas(_get(world, NON_RENEWAL)) == _ma_names([in_40, in_10, two_items])
-
-
 @pytest.mark.parametrize("path", LIST_PAGES)
 def test_list_pages_show_each_rows_responsible_divisions(world, path):
     status = _status_for_path(path)
@@ -340,15 +287,14 @@ def test_list_pages_show_each_rows_responsible_divisions(world, path):
 
     for index in (1, 2, 3):
         assert f"[TEST] ฝ่าย {index}" in html
-        if path != NON_RENEWAL:
-            assert f"Owner{index} Test" in html
+        assert f"Owner{index} Test" in html
 
 
 # ---------------------------------------------------------------------------
 # เรียงลำดับ (?sort=) และแถบตัวกรอง
 # ---------------------------------------------------------------------------
 
-DEFAULT_SORT = {PRODUCTS: "created_desc", NON_RENEWAL: "end_desc"}
+DEFAULT_SORT = {PRODUCTS: "created_desc"}
 
 
 def _sort_set(world, path):
@@ -450,53 +396,6 @@ def test_sorted_list_query_count_does_not_grow_with_ma_count(world, query_counte
     assert many == few
 
 
-def _non_renewal(world, name, **overrides):
-    ma = _create_ma(world, status="disactive", **{k: v for k, v in overrides.items() if k in ("end_in_days", "responsible")})
-    updates = {"set__name": name}
-    if "company" in overrides:
-        updates["set__company"] = overrides["company"]
-    models.Procurement.objects(id=ma.id).update(**updates)
-    return ma
-
-
-def test_non_renewal_filters_by_search_company_category_responsible_and_end_range(world):
-    owner = _add_member(world, 90)
-    alpha = _non_renewal(world, "[TEST] MA-0101", company="บริษัท อัลฟา", end_in_days=10, responsible=owner)
-    beta = _non_renewal(world, "[TEST] MA-0102", company="บริษัท เบตา", end_in_days=100)
-    models.ProcurementItem.objects(procurement=beta).update(set__category="software")
-
-    def shown(**params):
-        return set(_shown_mas(_get(world, NON_RENEWAL, **params)))
-
-    assert shown() == {"[TEST] MA-0101", "[TEST] MA-0102"}
-    assert shown(name="MA-0102") == {"[TEST] MA-0102"}
-    assert shown(name="PSU-" + alpha.psu_disbursement_number.split("-")[1]) == {"[TEST] MA-0101"}
-    assert shown(company="เบตา") == {"[TEST] MA-0102"}
-    assert shown(category="software") == {"[TEST] MA-0102"}
-    assert shown(responsible=owner.id) == {"[TEST] MA-0101"}
-    end_alpha = (TODAY + datetime.timedelta(days=10)).strftime("%Y-%m-%d")
-    assert shown(end_from=end_alpha, end_to=end_alpha) == {"[TEST] MA-0101"}
-    assert shown(end_from=(TODAY + datetime.timedelta(days=11)).strftime("%Y-%m-%d")) == {"[TEST] MA-0102"}
-    assert shown(end_to=(TODAY + datetime.timedelta(days=11)).strftime("%Y-%m-%d")) == {"[TEST] MA-0101"}
-    # ค่าที่ไม่ถูกต้องไม่ทำให้หน้า 500 และไม่กรองอะไร
-    assert shown(end_from="not-a-date", responsible="zzz") == {"[TEST] MA-0101", "[TEST] MA-0102"}
-
-
-def test_non_renewal_filters_never_leak_other_organizations(world, create_org):
-    other_org = create_org("[TEST] Org อื่น")
-    foreign = models.Procurement(
-        organization=other_org, name="[TEST] MA-0999", company="บริษัท อื่น", total_amount=Decimal("100.00"), status="disactive"
-    )
-    member = models.OrganizationUserRole(
-        user=world.admin, organization=other_org, roles=["staff"], status="active", added_by=world.admin, last_modifier=world.admin
-    ).save()
-    foreign.save_with_items([_item(999, member, 5, [_installment(5)])])
-    _non_renewal(world, "[TEST] MA-0100")
-
-    for params in ({}, {"company": "อื่น"}, {"name": "MA-0999"}, {"responsible": member.id}):
-        assert "[TEST] MA-0999" not in _get(world, NON_RENEWAL, **params).get_data(as_text=True)
-
-
 @pytest.mark.parametrize("path", LIST_PAGES)
 def test_filter_bar_has_count_clear_button_and_no_native_select(world, path):
     status = _status_for_path(path)
@@ -517,7 +416,7 @@ def test_filter_bar_has_count_clear_button_and_no_native_select(world, path):
 
 @pytest.mark.parametrize(
     "path,per_page,last_page_size",
-    [(PRODUCTS, 6, 2), (NON_RENEWAL, 8, 4)],
+    [(PRODUCTS, 6, 2)],
 )
 def test_default_page_size_and_last_page(world, path, per_page, last_page_size):
     status = _status_for_path(path)
@@ -538,7 +437,7 @@ def test_default_page_size_and_last_page(world, path, per_page, last_page_size):
 @pytest.mark.parametrize("sort", ["end_asc", "end_desc"])
 def test_end_date_sort_pages_are_cut_by_the_database(world, monkeypatch, sort):
     """เรียงวันหมดอายุ: แต่ละหน้าได้เฉพาะ id ของหน้านั้นจาก aggregation ($skip/$limit) ครบทุกหน้าไม่ซ้ำไม่ตก"""
-    status = _status_for_path(NON_RENEWAL)
+    status = "active"
     created = [_create_ma(world, end_in_days=10 + index, status=status).name for index in range(19)]
     expected = created if sort == "end_asc" else list(reversed(created))
 
@@ -551,12 +450,12 @@ def test_end_date_sort_pages_are_cut_by_the_database(world, monkeypatch, sort):
 
     monkeypatch.setattr(mongomock.collection.Collection, "aggregate", recording)
     shown = []
-    for page in (1, 2, 3):
-        shown += _shown_mas(_get(world, NON_RENEWAL, sort=sort, page=page))
+    for page in (1, 2, 3, 4):
+        shown += _shown_mas(_get(world, PRODUCTS, sort=sort, page=page))
 
     assert shown == expected
     limits = [stage["$limit"] for pipeline in pipelines for stage in pipeline if "$limit" in stage]
-    assert limits[:3] == [8, 8, 3]  # หน้าสุดท้ายเหลือ 3 จาก 19
+    assert limits[:4] == [6, 6, 6, 1]  # หน้าสุดท้ายเหลือ 1 จาก 19
 
 
 @pytest.mark.parametrize("path", LIST_PAGES)

@@ -22,12 +22,10 @@ from PyPDF2 import PdfMerger
 
 from kampan import models, utils
 from kampan.utils.money import MONEY_PLACES_ERROR, has_money_places, to_money
-from kampan.models.procurement import REVIEW_STATUSES, parent_procurement_ids, procurement_ids_of
+from kampan.models.procurement import REVIEW_STATUSES
 from kampan.web import feature_flags, forms
 
 from . import ma_permissions
-from .products import search_procurements
-from .ma_pagination import paginate_sorted, resolve_sort
 
 from ... import redis_rq
 
@@ -172,64 +170,6 @@ def non_renewal_action(requisition_procurement_id):
     else:
         flash("อนุมัติไม่ต่ออายุเรียบร้อยแล้ว", "success")
     return redirect(detail_url)
-
-
-def _non_renewal_filters(organization, procurements, form):
-    """ตัวกรองหน้ารายการไม่ต่ออายุ (ทุก query scope ด้วยหน่วยงาน) คืน queryset ของ MA ที่ผ่านตัวกรอง"""
-    procurements = search_procurements(procurements, organization, form.name.data)
-    if form.company.data and form.company.data.strip():
-        procurements = procurements.filter(company__icontains=form.company.data.strip())
-
-    items = models.ProcurementItem.objects(organization=organization)
-    item_filtered = False
-    if form.category.data:
-        items = items.filter(category=form.category.data)
-        item_filtered = True
-    if form.responsible.data and ObjectId.is_valid(form.responsible.data):
-        # สมาชิกต้องอยู่ในหน่วยงานนี้เท่านั้น (choices ของ form มาจากสมาชิกของหน่วยงาน)
-        items = items.filter(responsible_by=form.responsible.data)
-        item_filtered = True
-    if form.end_from.data and not form.end_from.errors:
-        items = items.filter(end_date__gte=datetime.datetime.combine(form.end_from.data, datetime.time.min))
-        item_filtered = True
-    if form.end_to.data and not form.end_to.errors:
-        items = items.filter(end_date__lt=datetime.datetime.combine(form.end_to.data + datetime.timedelta(days=1), datetime.time.min))
-        item_filtered = True
-    if item_filtered:
-        procurements = procurements.filter(id__in=procurement_ids_of(items))
-    return procurements
-
-
-@module.route("/non-renewal")
-@login_required
-def non_renewal():
-    organization = g.organization
-    if not organization:
-        abort(404)
-    only_my_division = request.args.get("division") == "mine"
-    form = forms.procurement.NonRenewalFilterForm(request.args)
-    # select_related: โหลดผู้ใช้ของทุกคนพร้อมกัน (ไม่ query ต่อคนตอนสร้างชื่อใน dropdown)
-    members = models.OrganizationUserRole.objects(organization=organization, status="active").select_related()
-    form.responsible.choices = [("", "ทั้งหมด")] + [(str(member.id), member.display_user_fullname()) for member in members]
-    form.validate()
-    procurements = ma_permissions.visible_procurements(organization, only_my_division=only_my_division).filter(
-        status="disactive"
-    )
-    procurements = procurements.filter(id__nin=parent_procurement_ids(organization))
-    procurements = _non_renewal_filters(organization, procurements, form)
-    # หน้านี้เน้นรายการที่หมดอายุล่าสุด: ค่าตั้งต้นเรียงวันสิ้นสุดใหม่สุดก่อน
-    sort = resolve_sort("end_desc")
-    form.sort.data = sort
-    paginated_procurements, page_procurements = paginate_sorted(procurements, organization, sort, default_per_page=8)
-    return render_template(
-        "procurement/requisitions/non_renewal.html",
-        items=page_procurements,
-        paginated_procurements=paginated_procurements,
-        organization=organization,
-        form=form,
-        my_division=ma_permissions.my_division_filter(organization),
-        only_my_division=only_my_division,
-    )
 
 
 @module.route("/<requisition_procurement_id>/renewal-requested", methods=["POST"])

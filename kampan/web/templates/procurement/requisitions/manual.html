@@ -1001,7 +1001,7 @@
 
         {% if current_user.has_organization_roles("admin", "staff") %}
         <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
-           href="{{ url_for('procurement.requisitions.non_renewal', organization_id=organization.id) }}">
+           href="{{ url_for('procurement.products.index', organization_id=organization.id, usage_status='', renewal_status='disactive') }}">
           <i class="ph ph-arrow-right"></i> ไปที่หน้ารายการ MA ไม่ต่ออายุ
         </a>
         {% endif %}

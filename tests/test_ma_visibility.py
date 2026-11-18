@@ -23,7 +23,7 @@ ALL_MAS = {MA_A, MA_B, MA_MIXED}
 # MA ทุกตัวอยู่ในสถานะ disactive เพื่อให้ขึ้นในหน้ารายการไม่ต่ออายุด้วย (อีก 2 หน้าไม่กรองสถานะ)
 LIST_PAGES = {
     "products": "/procurement/products",
-    "non_renewal": "/procurement/requisitions/non-renewal",
+    "non_renewal": "/procurement/products?usage_status=&renewal_status=disactive",
 }
 
 

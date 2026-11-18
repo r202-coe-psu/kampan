@@ -219,8 +219,8 @@
                       </a>
                     </li>
                     <li class="w-full">
-                      <a class="{{ 'menu-active' if '/procurement/requisitions/non-renewal' in request.path  else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
-                        href="{{ url_for('procurement.requisitions.non_renewal', organization_id=organization.id) }}"
+                      <a class="{{ 'menu-active' if ma_renewal == 'disactive' and '/procurement/products' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                        href="{{ url_for('procurement.products.index', organization_id=organization.id, usage_status='', renewal_status='disactive') }}"
                         title="รายการ MA ไม่ต่ออายุ">
                         <i class="ph ph-x-circle flex-shrink-0"></i>
                         <span class="truncate">รายการ MA ไม่ต่ออายุ</span>
@@ -311,8 +311,8 @@
                       </a>
                     </li>
                     <li class="w-full">
-                      <a class="{{ 'menu-active' if '/procurement/requisitions/non-renewal' in request.path  else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
-                        href="{{ url_for('procurement.requisitions.non_renewal', organization_id=organization.id) }}"
+                      <a class="{{ 'menu-active' if ma_renewal == 'disactive' and '/procurement/products' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                        href="{{ url_for('procurement.products.index', organization_id=organization.id, usage_status='', renewal_status='disactive') }}"
                         title="รายการ MA ไม่ต่ออายุ">
                         <i class="ph ph-x-circle flex-shrink-0"></i>
                         <span class="truncate">รายการ MA ไม่ต่ออายุ</span>
