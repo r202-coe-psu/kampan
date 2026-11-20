@@ -28,6 +28,11 @@ class CarFeedbackResponseFilterForm(FlaskForm):
         validators=[validators.Optional()],
         validate_choice=False,
     )
+    driver_id = fields.SelectField(
+        "พนักงานขับรถ",
+        validators=[validators.Optional()],
+        validate_choice=False,
+    )
     car_reservation_id = fields.SelectField(
         "เที่ยวรถ",
         validators=[validators.Optional()],

@@ -694,6 +694,37 @@ def test_view_responses_filter_carries_the_organization_through_a_wtforms_hidden
             ]
 
 
+def test_view_responses_filters_by_driver(
+    app, two_orgs, login_as, create_user, create_car_reservation, create_feedback_response, make_answer
+):
+    """เลือกพนักงานขับรถแล้วเห็นเฉพาะผลประเมินของเที่ยวที่คนนั้นขับ"""
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_orgs()
+            apichat = create_user("Apichat", "Driver")
+            somsak = create_user("Somsak", "Driver")
+            mine = create_car_reservation(data["org_a"], data["car_a"], location="สนามบินหาดใหญ่")
+            mine.driver = apichat
+            mine.save()
+            other = create_car_reservation(data["org_a"], data["car_a"], location="ศาลากลางสงขลา")
+            other.driver = somsak
+            other.save()
+            for trip in (mine, other):
+                create_feedback_response(
+                    data["template_a"], data["car_a"], car_reservation=trip,
+                    answers=[make_answer(data["question_a"], score=5)],
+                )
+            login_as(client, data["admin_a"])
+            base = f"{FEEDBACK_BASE}/{data['template_a'].id}/view?organization_id={data['org_a'].id}"
+
+            everyone = client.get(base).data.decode()
+            filtered = client.get(f"{base}&driver_id={apichat.id}").data.decode()
+
+            assert f'value="{apichat.id}"' in everyone and f'value="{somsak.id}"' in everyone
+            assert "สนามบินหาดใหญ่" in filtered
+            assert "ศาลากลางสงขลา" not in filtered
+
+
 def test_view_responses_ignores_unknown_filter_values(
     app, two_orgs, login_as, create_car_reservation, create_feedback_response, make_answer
 ):

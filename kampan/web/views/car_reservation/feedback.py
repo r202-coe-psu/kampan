@@ -511,10 +511,13 @@ def collect_question_stats(questions, aggregated):
     return stats
 
 
-def build_response_filter(template, cars, selected_car=None, selected_trip=None):
+def build_response_filter(
+    template, cars, selected_car=None, selected_trip=None, driver_trips=None
+):
     """เงื่อนไข query ของผลตอบรับตามตัวกรองที่ผู้ใช้เลือก
 
     ไม่มีตัวกรองรถ = จำกัดไว้แค่รถของหน่วยงานนี้ ไม่ใช่ทุกผลตอบรับของแบบประเมิน
+    driver_trips = เที่ยวของพนักงานขับรถที่เลือก (None = ไม่กรองตามคนขับ)
     """
     filter_kwargs = {"feedback_template": template}
     if selected_car:
@@ -523,6 +526,8 @@ def build_response_filter(template, cars, selected_car=None, selected_trip=None)
         filter_kwargs["car__in"] = list(cars)
     if selected_trip:
         filter_kwargs["car_reservation"] = selected_trip
+    elif driver_trips is not None:
+        filter_kwargs["car_reservation__in"] = [trip.id for trip in driver_trips]
 
     return filter_kwargs
 
@@ -618,12 +623,24 @@ def build_summary(stats, aggregated):
     }
 
 
-def build_response_report(template, organization, cars, trips, selected_car=None, selected_trip=None):
+def get_trip_drivers(trips):
+    """พนักงานขับรถของเที่ยวเหล่านี้ เรียงตามชื่อ (เที่ยวที่ยังไม่จัดคนขับไม่นับ)"""
+    driver_ids = {reference_id(trip.driver) for trip in trips if trip.driver}
+    if not driver_ids:
+        return []
+    return sorted(models.User.objects(id__in=list(driver_ids)), key=lambda user: user.get_name())
+
+
+def build_response_report(
+    template, organization, cars, trips, selected_car=None, selected_trip=None, driver_trips=None
+):
     """สถิติ ข้อความ log และการ์ดสรุปของหน้าดูผลตอบรับ
 
     ทุกอย่างมาจาก aggregation ครั้งเดียวบวก query log ที่จำกัดจำนวนแถวไว้แล้ว
     """
-    filter_kwargs = build_response_filter(template, cars, selected_car=selected_car, selected_trip=selected_trip)
+    filter_kwargs = build_response_filter(
+        template, cars, selected_car=selected_car, selected_trip=selected_trip, driver_trips=driver_trips
+    )
     car_by_id = {str(car.id): car for car in cars}
 
     aggregated = next(
@@ -810,9 +827,21 @@ def view_responses(template_id):
     car_id = str(selected_car.id) if selected_car else None
 
     trips = get_filter_trips([selected_car] if selected_car else cars, organization)
-    trip_by_id = {str(trip.id): trip for trip in trips}
-
     car_response_counts, trip_response_counts = get_response_choice_counts(template)
+
+    drivers = get_trip_drivers(trips)
+    driver_id = request.args.get("driver_id")
+    if driver_id not in {str(driver.id) for driver in drivers}:
+        driver_id = None
+    driver_trip_counts = {}
+    for trip in trips:
+        key = reference_key(trip.driver)
+        driver_trip_counts[key] = driver_trip_counts.get(key, 0) + trip_response_counts.get(str(trip.id), 0)
+    driver_trips = None
+    if driver_id:
+        trips = [trip for trip in trips if reference_key(trip.driver) == driver_id]
+        driver_trips = trips
+    trip_by_id = {str(trip.id): trip for trip in trips}
 
     trip_choices = []
     for trip in trips:
@@ -839,6 +868,11 @@ def view_responses(template_id):
         (str(car.id), f"{car.license_plate} · {car_response_counts.get(str(car.id), 0)} ผลตอบรับ") for car in cars
     ]
     form.car_id.data = car_id or ""
+    form.driver_id.choices = [("", f"พนักงานขับรถทุกคน ({len(drivers)} คน)")] + [
+        (str(driver.id), f"{driver.get_name()} · {driver_trip_counts.get(str(driver.id), 0)} ผลตอบรับ")
+        for driver in drivers
+    ]
+    form.driver_id.data = driver_id or ""
     form.organization_id.data = str(organization.id)
 
     if trip_choices:
@@ -864,6 +898,7 @@ def view_responses(template_id):
         trips,
         selected_car=selected_car,
         selected_trip=trip_by_id.get(car_reservation_id),
+        driver_trips=driver_trips,
     )
 
     return render_template(
@@ -881,6 +916,8 @@ def view_responses(template_id):
         trip_choices=trip_choices,
         car_reservation_id=car_reservation_id,
         selected_trip=selected_trip,
+        driver_id=driver_id,
+        has_filter=bool(car_id or driver_id or car_reservation_id),
         form=form,
     )
 

@@ -109,6 +109,10 @@
 				{{ renderer.render_select_field(form.car_id) }}
 			</div>
 
+			<div class="flex-1" data-role="driver-filter">
+				{{ renderer.render_select_field(form.driver_id) }}
+			</div>
+
 			<div class="flex-[1.6]">
 				{{ renderer.render_search_select_field(form.car_reservation_id, disabled=not trip_choices) }}
 			</div>
@@ -117,7 +121,7 @@
 				<button type="submit" class="btn btn-primary gap-2">
 					ค้นหา
 				</button>
-				{% if car_id or car_reservation_id %}
+				{% if has_filter %}
 				<a href="{{ url_for('car_reservation.feedback.view_responses', template_id=template.id, organization_id=organization.id) }}"
 					class="btn btn-ghost gap-2">
 					ล้างตัวกรอง
@@ -162,13 +166,13 @@
 		<i class="ph ph-chart-bar text-5xl text-base-content/20"></i>
 		<p class="mt-5 text-lg font-semibold tracking-tight">ยังไม่มีผลตอบรับ</p>
 		<p class="mt-2 max-w-md text-sm leading-relaxed text-base-content/55">
-			{% if car_id or car_reservation_id %}
+			{% if has_filter %}
 			ไม่พบผลตอบรับที่ตรงกับตัวกรองที่เลือกไว้ ลองขยายขอบเขตด้วยการล้างตัวกรอง
 			{% else %}
 			เมื่อผู้ใช้บริการสแกน QR Code และส่งแบบประเมินเข้ามา สถิติทั้งหมดจะแสดงที่นี่
 			{% endif %}
 		</p>
-		{% if car_id or car_reservation_id %}
+		{% if has_filter %}
 		<a href="{{ url_for('car_reservation.feedback.view_responses', template_id=template.id, organization_id=organization.id) }}"
 			class="btn btn-primary btn-sm mt-6 gap-2">
 			ดูผลตอบรับทั้งหมด
@@ -369,7 +373,7 @@
 								กำลังดูอยู่
 							</span>
 							{% else %}
-							<a href="{{ url_for('car_reservation.feedback.view_responses', template_id=template.id, organization_id=organization.id, car_id=car_id, car_reservation_id=row.trip_id) }}"
+							<a href="{{ url_for('car_reservation.feedback.view_responses', template_id=template.id, organization_id=organization.id, car_id=car_id, driver_id=driver_id, car_reservation_id=row.trip_id) }}"
 								class="btn btn-primary btn-soft btn-sm gap-1.5">
 								ดูเที่ยวนี้
 							</a>
