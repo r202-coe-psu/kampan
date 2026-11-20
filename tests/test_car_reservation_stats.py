@@ -129,13 +129,15 @@ def test_dispatcher_sees_each_drivers_workload_for_the_chosen_period(
 
     assert response.status_code == 200
     rows = rows_of(response)
-    assert rows["Alpha Driver"] == {**expected, "upcoming": "1"}
+    # งานข้างหน้า 2 ชม. นับเป็นชั่วโมงที่จองไว้ ไม่ปนกับชั่วโมงรวมที่ทำแล้ว
+    assert rows["Alpha Driver"] == {**expected, "upcoming": "1", "upcoming_hours": "2.0"}
     assert rows["Bravo Driver"] == {
         "in_hours": "0",
         "ot": "0",
         "hours": "0.0",
         "km": "0",
         "upcoming": "0",
+        "upcoming_hours": "0.0",
     }
 
 
@@ -269,3 +271,67 @@ def test_task_list_links_to_the_driver_summary(world):
     html = world.client_for(world.driver).get(world.url("/car_reservation/tasks/")).get_data(as_text=True)
 
     assert f"{SUMMARY_URL}?organization_id={world.org.id}" in html
+
+
+def driver_page(world, user, driver, **query):
+    return world.client_for(user).get(world.url(f"{DRIVERS_URL}/{driver.id}", **query))
+
+
+def test_each_row_links_to_that_drivers_own_dashboard(world):
+    response = world.client_for(world.managers["dispatcher"]).get(world.url(DRIVERS_URL))
+
+    html = response.get_data(as_text=True)
+    assert f"{DRIVERS_URL}/{world.driver.id}?" in html
+    assert f"{DRIVERS_URL}/{world.other_driver.id}?" in html
+
+
+def test_driver_dashboard_shows_the_same_numbers_as_the_table_and_lists_the_jobs(world):
+    give_alpha_jobs_in_three_periods(world)
+
+    html = driver_page(world, world.managers["dispatcher"], world.driver).get_data(as_text=True)
+
+    fields = dict(re.findall(r'data-field="([\w-]+)">\s*([^<\s]*)\s*<', html))
+    assert fields["jobs"] == "2"  # เดือนนี้: ในเวลา 1 + OT 1
+    assert fields["hours"] == "7.0"
+    assert fields["upcoming"] == "1"
+    assert html.count('data-role="done-job"') == 2
+    assert html.count('data-role="upcoming-job"') == 1
+
+
+def test_driver_dashboard_shows_feedback_of_their_jobs_and_links_admins_to_the_form(
+    world, create_feedback_template, create_feedback_response, make_question, make_answer
+):
+    now = datetime.datetime.now()
+    rated = world.job(world.driver, now - 2 * DAY, 3, mileage=(100, 160))
+    question = make_question("score")
+    template = create_feedback_template(world.org, [world.car], questions=[question])
+    for score in (4, 5):
+        create_feedback_response(
+            template, world.car, car_reservation=rated, answers=[make_answer(question, score=score)]
+        )
+
+    as_dispatcher = driver_page(world, world.managers["dispatcher"], world.driver).get_data(as_text=True)
+    as_admin = driver_page(world, world.org_admin, world.driver).get_data(as_text=True)
+
+    assert re.search(r'data-field="average-score">\s*4\.50\s*<', as_dispatcher)
+    assert "2 ผลตอบรับ" in as_dispatcher
+    # หน้าผลแบบประเมินเปิดได้เฉพาะ admin จึงไม่ส่งลิงก์ให้ผู้จัดรถ
+    assert 'data-role="open-feedback"' not in as_dispatcher
+    assert f"/car_reservation/feedback/{template.id}/view?" in as_admin
+    assert f"car_reservation_id={rated.id}" in as_admin
+
+
+def test_driver_dashboard_is_404_for_someone_who_is_not_a_driver(world):
+    response = driver_page(world, world.managers["dispatcher"], world.requester)
+
+    assert response.status_code == 404
+
+
+@pytest.mark.parametrize("who", ["driver", "requester"])
+def test_drivers_and_requesters_are_refused_a_drivers_dashboard(world, who):
+    give_alpha_jobs_in_three_periods(world)
+
+    response = driver_page(world, getattr(world, who), world.driver)
+
+    assert response.status_code in (302, 403)
+    assert 'data-role="done-job"' not in response.get_data(as_text=True)

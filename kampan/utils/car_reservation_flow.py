@@ -493,7 +493,41 @@ class DriverWorkload:
     hours: float = 0.0
     km: int = 0
     upcoming: int = 0
+    upcoming_hours: float = 0.0
     busy: bool = False
+
+
+def worked_hours(job):
+    """ชั่วโมงทำงานของงานที่เกิดแล้ว: เวลาเริ่ม/ปิดงานจริง ถ้าไม่มีใช้เวลาออก/กลับตามใบขอ"""
+    started = job.started_at or job.departure_datetime
+    finished = job.completed_at or job.return_datetime or started
+    return (finished - started).total_seconds() / 3600
+
+
+def booked_hours(job):
+    """ชั่วโมงที่จองไว้ของงานที่ยังไม่เกิด ตามเวลาออก-กลับในใบขอ"""
+    return (job.return_datetime - job.departure_datetime).total_seconds() / 3600
+
+
+def driver_jobs(organization, driver, *, now, since):
+    """(งานที่ออกเดินทางแล้วช่วง since..now ใหม่ก่อน, งาน active ที่ยังไม่ออก เรียงตามวันออก)
+
+    ใช้เงื่อนไขเดียวกับ driver_workload ตัวเลขในหน้ารายคนจึงตรงกับตารางรวม
+    """
+    done = models.CarReservation.objects(
+        organization=organization,
+        driver=driver,
+        status__in=["completed", "active"],
+        departure_datetime__gte=since,
+        departure_datetime__lte=now,
+    ).order_by("-departure_datetime")
+    upcoming = models.CarReservation.objects(
+        organization=organization,
+        driver=driver,
+        status="active",
+        departure_datetime__gt=now,
+    ).order_by("departure_datetime")
+    return list(done), list(upcoming)
 
 
 def driver_workload(
@@ -503,6 +537,7 @@ def driver_workload(
 
     นับงานที่ออกเดินทางตั้งแต่ `since` (ไม่ระบุ = ย้อนหลัง `days` วัน) ถึง `now`
     km = ผลรวมระยะทาง (เลข กม. กลับ - ออก) ของงานที่ปิดแล้ว
+    upcoming / upcoming_hours = งาน active ที่ยังไม่ออกเดินทาง และชั่วโมงที่จองไว้ตามใบขอ
     """
     rows = {
         driver.id: DriverWorkload(driver=driver)
@@ -522,9 +557,7 @@ def driver_workload(
             row.ot_jobs += 1
         else:
             row.in_hours_jobs += 1
-        started = job.started_at or job.departure_datetime
-        finished = job.completed_at or job.return_datetime or started
-        row.hours += (finished - started).total_seconds() / 3600
+        row.hours += worked_hours(job)
         row.km += job.distance_km or 0
     ahead = models.CarReservation.objects(
         organization=organization,
@@ -541,7 +574,9 @@ def driver_workload(
         status="active",
         departure_datetime__gt=now,
     ):
-        rows[job.driver.id].upcoming += 1
+        row = rows[job.driver.id]
+        row.upcoming += 1
+        row.upcoming_hours += booked_hours(job)
     return sorted(
         rows.values(), key=lambda row: (row.in_hours_jobs + row.ot_jobs, row.hours)
     )

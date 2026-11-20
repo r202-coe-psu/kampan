@@ -48,6 +48,8 @@
             <th class="text-right">ชั่วโมงรวม</th>
             <th class="text-right">ระยะทาง (กม.)</th>
             <th class="text-right">งานที่จะมาถึง</th>
+            <th class="text-right">ชั่วโมงที่จองไว้</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -59,6 +61,14 @@
             <td class="text-right" data-field="hours">{{ '%.1f' | format(row.hours) }}</td>
             <td class="text-right" data-field="km">{{ row.km }}</td>
             <td class="text-right" data-field="upcoming">{{ row.upcoming }}</td>
+            <td class="text-right" data-field="upcoming_hours">{{ '%.1f' | format(row.upcoming_hours) }}</td>
+            <td class="text-right">
+              <a class="btn btn-ghost btn-sm btn-square" data-role="open-driver"
+                 aria-label="ดูแดชบอร์ดของ {{ row.driver.get_name() }}" title="ดูแดชบอร์ดของ {{ row.driver.get_name() }}"
+                 href="{{ url_for('car_reservation.stats.driver', driver_id=row.driver.id, organization_id=organization.id, period=period) }}">
+                <i class="ph ph-eye text-lg"></i>
+              </a>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
