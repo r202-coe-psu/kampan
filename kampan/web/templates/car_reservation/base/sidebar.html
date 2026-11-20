@@ -29,8 +29,6 @@
     {% if can_request %}
     {{ MenuItem(['car_reservation.requests.index'], 'ph-list-bullets', 'คำขอของฉัน',
                 url_for('car_reservation.requests.index', organization_id=organization.id)) }}
-    {{ MenuItem(['car_reservation.requests.create'], 'ph-hand-arrow-up', 'ยื่นคำขอ',
-                url_for('car_reservation.requests.create', organization_id=organization.id), 'data-open-new-request') }}
     {% endif %}
     {% if can_create_insert %}
     {{ MenuItem(['car_reservation.requests.create_insert'], 'ph-plus-circle', 'เพิ่มงานแทรก',

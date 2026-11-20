@@ -57,7 +57,16 @@ def test_requests_list_has_the_type_modal_and_a_button_that_opens_it(world):
     for key, title in TYPES:
         assert title in dialog.group(0)
         assert any(f"type={key}" in href for href in modal_links)
-    assert len(re.findall(r"<a [^>]*data-open-new-request", html)) == 2
+    assert len(re.findall(r"<a [^>]*data-open-new-request", html)) == 1
+
+
+def test_calendar_new_request_button_opens_the_type_modal(world):
+    html = world.client.get(
+        f"/car_reservation/calendar/?organization_id={world.org.id}"
+    ).get_data(as_text=True)
+
+    assert re.search(r'<dialog[^>]*id="new-request-modal"', html)
+    assert len(re.findall(r"<a [^>]*data-open-new-request", html)) == 1
 
 
 def test_each_type_link_opens_the_form_of_that_type(world):

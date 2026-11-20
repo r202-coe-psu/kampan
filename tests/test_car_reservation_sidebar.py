@@ -12,7 +12,6 @@ from kampan.web import redis_rq
 HOME = "/car_reservation/requests/"
 
 MY_REQUESTS = "คำขอของฉัน"
-NEW_REQUEST = "ยื่นคำขอ"
 INSERT = "เพิ่มงานแทรก"
 CALENDAR = "ปฏิทินการจองรถ"
 INBOX = "รายการรออนุมัติ"
@@ -26,7 +25,8 @@ SWITCH_SYSTEM = "เปลี่ยนระบบ"
 # ทุก role มีแจ้งเตือนของตัวเอง จึงเห็นเมนูนี้เสมอ
 NOTIFICATIONS = "การแจ้งเตือน"
 
-EVERYONE = {MY_REQUESTS, NEW_REQUEST, CALENDAR, DIRECTORY}
+# ยื่นคำขอเป็นปุ่มในหน้าคำขอของฉัน ไม่มีเมนูแยก
+EVERYONE = {MY_REQUESTS, CALENDAR, DIRECTORY}
 # ขอใช้รถเร่งด่วนย้ายไปอยู่ใน modal เลือกประเภทคำขอแล้ว (test_car_reservation_new_request_picker.py)
 DISPATCH = EVERYONE | {INSERT, INBOX, STATS}
 EXECUTIVE = EVERYONE | {INBOX, STATS}
