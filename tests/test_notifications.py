@@ -14,11 +14,25 @@ def events_of(user, org):
     return [n.event for n in notifications.inbox(user, org)]
 
 
-def test_submitting_a_request_notifies_the_division_head_but_not_the_requester(world):
+def test_submitting_a_request_notifies_the_division_head_and_records_it_for_the_requester(world):
     world.submit_request()
 
     assert events_of(world.supervisor, world.org) == ["submitted"]
-    assert events_of(world.requester, world.org) == []
+    own = notifications.inbox(world.requester, world.org)
+    assert [(n.event, n.title) for n in own] == [("submitted", "คุณยื่นคำขอใช้รถแล้ว")]
+    # สิ่งที่ทำเองไม่นับเป็นเรื่องที่ยังไม่อ่าน
+    assert notifications.unread_count(world.requester, world.org) == 0
+
+
+def test_own_actions_show_on_the_notifications_page_as_done_by_you(world):
+    world.submit_request()
+
+    html = world.client_for(world.requester).get(
+        f"{NOTI}?organization_id={world.org.id}"
+    ).get_data(as_text=True)
+
+    assert "คุณยื่นคำขอใช้รถแล้ว" in html
+    assert "โดยคุณ" in html
 
 
 def test_dispatcher_assigning_a_driver_notifies_the_driver_and_the_next_approver(world):
@@ -30,7 +44,9 @@ def test_dispatcher_assigning_a_driver_notifies_the_driver_and_the_next_approver
 
     assert events_of(world.driver, world.org) == ["driver_assigned"]
     assert events_of(world.holders["vehicle_unit_head"], world.org) == ["approved"]
-    assert events_of(world.dispatcher, world.org) == ["approved"]  # จากขั้นผู้บังคับบัญชา
+    # อนุมัติเอง (ใหม่สุด) + แจ้งจากขั้นผู้บังคับบัญชา
+    assert events_of(world.dispatcher, world.org) == ["approved", "approved"]
+    assert notifications.unread_count(world.dispatcher, world.org) == 1
 
 
 NOTI = "/car_reservation/notifications"

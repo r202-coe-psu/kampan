@@ -136,17 +136,26 @@ IN_APP_TITLES = {
 }
 
 
+# หัวข้อที่ผู้ทำ action เห็นในแจ้งเตือนของตัวเอง (driver_assigned เกิดพร้อมการอนุมัติ จึงไม่บันทึกซ้ำ)
+OWN_ACTION_TITLES = {
+    "submitted": "คุณยื่นคำขอใช้รถแล้ว",
+    "approved": "คุณอนุมัติคำขอใช้รถแล้ว",
+    "active": "คุณอนุมัติคำขอใช้รถแล้ว",
+    "denied": "คุณไม่อนุมัติคำขอใช้รถ",
+    "cancel_requested": "คุณขอยกเลิกการใช้รถแล้ว",
+    "cancelled": "คุณยกเลิกคำขอใช้รถแล้ว",
+    "completed": "คุณปิดงานเที่ยวรถแล้ว",
+    "close_disputed": "คุณโต้แย้งการปิดงานแล้ว",
+}
+
+
 def notify_in_app(reservation, event, actor=None):
     """แจ้งเตือนในระบบอย่างเดียว (driver_assigned ไม่มีอีเมล)"""
     if actor is None and has_request_context() and current_user.is_authenticated:
         actor = current_user._get_current_object()
-    utils_notifications.send(
-        reservation.organization,
-        people_for(reservation, event),
+    common = dict(
         module="car_reservation",
         event=event,
-        title=IN_APP_TITLES[event],
-        actor=actor,
         ref=reservation,
         message=reservation.location,
         url=url_for(
@@ -155,6 +164,17 @@ def notify_in_app(reservation, event, actor=None):
             organization_id=reservation.organization.id,
         ),
     )
+    utils_notifications.send(
+        reservation.organization,
+        people_for(reservation, event),
+        title=IN_APP_TITLES[event],
+        actor=actor,
+        **common,
+    )
+    if actor is not None and event in OWN_ACTION_TITLES:
+        utils_notifications.record_own_action(
+            reservation.organization, actor, title=OWN_ACTION_TITLES[event], **common
+        )
 
 
 _COMMENT_ACTIONS = ("denied", "cancel_requested", "cancelled", "close_disputed")

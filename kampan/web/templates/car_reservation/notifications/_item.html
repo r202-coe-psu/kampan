@@ -29,7 +29,9 @@
       <span class="mt-0.5 block line-clamp-2 text-sm text-base-content/60">{{ notification.message }}</span>
       {% endif %}
       {% if notification.actor %}
-      <span class="mt-1 block text-xs text-base-content/50">โดย {{ notification.actor.get_resources_fullname_th() }}</span>
+      <span class="mt-1 block text-xs text-base-content/50">
+        โดย{{ 'คุณ' if notification.actor.id == notification.user.id else ' ' ~ notification.actor.get_resources_fullname_th() }}
+      </span>
       {% endif %}
     </span>
     <span class="mt-2 size-2 shrink-0 rounded-full {{ 'bg-primary' if unread else 'bg-transparent' }}"

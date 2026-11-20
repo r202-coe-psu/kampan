@@ -32,6 +32,22 @@ def send(organization, users, *, module, event, title, actor=None, ref=None, mes
     return recipients
 
 
+def record_own_action(organization, actor, *, module, event, title, ref=None, message="", url=""):
+    """บันทึกสิ่งที่ผู้ใช้ทำเองลงแจ้งเตือนของเขา ตั้งเป็นอ่านแล้ว จะได้ไม่นับเป็นเรื่องที่ต้องดู"""
+    return models.Notification(
+        organization=organization,
+        user=actor,
+        actor=actor,
+        module=module,
+        event=event,
+        ref=ref,
+        title=title,
+        message=message,
+        url=url,
+        read_at=datetime.datetime.now(),
+    ).save()
+
+
 def inbox(user, organization):
     return models.Notification.objects(user=user, organization=organization).order_by(
         "-created_date", "-id"
