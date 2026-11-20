@@ -23,9 +23,9 @@
 
     {% call FormSection('การเดินทาง', icon='ph-map-pin') %}
     <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
-      {{ renderer.render_field(form.departure_date) }}
+      {{ renderer.date_field(form.departure_date) }}
       {{ renderer.render_field(form.departure_time) }}
-      {{ renderer.render_field(form.return_date) }}
+      {{ renderer.date_field(form.return_date) }}
       {{ renderer.render_field(form.return_time) }}
       {{ renderer.render_field(form.pickup_place) }}
       {{ renderer.render_field(form.pickup_time) }}
@@ -94,7 +94,8 @@
         }
         modal.querySelector('[data-role="short-notice-back"]').addEventListener("click", function () {
           modal.close();
-          var date = document.getElementById("{{ form.departure_date.id }}");
+          // ช่องวันที่เป็นปุ่มปฏิทินของ renderer.date_field (ช่องจริงเป็น hidden) จึง focus ปุ่มนั้น
+          var date = document.getElementById("cally-{{ form.departure_date.id }}");
           if (date) { date.scrollIntoView({ block: "center" }); date.focus(); }
         });
       })();

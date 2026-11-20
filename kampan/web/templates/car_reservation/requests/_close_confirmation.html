@@ -26,7 +26,7 @@
           action="{{ url_for('car_reservation.requests.close_confirmation', request_id=reservation.id, organization_id=organization.id) }}">
       {{ close_form.csrf_token }}
       <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
-        {{ renderer.render_field(close_form.actual_end_date) }}
+        {{ renderer.date_field(close_form.actual_end_date) }}
         {{ renderer.render_field(close_form.actual_end_time) }}
       </div>
       {{ renderer.render_field(close_form.note) }}
