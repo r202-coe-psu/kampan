@@ -1,4 +1,5 @@
 {% extends "/car_reservation/base/default-page.html" %}
+{% from '/base/components/empty_state.html' import EmptyState %}
 
 {% block title %}รายการงาน{% endblock %}
 
@@ -15,7 +16,9 @@
     {% for task in active_tasks %}
     {% include "/car_reservation/tasks/_card.html" %}
     {% else %}
-    <div class="alert">ไม่มีงานที่ต้องไป</div>
+    <div class="lg:col-span-2">
+      {{ EmptyState(None, 'ไม่มีงานที่ต้องไป', description='งานที่ผู้จัดรถมอบหมายให้คุณจะแสดงที่นี่') }}
+    </div>
     {% endfor %}
   </div>
 
@@ -24,7 +27,9 @@
     {% for task in completed_tasks %}
     {% include "/car_reservation/tasks/_card.html" %}
     {% else %}
-    <div class="alert">ยังไม่มีงานที่เสร็จ</div>
+    <div class="lg:col-span-2">
+      {{ EmptyState(None, 'ยังไม่มีงานที่เสร็จ', description='งานที่ปิดแล้วจะแสดงที่นี่') }}
+    </div>
     {% endfor %}
   </div>
 </div>
