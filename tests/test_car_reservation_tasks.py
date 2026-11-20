@@ -286,28 +286,34 @@ def test_close_form_is_prefilled_with_the_cars_last_mileage(world):
     assert 'value="10000"' in html
 
 
-def test_a_task_waits_for_the_earlier_active_task_of_the_same_car(world):
-    world.reservation(location="งานแรก", departure=datetime.datetime(2031, 1, 5, 8, 0))
-    later = world.reservation(
-        location="งานหลัง", departure=datetime.datetime(2031, 1, 9, 8, 0)
-    )
-
-    response = close(world, later)
-
-    later.reload()
-    assert later.status == "active"
-    assert "งานแรก" in response.get_data(as_text=True).split("ต้องปิดงาน")[1]
-
-
-def test_closing_the_earlier_task_first_unblocks_the_later_one(world):
+def test_a_later_task_can_close_while_an_earlier_one_of_the_same_car_is_still_open(world):
+    """คนขับอีกคนลืมปิดงานก่อนหน้า ต้องไม่ทำให้งานหลังปิดไม่ได้"""
     earlier = world.reservation(departure=datetime.datetime(2031, 1, 5, 8, 0))
     later = world.reservation(departure=datetime.datetime(2031, 1, 9, 8, 0))
 
-    close(world, earlier)
-    close(world, later, mileage_out="10250", mileage_in="10300")
+    response = close(world, later, mileage_out="10300", mileage_in="10400")
 
     later.reload()
+    earlier.reload()
+    assert response.status_code == 302
     assert later.status == "completed"
+    assert earlier.status == "active"
+
+
+def test_closing_an_old_task_late_does_not_wind_the_car_mileage_back(world):
+    earlier = world.reservation(departure=datetime.datetime(2031, 1, 5, 8, 0))
+    later = world.reservation(departure=datetime.datetime(2031, 1, 9, 8, 0))
+    close(world, later, mileage_out="10300", mileage_in="10400")
+
+    # งานเก่ามาปิดทีหลัง ฟอร์มตั้งต้นด้วยเลขไมล์สูงสุดของรถ คนขับแก้เป็นเลขจริงได้
+    form = world.client_for(world.driver).get(close_url(world, earlier)).get_data(as_text=True)
+    assert 'value="10400"' in form
+    close(world, earlier, mileage_out="10000", mileage_in="10250")
+
+    earlier.reload()
+    world.car.reload()
+    assert (earlier.last_mileage_before, earlier.last_mileage) == (10000, 10250)
+    assert world.car.last_mileage == 10400
 
 
 def test_an_earlier_task_of_another_car_does_not_block(world, create_car):
@@ -399,8 +405,9 @@ def test_task_list_offers_close_only_for_tasks_that_can_be_closed_now(world):
 
     assert f"/{earlier.id}/close" in html
     assert f"/{later.id}/close" not in html
+    assert f"/{later.id}/start" in html
     assert f"/{done.id}/close" not in html
-    assert "ปิดงานก่อนหน้าให้เสร็จก่อน" in html
+    assert 'data-role="blocked-by"' not in html
 
 
 def test_request_detail_shows_the_trip_report_once_completed(world):

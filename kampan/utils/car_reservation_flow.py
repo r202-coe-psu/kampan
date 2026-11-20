@@ -760,22 +760,6 @@ def start_trip(app, user):
     app.save()
 
 
-def earlier_active_task(app):
-    """งาน active ของรถคันเดียวกันที่ออกเดินทางก่อนงานนี้ (ต้องปิดก่อน) ไม่มีคือ None"""
-    if app.car is None:
-        return None
-    return (
-        models.CarReservation.objects(
-            organization=app.organization,
-            car=app.car,
-            status="active",
-            departure_datetime__lt=app.departure_datetime,
-        )
-        .order_by("departure_datetime")
-        .first()
-    )
-
-
 def close_trip(
     app,
     user,
@@ -788,17 +772,15 @@ def close_trip(
     photo_out=None,
     photo_in=None,
 ):
-    """ปิดงาน: บันทึกรายงานท้ายใบ (กม. ออก/กลับ น้ำมัน กรณีค่าใช้จ่าย เป็นเงิน) และอัปเดตเลขไมล์รถ"""
+    """ปิดงาน: บันทึกรายงานท้ายใบ (กม. ออก/กลับ น้ำมัน กรณีค่าใช้จ่าย เป็นเงิน) และอัปเดตเลขไมล์รถ
+
+    ปิดงานได้ไม่ต้องเรียงตามวันเดินทาง (คนขับอีกคนลืมปิดก็ไม่ติด) เลขไมล์รถจึงเก็บค่าสูงสุดที่เคยกรอก
+    งานเก่าที่มาปิดทีหลังด้วยเลขที่ต่ำกว่าจะไม่ทำให้เลขไมล์รถถอยหลัง
+    """
     if not can_close(app, user):
         raise FlowError("ไม่มีสิทธิ์ปิดงานนี้")
     if mileage_in < mileage_out:
         raise MileageError(MILEAGE_IN_BELOW_OUT)
-    earlier = earlier_active_task(app)
-    if earlier is not None:
-        raise FlowError(
-            "ต้องปิดงานที่ออกเดินทางก่อนของรถคันเดียวกันก่อน: "
-            f"{earlier.location} ({earlier.departure_datetime.strftime('%d/%m/%Y %H:%M')} น.)"
-        )
 
     before = _trip_report_snapshot(app)
     app.last_mileage_before = mileage_out
@@ -831,8 +813,8 @@ def close_trip(
     )
     app.save()
     if app.car is not None:
-        app.car.last_mileage = mileage_in
-        app.car.save()
+        app.car.update(max__last_mileage=mileage_in)
+        app.car.reload("last_mileage")
 
 
 def _is_admin(organization, user):

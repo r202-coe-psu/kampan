@@ -61,12 +61,6 @@ def index():
         "/car_reservation/tasks/index.html",
         organization=g.organization,
         active_tasks=active_tasks,
-        # งานที่ต้องรอปิดงานก่อนหน้าของรถคันเดียวกันก่อน: id ของงาน -> งานที่ต้องปิดก่อน
-        blocked_by={
-            task.id: earlier
-            for task in active_tasks
-            if (earlier := flow.earlier_active_task(task)) is not None
-        },
         completed_tasks=my_tasks("completed").order_by("-departure_datetime")[
             :RECENT_COMPLETED_LIMIT
         ],
@@ -133,6 +127,7 @@ def close(task_id):
 
     form = forms.car_reservation.TripCloseForm()
     if request.method == "GET" and task.car is not None:
+        # เลขไมล์สูงสุดของรถ (งานอื่นอาจปิดไปก่อน) คนขับแก้ได้ถ้าเลขออกจริงต่ำกว่า
         form.mileage_out.data = task.car.last_mileage
     if form.validate_on_submit():
         try:
