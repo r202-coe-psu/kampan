@@ -497,7 +497,7 @@ def test_products_cards_count_usage_and_renewal_and_default_filters(world):
         waiting.name,
         requested.name,
     }
-    assert set(_shown_mas(_get(world, PRODUCTS, usage_status="", renewal_status="waiting"))) == {waiting.name}
+    assert set(_shown_mas(_get(world, PRODUCTS, usage_status="", renewal_status="renewed"))) == {waiting.name}
     assert set(_shown_mas(_get(world, PRODUCTS, usage_status="", renewal_status="renewal-requested"))) == {requested.name}
 
 
@@ -505,13 +505,15 @@ def test_sidebar_has_filter_tabs_for_procurement_staff(world):
     html = _get(world, PRODUCTS, usage_status="", renewal_status="renewal-requested").get_data(as_text=True)
 
     for key, label in [
-        ("review", "รอตรวจสอบเอกสาร"),
         ("renewal-requested", "รอต่ออายุ"),
         ("renewed", "ต่ออายุแล้ว"),
         ("disactive", "ไม่ต่ออายุ"),
-        ("waiting", "รอใช้งาน"),
     ]:
         assert f'data-ma-tab="{key}"' in html and label in html
+    # ไม่มีแท็บ "รอตรวจสอบเอกสาร" / "รอใช้งาน" และไม่มีกลุ่ม "งานเจ้าหน้าที่พัสดุ" แยก (รวมอยู่ใน "ระบบการจัดการ MA")
+    for key in ("review", "waiting"):
+        assert f'data-ma-tab="{key}"' not in html
+    assert "งานเจ้าหน้าที่พัสดุ" not in html
     # แท็บที่ตรงกับตัวกรองปัจจุบันเป็น active และ "รายการบำรุงรักษา" ชี้ไปที่ MA ทั้งหมด (ไม่กรอง)
     assert re.search(r'menu-active[^>]*\n?[^>]*data-ma-tab="renewal-requested"', html)
     assert "usage_status=&amp;renewal_status=" in html

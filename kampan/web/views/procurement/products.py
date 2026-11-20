@@ -154,11 +154,13 @@ def index():
         procurement_qs = procurement_qs.filter(
             id__in=[procurement_id for procurement_id, status in statuses.items() if status == payment_status]
         )
-    # "รอใช้งาน" ของสถานะการต่ออายุคือรายการที่ยังไม่เริ่มใช้งาน จึงไม่ซ้อนกับตัวกรองการใช้งาน
-    if usage_status in dict(models.USAGE_STATUS_CHOICES) and renewal_status != "waiting":
+    if usage_status in dict(models.USAGE_STATUS_CHOICES):
         procurement_qs = procurement_qs.filter(_usage_q(usage_status))
-    if renewal_status == "waiting":
-        procurement_qs = procurement_qs.filter(usage_status="upcoming")
+    if renewal_status == "renewed":
+        # "ต่ออายุแล้ว" รวมรายการใหม่ที่ยังไม่ถึงวันเริ่มใช้งาน (รอใช้งาน)
+        procurement_qs = procurement_qs.filter(
+            Q(status__in=renewal_status_statuses("renewed")) | Q(usage_status="upcoming")
+        )
     elif renewal_status in FILTERABLE_RENEWAL_STATUSES:
         procurement_qs = procurement_qs.filter(status__in=renewal_status_statuses(renewal_status))
 

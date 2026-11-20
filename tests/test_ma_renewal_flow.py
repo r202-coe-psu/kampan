@@ -365,7 +365,8 @@ def test_list_renders_both_badges_and_filters_by_each_status(world, client_for, 
     assert names(renewal_status="renewal-requested")[0] == {"CCC"}
     assert names(renewal_status="review")[0] == {"AAA", "BBB"}
     assert names(renewal_status="review", usage_status="upcoming")[0] == {"BBB"}
-    assert names(renewal_status="renewed")[0] == set()
+    # "ต่ออายุแล้ว" รวมรายการที่รอใช้งานด้วย
+    assert names(renewal_status="renewed")[0] == {"BBB"}
     assert names(usage_status="bogus")[0] == {"AAA", "BBB", "CCC"}  # ค่าที่ไม่รู้จักไม่กรอง
     form_html = client.get(f"/procurement/products?{_q(world.org)}").get_data(as_text=True)
     assert 'name="usage_status"' in form_html and 'name="renewal_status"' in form_html

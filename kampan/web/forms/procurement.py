@@ -414,8 +414,6 @@ def sort_field() -> fields.SelectField:
 
 # สถานะการต่ออายุที่กรองในรายการ MA ได้ (ไม่มีแบบร่าง และไม่แสดงค่าเดิม active / pending แยก)
 RENEWAL_FILTER_STATUSES = ("review", "renewal-requested", "renewed", "disactive")
-# "waiting" ไม่ใช่ค่าที่เก็บ: รายการที่ยังไม่ถึงวันเริ่มใช้งาน (รอใช้งาน เช่น รายการใหม่ที่ต่ออายุแล้ว)
-RENEWAL_FILTER_WAITING = ("waiting", "รอใช้งาน")
 
 
 class ProductFilterForm(FlaskForm):
@@ -441,8 +439,7 @@ class ProductFilterForm(FlaskForm):
     renewal_status = fields.SelectField(
         "สถานะการต่ออายุ",
         choices=[("", "ทั้งหมด")]
-        + [(value, label) for value, label in models.RENEWAL_STATUS_CHOICES if value in RENEWAL_FILTER_STATUSES]
-        + [RENEWAL_FILTER_WAITING],
+        + [(value, label) for value, label in models.RENEWAL_STATUS_CHOICES if value in RENEWAL_FILTER_STATUSES],
         validators=[validators.Optional()],
     )
     sort = sort_field()
