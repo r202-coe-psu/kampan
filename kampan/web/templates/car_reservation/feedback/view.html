@@ -98,8 +98,8 @@
 		</div>
 	</section>
 
-	{# ---------- Filter rail: sticks to the top while the stats scroll ---------- #}
-	<div class="sticky top-0 z-30 -mx-2 mt-6 bg-base-200/85 px-2 py-4 backdrop-blur-md lg:-mx-4 lg:px-4">
+	{# ---------- Filter rail: sticks to the top while the stats scroll (z ต่ำกว่า sidebar ที่ z-10) ---------- #}
+	<div class="sticky top-0 z-5 -mx-2 mt-6 bg-base-200/85 px-2 py-4 backdrop-blur-md lg:-mx-4 lg:px-4">
 		<form method="GET"
 			action="{{ url_for('car_reservation.feedback.view_responses', template_id=template.id, organization_id=organization.id) }}"
 			class="flex flex-col gap-4 rounded-box border border-base-300 bg-base-100 p-4 shadow-sm lg:flex-row lg:items-end">
