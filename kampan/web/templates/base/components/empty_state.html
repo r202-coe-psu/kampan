@@ -11,6 +11,7 @@
      {{ EmptyState('ph-tree-structure', 'ยังไม่มีแผนก', filtered=is_filtered,
                    clear_href=url_for(...)) }}
 
+   icon=None: ไม่แสดงไอคอน
    size: md (ค่าเริ่มต้น ใช้แทนทั้งตาราง) / sm (ใช้ในรายการที่กรองด้วย JS หรือใน modal)
    attrs: attribute เพิ่มเติมของกล่อง เช่น 'data-filter-empty="x"'
    hidden: ซ่อนไว้ก่อน ให้ JS สลับ class hidden เอง
@@ -30,7 +31,9 @@
 <div class="{{ 'hidden' if hidden else '' }}" role="status" {{ attrs | safe }}>
 <div class="flex flex-col items-center text-center {{ 'gap-2 px-4 py-6' if is_small else 'mt-4 gap-3 rounded-box border border-dashed border-base-300 bg-base-200/40 px-6 py-12' }}">
   {# ต้องใส่ ! เพราะ .ph ใน setup.css ตั้ง font-size ไว้นอก layer ทำให้ชนะ utility ปกติ #}
+  {% if icon %}
   <i class="ph {{ icon }} text-base-content {{ 'text-3xl!' if is_small else 'text-5xl!' }}"></i>
+  {% endif %}
   <div class="max-w-md">
     <p class="{{ 'text-base' if is_small else 'text-lg' }} font-semibold text-base-content">{{ title }}</p>
     {% if description %}

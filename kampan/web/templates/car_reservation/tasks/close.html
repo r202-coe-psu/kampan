@@ -1,0 +1,110 @@
+{% extends "/car_reservation/base/default-page.html" %}
+
+{% block title %}ปิดงาน{% endblock %}
+
+{% block content %}
+<div class="mt-4 card bg-base-100 border border-base-300 shadow-sm max-w-2xl">
+  <form method="post" enctype="multipart/form-data" id="close-form" class="card-body gap-2"
+        action="{{ url_for('car_reservation.tasks.close', task_id=task.id, organization_id=organization.id) }}">
+    {{ form.csrf_token }}
+    <h3 class="card-title">{{ task.location }}</h3>
+    <div class="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+      {{ renderer.render_number_field(form.mileage_out) }}
+      {{ renderer.render_number_field(form.mileage_in) }}
+      {{ renderer.render_number_field(form.fuel_liters) }}
+      {{ renderer.render_number_field(form.cost_baht) }}
+    </div>
+    {{ renderer.render_select_field(form.expense_case) }}
+
+    <div id="camera-error" class="alert alert-error hidden mt-2" role="alert" data-role="camera-error">
+      <i class="ph ph-camera-slash"></i>
+      <span>ใช้กล้องไม่ได้ กรุณาใช้เบราว์เซอร์บนมือถือและอนุญาตให้ใช้กล้อง แล้วเปิดหน้านี้ใหม่</span>
+    </div>
+    <div class="grid grid-cols-1 gap-4 sm:max-w-md">
+      {% for field, label in ((form.mileage_photo_in, 'รูปเลขไมล์ขากลับ'),) %}
+      <fieldset class="fieldset" data-photo="{{ field.name }}">
+        <legend class="fieldset-legend">{{ label }} <span class="text-error">*</span></legend>
+        {{ field(class_="hidden", accept="image/jpeg,image/png", required=False) }}
+        <video class="w-full rounded-box bg-base-300 aspect-[4/3] object-cover" autoplay playsinline muted></video>
+        <img class="w-full rounded-box aspect-[4/3] object-cover hidden" alt="{{ label }}">
+        <canvas class="hidden"></canvas>
+        <button type="button" class="btn btn-primary btn-lg w-full" data-action="shoot">
+          ถ่ายรูป
+        </button>
+        <button type="button" class="btn btn-ghost btn-lg w-full hidden" data-action="retake">
+          ถ่ายใหม่
+        </button>
+        {% for error in field.errors %}<span class="fieldset-label text-error text-sm">{{ error }}</span>{% endfor %}
+      </fieldset>
+      {% endfor %}
+    </div>
+    <div class="card-actions justify-end mt-2">
+      <a class="btn btn-ghost"
+         href="{{ url_for('car_reservation.tasks.index', organization_id=organization.id) }}">ยกเลิก</a>
+      <button type="submit" class="btn btn-primary">ปิดงาน</button>
+    </div>
+  </form>
+</div>
+<script>
+(function () {
+  var form = document.getElementById('close-form');
+  var errorBox = document.getElementById('camera-error');
+  var blocks = form.querySelectorAll('[data-photo]');
+  var stream = null;
+
+  function show(el, visible) { el.classList.toggle('hidden', !visible); }
+  function stopCamera() { if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); } }
+
+  function cameraUnavailable() {
+    show(errorBox, true);
+    blocks.forEach(function (block) {
+      block.querySelector('video').classList.add('hidden');
+      block.querySelector('[data-action=shoot]').disabled = true;
+    });
+  }
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof DataTransfer === 'undefined') {
+    cameraUnavailable();
+    return;
+  }
+
+  blocks.forEach(function (block) {
+    var video = block.querySelector('video');
+    var preview = block.querySelector('img');
+    var canvas = block.querySelector('canvas');
+    var input = block.querySelector('input[type=file]');
+    var shoot = block.querySelector('[data-action=shoot]');
+    var retake = block.querySelector('[data-action=retake]');
+
+    shoot.addEventListener('click', function () {
+      if (!video.videoWidth) { return; }
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      canvas.toBlob(function (blob) {
+        var transfer = new DataTransfer();
+        transfer.items.add(new File([blob], block.dataset.photo + '.jpg', { type: 'image/jpeg' }));
+        input.files = transfer.files;
+        preview.src = URL.createObjectURL(blob);
+        show(video, false); show(preview, true); show(shoot, false); show(retake, true);
+      }, 'image/jpeg', 0.85);
+    });
+
+    retake.addEventListener('click', function () {
+      input.value = '';
+      show(preview, false); show(video, true); show(retake, false); show(shoot, true);
+    });
+  });
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+    .then(function (s) {
+      stream = s;
+      blocks.forEach(function (block) { block.querySelector('video').srcObject = s; });
+    })
+    .catch(cameraUnavailable);
+
+  form.addEventListener('submit', stopCamera);
+  window.addEventListener('pagehide', stopCamera);
+})();
+</script>
+{% endblock %}

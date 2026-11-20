@@ -48,6 +48,9 @@ class CarFeedbackResponse(me.Document):
     feedback_template = me.ReferenceField("CarFeedbackTemplate", required=True)
     organization = me.ReferenceField("Organization", dbref=True, required=True)
     car = me.ReferenceField("Car", required=True)
+    # เที่ยวรถของระบบจองรถ (CarReservation) ที่ผู้ตอบเลือกตอนประเมิน
+    car_reservation = me.ReferenceField("CarReservation")
+    # เที่ยวรถของระบบ DIIS (CarApplication) เก็บไว้ให้เอกสารเก่าที่เคยบันทึกก่อนย้ายแบบประเมินมาที่ระบบจองรถ
     car_application = me.ReferenceField("CarApplication")
     answers = me.ListField(me.EmbeddedDocumentField(Answer))
     created_date = me.DateTimeField(default=datetime.datetime.now)
@@ -56,9 +59,11 @@ class CarFeedbackResponse(me.Document):
         "collection": "car_feedback_responses",
         "indexes": [
             "car_application",
+            "car_reservation",
             ("organization", "-created_date"),
             ("feedback_template", "-created_date"),
             ("feedback_template", "car", "-created_date"),
             ("feedback_template", "car_application", "-created_date"),
+            ("feedback_template", "car_reservation", "-created_date"),
         ],
     }

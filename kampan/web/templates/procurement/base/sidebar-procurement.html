@@ -433,11 +433,16 @@
     <!-- User Profile Section - Fixed at Bottom -->
     <div class="w-full px-2 py-3 border-t flex-shrink-0">
       <div class="flex items-center gap-3 w-full min-w-0">
+        {% from "/base/components/user_avatar.html" import UserAvatar %}
+        {% if current_user.get_picture() %}
+        {{ UserAvatar(current_user) }}
+        {% else %}
         <div class="avatar placeholder flex-shrink-0">
           <div class="bg-base-300 p-2 text-base-content rounded-full w-10 h-10 flex items-center justify-center">
             <i class="ph ph-user text-sm"></i>
           </div>
         </div>
+        {% endif %}
         <div class="flex-1 min-w-0 overflow-hidden">
           <p class="text-sm font-medium text-base-content truncate whitespace-nowrap"
             title="{{ current_user.get_resources_fullname_th() }}">

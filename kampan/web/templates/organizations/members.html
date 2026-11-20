@@ -38,7 +38,7 @@
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
       <h2 class="text-xl font-bold">รายชื่อสมาชิก</h2>
-      <p class="text-base-content/60">{{ paginated_org_users.total if paginated_org_users else 0 }} คน</p>
+      <p class="text-base-content/60">ทั้งหมด {{ paginated_org_users.total if paginated_org_users else 0 }} รายการ</p>
     </div>
     <div class="flex flex-wrap gap-2">
       <a class="btn" href="{{ url_for('organizations.members.upload_member_file', organization_id=organization.id) }}">
@@ -52,25 +52,29 @@
     </div>
   </div>
   {% if org_users %}
-  <div class="overflow-x-auto mt-4 rounded-xl">
-    <table class="table-auto w-full">
+  {% macro MemberActions(org_user) %}
+    {{ IconButton('ph-pen', 'แก้ไขตำแหน่ง', href=url_for('organizations.members.edit_roles', organization_id=organization.id, org_user_id=org_user.id)) }}
+    {{ IconButton('ph-trash', 'นำออกจากองค์กร', onclick=open_modal('remove-org-user-%s' | format(org_user.id)), tone='error') }}
+  {% endmacro %}
+  <div class="overflow-x-auto mt-4 hidden md:block" data-table-view>
+    <table class="table">
       <thead>
         <tr>
-          <th class="table-style">ชื่อสมาชิก (ภาษาอังกฤษ)</th>
-          <th class="table-style">อีเมล</th>
-          <th class="table-style">ตำแหน่ง</th>
-          <th class="table-style">ระดับ</th>
-          <th class="table-style">แผนก</th>
-          <th class="table-style whitespace-nowrap">วันที่เพิ่ม</th>
-          <th class="table-style w-px whitespace-nowrap">จัดการ</th>
+          <th>ชื่อสมาชิก (ภาษาอังกฤษ)</th>
+          <th>อีเมล</th>
+          <th>ตำแหน่ง</th>
+          <th>ระดับ</th>
+          <th>แผนก</th>
+          <th class="whitespace-nowrap">วันที่เพิ่ม</th>
+          <th class="text-right">จัดการ</th>
         </tr>
       </thead>
       <tbody>
         {% for org_user in paginated_org_users.items %}
         <tr>
-          <td class="table-style" data-label="Organization">{{ org_user.display_fullname() }}</td>
-          <td class="table-style" data-label="Email">{{ org_user.display_email() }}</td>
-          <td class="table-style" data-label="Email">
+          <td class="font-medium">{{ org_user.display_fullname() }}</td>
+          <td>{{ org_user.display_email() }}</td>
+          <td>
             {% if org_user.appointment|length >= 30 %}
             <span data-tip="{{ org_user.appointment }}">
               {{ org_user.display_appointment() }}
@@ -79,27 +83,41 @@
             {{ org_user.display_appointment() }}
             {% endif %}
           </td>
-          <td class="table-style" data-label="Roles">{{ RoleBadges(org_user.role_items()) }}</td>
-          <td class="table-style" data-label="Roles">{{ org_user.division.name }}</td>
-          <td class="table-style whitespace-nowrap" data-label="Create date">
+          <td>{{ RoleBadges(org_user.role_items()) }}</td>
+          <td>{{ org_user.division.name if org_user.division else '-' }}</td>
+          <td class="whitespace-nowrap">
             {{ org_user.created_date.strftime('%d/%m/%Y') if org_user.created_date else "-" }}
           </td>
-          <td class="table-style w-px whitespace-nowrap">
-            {{ IconButton('ph-pen', 'แก้ไขตำแหน่ง', href=url_for('organizations.members.edit_roles', organization_id=organization.id, org_user_id=org_user.id)) }}
-            {{ IconButton('ph-trash', 'นำออกจากองค์กร', onclick=open_modal('remove-org-user-%s' | format(org_user.id)), tone='error') }}
-            {{ DeleteModal(
-                'remove-org-user-%s' | format(org_user.id),
-                'นำสมาชิกออกจากองค์กร',
-                url_for('organizations.members.remove_org_user', organization_id=organization.id, org_user_id=org_user.id),
-                body='นำ %s ออกจากองค์กรนี้' | format(org_user.display_fullname()),
-                confirm_label='นำออก') }}
-          </td>
+          <td class="whitespace-nowrap text-right">{{ MemberActions(org_user) }}</td>
         </tr>
-
         {% endfor %}
       </tbody>
     </table>
   </div>
+  <div class="mt-4 grid gap-3 md:hidden" data-mobile-list>
+    {% for org_user in paginated_org_users.items %}
+    <div class="rounded-box border border-base-300 p-4">
+      <p class="font-semibold break-words">{{ org_user.display_fullname() }}</p>
+      <p class="text-sm text-base-content/70 break-all">{{ org_user.display_email() }}</p>
+      {% if org_user.appointment %}<p class="text-sm break-words">{{ org_user.appointment }}</p>{% endif %}
+      <div class="mt-2">{{ RoleBadges(org_user.role_items()) }}</div>
+      <p class="mt-2 text-sm text-base-content/60">
+        แผนก {{ org_user.division.name if org_user.division else '-' }}
+        · เพิ่มเมื่อ {{ org_user.created_date.strftime('%d/%m/%Y') if org_user.created_date else "-" }}
+      </p>
+      <div class="mt-2 flex flex-wrap gap-1">{{ MemberActions(org_user) }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {# modal นำออกอยู่นอกตารางและการ์ด เพื่อให้แต่ละคนมี dialog id เดียว #}
+  {% for org_user in paginated_org_users.items %}
+  {{ DeleteModal(
+      'remove-org-user-%s' | format(org_user.id),
+      'นำสมาชิกออกจากองค์กร',
+      url_for('organizations.members.remove_org_user', organization_id=organization.id, org_user_id=org_user.id),
+      body='นำ %s ออกจากองค์กรนี้' | format(org_user.display_fullname()),
+      confirm_label='นำออก') }}
+  {% endfor %}
   {% set params=dict(request.args) %}
   {% if 'page' in params %}
   {% set _dummy=params.pop('page') %}

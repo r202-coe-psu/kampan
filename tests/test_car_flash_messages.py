@@ -1,0 +1,45 @@
+"""ผลของการสร้าง/แก้ไข/ลบในระบบรถต้องแจ้งผู้ใช้ผ่าน flash เป็น toast แบบเดียวกับระบบจัดการองค์กร"""
+
+import pytest
+
+
+
+@pytest.fixture
+def setup(create_org, create_user, assign_user_to_org, create_car):
+    org = create_org("Car Flash Org")
+    admin = create_user("Admin", "Car")
+    assign_user_to_org(admin, org, roles=["admin"])
+    car = create_car(org, license_plate="ขข 2222")
+    return {"org": org, "admin": admin, "car": car}
+
+
+def _assert_toast(html, message, tone="alert-success"):
+    category = tone.removeprefix("alert-")
+    toast = html[html.index(f'data-toast-category="{category}"') :]
+    assert message in toast[: toast.index("</div>")]
+
+
+def test_delete_car_shows_toast(app, login_as, setup):
+    with app.test_client() as client:
+        login_as(client, setup["admin"])
+        response = client.get(
+            f"/vehicle_lending/cars/{setup['car'].id}/delete?organization_id={setup['org'].id}",
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    _assert_toast(response.get_data(as_text=True), "ลบรถ ขข 2222 แล้ว")
+
+
+def test_delete_feedback_template_shows_toast(app, login_as, setup, create_feedback_template):
+    template = create_feedback_template(setup["org"], [setup["car"]], name="ประเมินรถตู้")
+    with app.test_client() as client:
+        login_as(client, setup["admin"])
+        response = client.post(
+            f"/car_reservation/feedback/{template.id}/delete?organization_id={setup['org'].id}",
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    _assert_toast(response.get_data(as_text=True), "ลบแบบประเมิน ประเมินรถตู้ แล้ว")
+

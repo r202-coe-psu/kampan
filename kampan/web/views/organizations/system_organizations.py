@@ -61,6 +61,20 @@ def create_or_edit(organization_id):
         else models.Organization()
     )
     form = forms.organizations.OrganizationForm(obj=target_organization)
+    if (
+        organization_id
+        and request.method == "GET"
+        and target_organization.enabled_modules is None
+    ):
+        # ยังไม่เคยตั้งค่า = เปิดทุกโมดูล แสดงให้เห็นตามจริง ไม่ให้บันทึกแล้วปิดหมดโดยไม่รู้ตัว
+        form.enabled_modules.data = [key for key, _ in models.organizations.MODULES]
+    if (
+        organization_id
+        and request.method == "GET"
+        and target_organization.enabled_roles is None
+    ):
+        # ยังไม่เคยตั้งค่า = ใช้ 8 role เดิม แสดงให้เห็นตามจริง ไม่ให้บันทึกแล้วปิดหมดโดยไม่รู้ตัว
+        form.enabled_roles.data = list(models.organizations.DEFAULT_ENABLED_ROLE_KEYS)
 
     if not form.validate_on_submit():
         return render_system_page(
@@ -70,6 +84,8 @@ def create_or_edit(organization_id):
         )
 
     form.populate_obj(target_organization)
+    # ไม่ติ๊กสักอัน = ไม่ตั้งค่า (ใช้ 8 role เดิม) ไม่ใช่ปิดทุก role จนเพิ่มสมาชิกไม่ได้
+    target_organization.enabled_roles = form.enabled_roles.data or None
     if not organization_id:
         target_organization.created_by = current_user._get_current_object()
     target_organization.last_updated_by = current_user._get_current_object()

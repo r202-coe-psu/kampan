@@ -1,4 +1,5 @@
 import datetime
+import io
 import markdown
 import mongoengine as me
 
@@ -52,10 +53,20 @@ def get_user_and_remember():
         login_user(user, remember=True)
 
 
+PROFILE_FROM_SELECT_SYSTEM = "select_system"
+
+
+def redirect_to_profile(**params):
+    """กลับหน้าข้อมูลผู้ใช้ โดยคงมุมมองแบบเปิดจากหน้าเลือกระบบไว้ถ้ามาจากที่นั่น"""
+    if request.args.get("from") == PROFILE_FROM_SELECT_SYSTEM:
+        params["from"] = PROFILE_FROM_SELECT_SYSTEM
+    return redirect(url_for("accounts.index", **params))
+
+
 @module.route("/login", methods=("GET", "POST"))
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for("accounts.index"))
+        return redirect(url_for("site.select_system"))
 
     # if "next" in request.args:
     #     session["next"] = request.args.get("next", None)
@@ -148,6 +159,8 @@ def index():
             user=current_user,
             organization=organization,
             errors=errors,
+            picture_form=forms.accounts.PictureForm(),
+            signature_form=forms.accounts.SignatureForm(),
         )
     if not organization and "admin" not in current_user.roles:
         return render_template(
@@ -155,6 +168,8 @@ def index():
             user=current_user,
             organization=organization,
             errors=errors,
+            picture_form=forms.accounts.PictureForm(),
+            signature_form=forms.accounts.SignatureForm(),
         )
 
     if "admin" in current_user.roles and organization_id:
@@ -166,6 +181,8 @@ def index():
         user=current_user,
         organization=organization,
         errors=errors,
+        picture_form=forms.accounts.PictureForm(),
+        signature_form=forms.accounts.SignatureForm(),
     )
 
 
@@ -205,6 +222,96 @@ def edit_profile():
     user.save()
 
     return redirect(url_for("accounts.index"))
+
+
+@module.route("/accounts/picture", methods=["POST"])
+@login_required
+def upload_picture():
+    form = forms.accounts.PictureForm()
+    if not form.validate_on_submit():
+        errors = " ".join(message for messages in form.errors.values() for message in messages)
+        return redirect_to_profile(errors=errors)
+
+    user = current_user._get_current_object()
+    upload = form.picture.data
+    if user.picture:
+        user.picture.replace(
+            upload, filename=upload.filename, content_type=upload.content_type
+        )
+    else:
+        user.picture.put(
+            upload, filename=upload.filename, content_type=upload.content_type
+        )
+    user.save()
+
+    return redirect_to_profile()
+
+
+@module.route("/accounts/<user_id>/picture")
+def user_picture(user_id):
+    user = models.User.objects(id=user_id).first()
+    if not user or not user.picture:
+        return abort(404)
+
+    return send_file(
+        user.picture,
+        download_name=user.picture.filename,
+        mimetype=user.picture.content_type,
+    )
+
+
+@module.route("/accounts/signature", methods=["POST"])
+@login_required
+def upload_signature():
+    form = forms.accounts.SignatureForm()
+    if not form.validate_on_submit():
+        errors = " ".join(
+            message for messages in form.errors.values() for message in messages
+        )
+        return redirect_to_profile(errors=errors)
+
+    user = current_user._get_current_object()
+    image = io.BytesIO(form.image_bytes)
+    if user.signature:
+        user.signature.replace(
+            image,
+            filename=form.image_filename,
+            content_type=form.image_content_type,
+        )
+    else:
+        user.signature.put(
+            image,
+            filename=form.image_filename,
+            content_type=form.image_content_type,
+        )
+    user.save()
+
+    return redirect_to_profile()
+
+
+@module.route("/accounts/signature/remove", methods=["POST"])
+@login_required
+def remove_signature():
+    user = current_user._get_current_object()
+    if user.signature:
+        user.signature.delete()
+        user.save()
+
+    return redirect_to_profile()
+
+
+@module.route("/accounts/<user_id>/signature")
+@login_required
+def user_signature(user_id):
+    user = models.User.objects(id=user_id).first()
+    if not user or not user.signature:
+        return abort(404)
+
+    return send_file(
+        user.signature,
+        download_name=user.signature.filename or "signature.png",
+        mimetype=user.signature.content_type or "image/png",
+    )
 
 
 @module.route("/accounts/<user_id>/picture/<filename>", methods=["GET", "POST"])

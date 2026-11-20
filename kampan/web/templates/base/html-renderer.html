@@ -52,6 +52,11 @@ file_input -->
           {% endif %}
         </legend>
       {% endif %}
+      {% if field.type == "TextAreaField" %}
+        {# textarea มีกรอบของตัวเอง ห่อด้วย label.input จะเป็นกล่องซ้อนกล่อง จึงใช้ class textarea ของ DaisyUI ตรง ๆ #}
+        {% set textarea_class = "textarea w-full validator" ~ (" textarea-error" if field.errors else "") ~ (" " ~ class_ if class_ else "") %}
+        {{ field(class_=textarea_class, placeholder=placeholder, readonly=readonly, disabled=disabled, **kwargs) }}
+      {% else %}
       <label class="{{ style }} validator {% if readonly %}input-readonly{% endif %}">
         {% if prefix %}{{ prefix_icon }}{% endif %}
         {% if disabled %}
@@ -61,6 +66,7 @@ file_input -->
         {% endif %}
         {% if suffix %}{{ suffix_icon }}{% endif %}
       </label>
+      {% endif %}
       {% if field.errors %}
         <span class="fieldset-label text-error text-sm mt-1">
           {% for error in field.errors %}
@@ -200,10 +206,15 @@ file_input -->
                   {% if readonly %}input-readonly{% endif %}
                   {{ class_ }}">
       {% if readonly %}
-        {{ field(class_="w-full bg-transparent bg-none appearance-none outline-none border-none", disabled="disabled", **kwargs) }}
-        <input type="hidden" name="{{ field.name }}" value="{{ field.data }}" />
+        {% set select_html = field(class_="w-full bg-none outline-none border-none", disabled="disabled", **kwargs) %}
       {% else %}
-        {{ field(class_="w-full bg-transparent bg-none appearance-none outline-none border-none", **kwargs) }}
+        {% set select_html = field(class_="w-full bg-none outline-none border-none", **kwargs) %}
+      {% endif %}
+      {# <selectedcontent> ทำให้ข้อความยาวถูกตัดเป็น … ตาม DaisyUI แทนที่จะวิ่งทับลูกศร (เบราว์เซอร์ที่ไม่รองรับจะข้ามแท็กนี้) #}
+      {% set open_end = select_html.index('>') + 1 %}
+      {{ select_html[:open_end] }}<button><selectedcontent></selectedcontent></button>{{ select_html[open_end:] }}
+      {% if readonly %}
+        <input type="hidden" name="{{ field.name }}" value="{{ field.data }}" />
       {% endif %}
     </label>
     {% if field.errors %}
@@ -471,13 +482,16 @@ file_input -->
 
   {% macro render_text_area_field(field) %}
     <fieldset class="fieldset w-full" id="field-{{ field.id }}">
-      <legend class="fieldset-legend">{{ field.label.text }}</legend>
-      <textarea class="w-full h-24 textarea"
+      <legend class="fieldset-legend">
+        {{ field.label.text }}
+        {% if field.flags.required %}<span class="text-error">*</span>{% endif %}
+      </legend>
+      <textarea class="w-full h-24 textarea {% if field.errors %}textarea-error{% endif %}"
                 name="{{ field.name }}"
                 id="{{ field.id }}"
                 placeholder="กรอก{{ field.label.text }}ที่นี่">{{ field.data if field.data else field.default if field.default else "" }}</textarea>
-      <div class="fieldset-label">
-        <p class="validator-hint">
+      {% if field.errors %}
+        <span class="fieldset-label text-error text-sm mt-1">
           {% for error in field.errors %}
             {% if 'This field is required' in error %}
               กรุณากรอกข้อมูล
@@ -486,8 +500,8 @@ file_input -->
             {% endif %}
             {% if not loop.last %}<br />{% endif %}
           {% endfor %}
-        </p>
-      </div>
+        </span>
+      {% endif %}
     </fieldset>
   {% endmacro %}
 

@@ -1,0 +1,36 @@
+{% extends "/car_reservation/base/default-page.html" %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+
+{% block title %}รายการงาน{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline btn-sm" href="{{ url_for('car_reservation.tasks.summary', organization_id=organization.id) }}" data-role="summary-link">
+  สรุปงานของฉัน
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="mt-4 flex flex-col gap-4">
+  <h2 class="text-lg font-semibold">งานที่ต้องไป</h2>
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2" data-role="active-tasks">
+    {% for task in active_tasks %}
+    {% include "/car_reservation/tasks/_card.html" %}
+    {% else %}
+    <div class="lg:col-span-2">
+      {{ EmptyState(None, 'ไม่มีงานที่ต้องไป', description='งานที่ผู้จัดรถมอบหมายให้คุณจะแสดงที่นี่') }}
+    </div>
+    {% endfor %}
+  </div>
+
+  <h2 class="text-lg font-semibold">งานที่เสร็จแล้วล่าสุด</h2>
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2" data-role="completed-tasks">
+    {% for task in completed_tasks %}
+    {% include "/car_reservation/tasks/_card.html" %}
+    {% else %}
+    <div class="lg:col-span-2">
+      {{ EmptyState(None, 'ยังไม่มีงานที่เสร็จ', description='งานที่ปิดแล้วจะแสดงที่นี่') }}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,315 @@
+{% extends '/car_reservation/base/default-page.html' %}
+{% import '/car_reservation/components/status_badge.html' as status_badge %}
+{% from '/car_reservation/components/info_card.html' import InfoCard, Item %}
+{% from '/base/components/modals.html' import DeleteModal %}
+{% from '/car_reservation/components/approval_steps.html' import ApprovalSteps %}
+
+{% block title %}คำขอใช้รถ{% endblock %}
+
+{% block dashboard_title %}{{ reservation.get_request_type_display() }}{% endblock %}
+
+{% block page_actions %}
+<div class="flex flex-wrap items-center gap-2" data-role="action-bar">
+  {% if can_act %}
+  <button type="button" class="btn btn-sm btn-success" data-role="open-approve"
+          onclick="document.getElementById('approve-modal').showModal()">อนุมัติ</button>
+  <button type="button" class="btn btn-sm btn-error btn-soft" data-role="open-deny"
+          onclick="document.getElementById('deny-modal').showModal()">ไม่อนุมัติ</button>
+  {% endif %}
+  {% if can_set_overtime %}
+  <button type="button" class="btn btn-sm btn-primary btn-soft" data-role="open-overtime"
+          onclick="document.getElementById('overtime-modal').showModal()">บันทึก OT</button>
+  {% endif %}
+  {% if can_confirm_cancel %}
+  <form method="post"
+        action="{{ url_for('car_reservation.requests.confirm_cancel', request_id=reservation.id, organization_id=organization.id) }}">
+    {{ cancel_form.csrf_token }}
+    <button type="submit" class="btn btn-sm btn-warning">รับทราบการยกเลิก</button>
+  </form>
+  {% endif %}
+  {% if can_edit %}
+  <a class="btn btn-sm btn-primary btn-soft" data-role="edit-request"
+     href="{{ url_for('car_reservation.requests.edit', request_id=reservation.id, organization_id=organization.id) }}">แก้ไข</a>
+  {% endif %}
+  {% if can_cancel %}
+  <button type="button" class="btn btn-sm btn-error btn-soft" data-role="open-cancel"
+          onclick="document.getElementById('cancel-modal').showModal()">ยกเลิกคำขอ</button>
+  {% endif %}
+  {% if can_print_paper %}
+  <button type="button" class="btn btn-sm btn-primary" data-role="preview-paper"
+          onclick="document.getElementById('paper-preview-modal').showModal()">
+    ดูตัวอย่าง PDF
+  </button>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-4">
+<div class="card bg-base-100 border border-base-300 shadow-sm" data-role="request-summary">
+  <div class="card-body gap-2">
+    <div class="flex flex-wrap items-center gap-2">
+      {{ status_badge.render(reservation) }}
+      {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
+      {% if reservation.is_overtime %}{{ status_badge.overtime() }}{% endif %}
+      {% if reservation.is_insert %}{{ status_badge.insert() }}{% endif %}
+      {% if reservation.closed_off_campus %}{{ status_badge.off_campus() }}{% endif %}
+      {% if reservation.status == 'pending' %}
+      <span class="font-medium">รอ{{ current_step_label }}</span>
+      {% endif %}
+      {% if reservation.status == 'cancel_requested' %}
+      <span class="font-medium">ขอยกเลิก — รอผู้จัดรถรับทราบ</span>
+      {% endif %}
+    </div>
+    <p class="text-sm text-base-content/60">
+      ยื่นเมื่อ {{ reservation.created_date.strftime('%d/%m/%Y %H:%M') }} น.
+    </p>
+  </div>
+</div>
+
+<div class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4">
+    <h2 class="card-title text-lg">สถานะการอนุมัติ</h2>
+    {{ ApprovalSteps(steps) }}
+  </div>
+</div>
+
+{% call InfoCard('ข้อมูลผู้ขอ', icon='ph-user') %}
+  {% call Item('ผู้ขอ') %}{{ reservation.creator.get_name() if reservation.creator else '-' }}{% endcall %}
+  {% call Item('คณะ/หน่วยงาน') %}{{ reservation.requester_unit or '-' }}{% endcall %}
+  {% call Item('เบอร์โทร') %}{{ reservation.phone or '-' }}{% endcall %}
+  {% call Item('ผู้ติดต่อรับแจ้งสถานะ') %}{{ reservation.contact_name or '-' }}{% endcall %}
+  {% call Item('อีเมลผู้ติดต่อ') %}{{ reservation.contact_email or '-' }}{% endcall %}
+{% endcall %}
+
+{% call InfoCard('การเดินทาง', icon='ph-map-pin') %}
+  {% call Item('สถานที่ปฏิบัติงาน') %}{{ reservation.location }}{% endcall %}
+  {% call Item('เรื่อง') %}{{ reservation.request_reason }}{% endcall %}
+  {% call Item('วัน-เวลา ออกเดินทาง') %}{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.{% endcall %}
+  {% call Item('วัน-เวลา กลับ') %}{{ reservation.return_datetime.strftime('%d/%m/%Y %H:%M') + ' น.' if reservation.return_datetime else '-' }}{% endcall %}
+  {% call Item('จำนวนผู้โดยสาร') %}{{ reservation.passenger_number }}{% endcall %}
+  {% call Item('ให้รถไปจอดรับที่') %}{{ reservation.pickup_place }}{% endcall %}
+  {% call Item('เวลารับ') %}{{ reservation.pickup_time }}{% endcall %}
+{% endcall %}
+
+{% if reservation.car or reservation.driver or reservation.extra_travelers %}
+{% call InfoCard('รถและพนักงานขับรถ', icon='ph-car') %}
+  {% if reservation.car %}
+  {% call Item('รถ', role='assigned-car') %}{{ reservation.car.license_plate }}{% if reservation.car.vehicle_type %} ({{ reservation.car.vehicle_type }}){% endif %}{% endcall %}
+  {% endif %}
+  {% if reservation.driver %}
+  {% call Item('พนักงานขับรถ', role='assigned-driver') %}{{ reservation.driver.get_name() }}{% endcall %}
+  {% endif %}
+  {% call Item('งานนอกเวลา (OT)', role='overtime-status') %}{{ 'ใช่' if reservation.is_overtime else 'ไม่ใช่' }}{% endcall %}
+  {% if reservation.extra_travelers %}
+  {% call Item('ขออนุมัติให้ผู้ร่วมเดินทางไปปฏิบัติงานต่างจังหวัด', role='extra-travelers', wide=True) %}{{ reservation.extra_travelers }}{% endcall %}
+  {% endif %}
+{% endcall %}
+{% endif %}
+
+{% if reservation.details %}
+{% call InfoCard('รายละเอียดตามแบบฟอร์ม', icon='ph-clipboard-text', role='type-details') %}
+  {% include '/car_reservation/requests/details_' ~ reservation.request_type ~ '.html' %}
+{% endcall %}
+{% endif %}
+
+{% include '/car_reservation/requests/_trip_report.html' %}
+{% include '/car_reservation/requests/_close_confirmation.html' %}
+{% include '/car_reservation/requests/_finance_documents.html' %}
+{% include '/car_reservation/feedback/_link.html' %}
+
+<div class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4">
+    <h2 class="card-title text-lg">ประวัติการดำเนินการ</h2>
+    <ul class="timeline timeline-vertical timeline-snap-icon timeline-compact" data-role="audit-log">
+      {% for log in reservation.audit_logs %}
+      <li>
+        {% if not loop.first %}<hr class="bg-base-300" />{% endif %}
+        <div class="timeline-middle text-primary"><i class="ph ph-check-circle text-xl"></i></div>
+        <div class="timeline-end timeline-box mb-4 border-base-300 bg-base-100">
+          <p class="text-sm text-base-content/60">{{ log.created_date.strftime('%d/%m/%Y %H:%M') }}</p>
+          <p>
+            <span class="font-medium">{{ log.get_action_display() }}</span>
+            {% if log.step_label %}<span>({{ log.step_label }})</span>{% endif %}
+            โดย {{ log.actor.get_name() if log.actor else '-' }}
+          </p>
+          {% if log.comment %}<p class="text-base-content/70">{{ log.comment }}</p>{% endif %}
+          {% if log.changes %}
+          {% set dialog_id = 'audit-details-' ~ loop.index %}
+          <div class="mt-1 flex flex-wrap items-center gap-2">
+            <span class="badge badge-ghost badge-sm">แก้ไข {{ log.changes | length }} รายการ</span>
+            <button type="button" class="btn btn-xs btn-outline btn-primary" data-role="audit-details"
+                    onclick="document.getElementById('{{ dialog_id }}').showModal()">ดูรายละเอียด</button>
+          </div>
+          <dialog id="{{ dialog_id }}" class="modal">
+            <div class="modal-box max-w-2xl">
+              <h3 class="text-lg font-bold">{{ log.get_action_display() }}{% if log.step_label %} ({{ log.step_label }}){% endif %}</h3>
+              <p class="text-sm text-base-content/60">โดย {{ log.actor.get_name() if log.actor else '-' }} · {{ log.created_date.strftime('%d/%m/%Y %H:%M') }}</p>
+              {% if log.comment %}<p class="mt-1 text-base-content/70">{{ log.comment }}</p>{% endif %}
+              <div class="mt-4 overflow-x-auto bg-base-100 rounded-box border border-base-300">
+                <table class="table table-sm">
+                  <thead>
+                    <tr><th>ข้อมูล</th><th>เดิม</th><th>ใหม่</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for change in log.changes %}
+                    <tr>
+                      <td class="font-medium">{{ change.label }}</td>
+                      <td class="text-base-content/60 line-through">{{ change.old }}</td>
+                      <td class="font-bold">{{ change.new }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <div class="modal-action">
+                <form method="dialog"><button class="btn">ปิด</button></form>
+              </div>
+            </div>
+            <form method="dialog" class="modal-backdrop"><button>ปิด</button></form>
+          </dialog>
+          {% endif %}
+        </div>
+        {% if not loop.last %}<hr class="bg-base-300" />{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+{% if can_act %}
+<dialog id="approve-modal" class="modal" data-role="approve-modal">
+  <div class="modal-box max-h-[90vh] w-11/12 max-w-4xl">
+    <h3 class="mb-3 text-lg font-bold">อนุมัติคำขอ</h3>
+    <form method="post"
+          action="{{ url_for('car_reservation.requests.approve', request_id=reservation.id, organization_id=organization.id) }}"
+          class="flex flex-col gap-2">
+      {{ form.csrf_token }}
+      {% if form.car is defined %}
+      <div class="flex flex-col gap-2" data-role="driver-workload">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="font-medium">{{ form.driver.label.text }} (ภาระงานย้อนหลัง 30 วัน)</span>
+          <a href="{{ url_for('car_reservation.stats.drivers', organization_id=organization.id) }}" class="link link-primary text-sm" data-role="workload-dashboard-link">ดู dashboard ภาระงาน</a>
+        </div>
+        {# แถวเดียวต่อ พขร. เป็น label ที่ครอบ radio: มือถือเป็นการ์ดสองบรรทัด (ชื่อ+ป้ายสถานะ / สถิติย่อ) เดสก์ท็อปเป็นกริดแบบตาราง ไม่ต้องเลื่อนแนวนอน #}
+        {% set cols = 'md:grid-cols-[auto_minmax(0,1fr)_4.5rem_4.5rem_4.5rem_6.5rem_7rem]' %}
+        <div class="rounded-box border border-base-300 bg-base-100 divide-y divide-base-300" role="radiogroup">
+          <div class="hidden md:grid {{ cols }} items-center gap-x-3 px-3 py-2 text-xs font-semibold text-base-content/70" aria-hidden="true">
+            <span class="w-5"></span>
+            <span>ชื่อ</span>
+            <span class="text-right">ในเวลา</span>
+            <span class="text-right">OT</span>
+            <span class="text-right">ชม.</span>
+            <span class="text-right">งานที่จะมาถึง</span>
+            <span>สถานะ</span>
+          </div>
+          {# choices ของ form.driver ตั้งจาก workload ลำดับเดียวกัน จึงจับคู่แถวกับ subfield ด้วย loop.index0 #}
+          {% for subfield in form.driver %}
+          {% set row = workload[loop.index0] %}
+          <label for="{{ subfield.id }}" class="grid grid-cols-[auto_minmax(0,1fr)_auto] {{ cols }} items-center gap-x-3 gap-y-1 px-3 py-2 cursor-pointer hover:bg-base-200 has-[:checked]:bg-primary/10"
+                 data-role="driver-row" data-driver-id="{{ row.driver.id }}" data-busy="{{ 'true' if row.busy else 'false' }}">
+            {{ subfield(class_="radio radio-sm radio-primary") }}
+            <span class="font-medium break-words">{{ row.driver.get_name() }}</span>
+            <span class="col-start-2 col-span-2 row-start-2 flex flex-wrap gap-x-3 text-xs text-base-content/70 md:contents md:text-sm md:text-base-content">
+              <span class="md:text-right"><span class="md:hidden">ในเวลา </span>{{ row.in_hours_jobs }}</span>
+              <span class="md:text-right"><span class="md:hidden">OT </span>{{ row.ot_jobs }}</span>
+              <span class="md:text-right">{{ '%.1f' | format(row.hours) }}<span class="md:hidden"> ชม.</span></span>
+              <span class="md:text-right"><span class="md:hidden">ที่จะมาถึง </span>{{ row.upcoming }}</span>
+            </span>
+            <span class="col-start-3 row-start-1 md:col-auto md:row-auto">
+              {% if row.busy %}
+              <span class="badge badge-warning badge-soft badge-sm whitespace-nowrap" data-role="busy-badge">มีงานชน</span>
+              {% else %}
+              <span class="badge badge-success badge-soft badge-sm tone-deep-success whitespace-nowrap">ว่าง</span>
+              {% endif %}
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
+        {{ renderer.render_select_field(form.car) }}
+        <div class="md:self-end md:pb-2">{{ renderer.render_checkbox(form.is_overtime) }}</div>
+        {% if asks_extra_travelers %}
+        <div class="md:col-span-2">
+          {{ renderer.render_field(form.extra_travelers) }}
+          <p class="text-sm text-base-content/60" data-role="extra-travelers-help">{{ form.extra_travelers.description }}</p>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+      {{ renderer.render_field(form.comment) }}
+      <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">ปิด</button>
+        <button type="submit" class="btn btn-success">อนุมัติ</button>
+      </div>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+{% endif %}
+{% if can_set_overtime %}
+<dialog id="overtime-modal" class="modal">
+  <div class="modal-box">
+    <h3 class="mb-3 text-lg font-bold">โอที</h3>
+    <form method="post" class="flex flex-wrap items-center gap-2" data-role="overtime-form"
+          action="{{ url_for('car_reservation.requests.overtime', request_id=reservation.id, organization_id=organization.id) }}">
+      {{ overtime_form.csrf_token }}
+      <label class="label cursor-pointer gap-2" for="{{ overtime_form.is_overtime.id }}">
+        {{ overtime_form.is_overtime(class_="checkbox checkbox-sm") }}
+        <span>{{ overtime_form.is_overtime.label.text }}</span>
+      </label>
+      <button type="submit" class="btn btn-primary">บันทึก OT</button>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+{% endif %}
+
+{% if can_cancel %}
+{% call DeleteModal('cancel-modal', 'ยกเลิกคำขอ',
+                    url_for('car_reservation.requests.cancel', request_id=reservation.id, organization_id=organization.id),
+                    confirm_label='ยืนยันยกเลิก', cancel_label='ปิด', icon='ph-x-circle',
+                    hidden=cancel_form.csrf_token) %}
+  {{ renderer.render_field(cancel_form.reason) }}
+{% endcall %}
+{% endif %}
+
+{% if can_act %}
+{% call DeleteModal('deny-modal', 'ไม่อนุมัติคำขอ',
+                    url_for('car_reservation.requests.deny', request_id=reservation.id, organization_id=organization.id),
+                    confirm_label='ยืนยันไม่อนุมัติ', cancel_label='ยกเลิก', icon='ph-x-circle',
+                    hidden=deny_form.csrf_token) %}
+  {{ renderer.render_field(deny_form.comment) }}
+{% endcall %}
+{% endif %}
+{% if can_print_paper %}
+<dialog id="paper-preview-modal" class="modal" data-src="{{ url_for('car_reservation.requests.paper', request_id=reservation.id, organization_id=organization.id) }}">
+  <div class="modal-box flex h-[90vh] w-11/12 max-w-5xl flex-col gap-3 p-4">
+    <div class="flex items-center justify-between gap-2">
+      <h3 class="flex items-center gap-2 text-lg font-bold">ตัวอย่างใบขอใช้รถ (PDF)</h3>
+      <div class="flex items-center gap-2">
+        <form method="dialog"><button class="btn btn-sm btn-ghost btn-circle" aria-label="ปิด"><i class="ph ph-x"></i></button></form>
+      </div>
+    </div>
+    <div class="relative min-h-0 flex-1 overflow-hidden rounded-box border border-base-300 bg-base-200">
+      <span class="loading loading-spinner loading-lg absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"></span>
+      <iframe title="ตัวอย่างใบขอใช้รถ" class="relative h-full w-full" data-role="paper-frame"></iframe>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+<script>
+  (function () {
+    var modal = document.getElementById('paper-preview-modal');
+    if (!modal) return;
+    var frame = modal.querySelector('iframe');
+    // โหลด PDF เมื่อเปิด modal ครั้งแรกเท่านั้น ไม่ต้องสร้างไฟล์ทุกครั้งที่เปิดหน้า
+    new MutationObserver(function () {
+      if (modal.open && !frame.getAttribute('src')) frame.setAttribute('src', modal.dataset.src);
+    }).observe(modal, { attributes: true, attributeFilter: ['open'] });
+  })();
+</script>
+{% endif %}
+</div>
+{% endblock %}

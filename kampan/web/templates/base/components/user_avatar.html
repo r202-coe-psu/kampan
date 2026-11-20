@@ -1,0 +1,13 @@
+{# รูปโปรไฟล์ของผู้ใช้ที่ sidebar/header
+   มีรูปที่อัปโหลดไว้: แสดงรูปกลม (class user-avatar ใช้เป็นจุดอ้างอิงใน test)
+   ยังไม่มีรูป: แสดงไอคอนผู้ใช้เหมือนเดิม
+#}
+{% macro UserAvatar(user, size="w-10 h-10") %}
+  {% if user.get_picture() %}
+    <img class="user-avatar {{ size }} rounded-full object-cover shrink-0"
+         src="{{ user.get_picture() }}"
+         alt="{{ user.get_resources_fullname_th() }}">
+  {% else %}
+    <i class="ph ph-size ph-user p-2"></i>
+  {% endif %}
+{% endmacro %}

@@ -36,7 +36,7 @@
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
       <h2 class="text-xl font-bold">รายการแผนก</h2>
-      <p class="text-base-content/60">{{ paginated_divisions.total }} แผนก</p>
+      <p class="text-base-content/60">ทั้งหมด {{ paginated_divisions.total }} รายการ</p>
     </div>
     <button type="button" class="btn btn-primary" onclick="{{ open_modal('create-division') }}">
       <i class="ph ph-plus"></i>
@@ -44,34 +44,44 @@
     </button>
   </div>
   {% if divisions %}
-  <div class="overflow-x-auto mt-4 rounded-xl">
-    <table class="table-auto w-full">
+  {% macro DivisionActions(division) %}
+    {{ IconButton('ph-arrow-square-out', 'ดูแผนกและสมาชิก', href=url_for('organizations.divisions.detail', organization_id=organization.id, division_id=division.id)) }}
+  {% endmacro %}
+  <div class="overflow-x-auto mt-4 hidden md:block" data-table-view>
+    <table class="table">
       <thead>
         <tr>
           {# ชื่อแผนกกว้างประมาณ 1/4, คำอธิบายกินที่เหลือ, ปุ่มจัดการแคบเท่าปุ่ม #}
-          <th class="table-style w-1/4 min-w-40">ชื่อแผนก</th>
-          <th class="table-style">คำอธิบาย</th>
-          <th class="table-style w-px whitespace-nowrap">จัดการ</th>
+          <th class="w-1/4 min-w-40">ชื่อแผนก</th>
+          <th>คำอธิบาย</th>
+          <th class="w-px whitespace-nowrap text-right">จัดการ</th>
         </tr>
       </thead>
       <tbody>
         {% for division in paginated_divisions.items %}
         <tr>
-          <td class="table-style break-words" data-label="Name">{{ division.name }}</td>
-          <td class="table-style" data-label="Description">
+          <td class="font-medium break-words">{{ division.name }}</td>
+          <td>
             <p class="line-clamp-2 break-words" title="{{ division.description }}">{{ division.description or '-' }}</p>
           </td>
-          <td class="table-style whitespace-nowrap">
-            {{ IconButton('ph-arrow-square-out', 'ดูแผนกและสมาชิก', href=url_for('organizations.divisions.detail', organization_id=organization.id, division_id=division.id)) }}
-          </td>
+          <td class="whitespace-nowrap text-right">{{ DivisionActions(division) }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
-    {% if paginated_divisions.pages > 1 %}
-      {{ paginated.render_pagination(paginated_divisions, "organizations.divisions.index", request.args) }}
-    {% endif %}
   </div>
+  <div class="mt-4 grid gap-3 md:hidden" data-mobile-list>
+    {% for division in paginated_divisions.items %}
+    <div class="rounded-box border border-base-300 p-4">
+      <p class="font-semibold break-words">{{ division.name }}</p>
+      <p class="line-clamp-2 text-sm text-base-content/70 break-words">{{ division.description or '-' }}</p>
+      <div class="mt-2 flex flex-wrap gap-1">{{ DivisionActions(division) }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% if paginated_divisions.pages > 1 %}
+    {{ paginated.render_pagination(paginated_divisions, "organizations.divisions.index", request.args) }}
+  {% endif %}
   {% else %}
   {{ EmptyState('ph-tree-structure', 'ยังไม่มีแผนก',
                 description='สร้างแผนกเพื่อจัดกลุ่มสมาชิกและกำหนดผู้อนุมัติในแต่ละแผนก',

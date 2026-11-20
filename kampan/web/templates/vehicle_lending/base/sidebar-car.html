@@ -11,12 +11,6 @@
         <i class="ph ph-car"></i>รถยนต์
       </a>
     </li>
-    <li>
-      <a class="{{ 'menu-active' if '/vehicle_lending/car_feedback' in request.path else '' }}"
-        href="{{ url_for('vehicle_lending.car_feedback.index', organization_id=organization.id ) }}">
-        <i class="ph ph-files"></i>แบบประเมินรถยนต์
-      </a>
-    </li>
     {% endif %}
     {% if organization %}
     {% if current_user.has_organization_roles("admin", "driver") %}
@@ -96,7 +90,7 @@
     <div class="dropdown dropdown-top dropdown-end">
       <div class="rounded-field w-full px-2 justify-between">
         <div class="flex items-center gap-2 justify-between">
-          <i class="ph ph-size ph-user p-2"></i>
+          {% from "/base/components/user_avatar.html" import UserAvatar %}{{ UserAvatar(current_user) }}
           <div class="flex justify-center">
             <div class="break-all">
               <p>{{ current_user.get_resources_fullname_th() }}</p>

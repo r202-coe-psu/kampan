@@ -21,6 +21,15 @@
   {{ form.hidden_tag() }}
   {{ renderer.render_field(form.name) }}
   {{ renderer.render_text_area_field(form.description) }}
+  <div class="mt-6 border border-base-300 rounded-xl p-4">
+    <h2 class="text-base font-semibold mb-2">ระบบที่เปิดใช้</h2>
+    {{ renderer.render_checkbox_list_field(form.enabled_modules) }}
+  </div>
+  <div class="mt-6 border border-base-300 rounded-xl p-4">
+    <h2 class="text-base font-semibold mb-2">Role ที่เปิดใช้</h2>
+    <p class="text-sm text-base-content/70 mb-2">ไม่เลือกเลย = ใช้ 8 role เดิม (ไม่รวมตำแหน่งผู้อนุมัติของระบบจองรถ)</p>
+    {{ renderer.render_checkbox_list_field(form.enabled_roles) }}
+  </div>
   <button class="btn btn-primary mt-4" type="submit">ยืนยันข้อมูล</button>
 </form>
 {% endblock content %}

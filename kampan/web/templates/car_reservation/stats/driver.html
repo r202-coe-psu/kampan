@@ -1,0 +1,157 @@
+{% extends "/car_reservation/base/default-page.html" %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+{% import '/car_reservation/components/status_badge.html' as status_badge %}
+
+{% block title %}{{ driver.get_name() }}{% endblock %}
+
+{% block page_subtitle %}แดชบอร์ดพนักงานขับรถ: ภาระงานและผลประเมินจากผู้ใช้บริการ{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-ghost btn-sm" data-role="back-to-drivers"
+   href="{{ url_for('car_reservation.stats.drivers', organization_id=organization.id, period=period) }}">
+  <i class="ph ph-arrow-left"></i> พนักงานขับรถทุกคน
+</a>
+{% endblock %}
+
+{% macro Score(value) -%}
+{% if value is none %}<span class="text-base-content/40">-</span>
+{% else %}<span class="inline-flex items-center gap-1 font-semibold tabular-nums"><i class="ph-fill ph-star text-warning"></i>{{ '%.2f' | format(value) }}</span>{% endif %}
+{%- endmacro %}
+
+{% block content %}
+<div role="tablist" class="tabs tabs-box mt-4 w-fit">
+  {% for key, label, _ in periods %}
+  <a role="tab" class="tab {{ 'tab-active' if key == period else '' }}" {% if key == period %}aria-selected="true"{% endif %}
+     href="{{ url_for('car_reservation.stats.driver', driver_id=driver.id, organization_id=organization.id, period=key) }}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+<div class="mt-4 stats stats-vertical lg:stats-horizontal w-full border border-base-300 bg-base-100 shadow-sm" data-role="driver-stats">
+  <div class="stat">
+    <div class="stat-title">งานที่ทำแล้ว</div>
+    <div class="stat-value text-primary" data-field="jobs">{{ row.in_hours_jobs + row.ot_jobs }}</div>
+    <div class="stat-desc">ในเวลา {{ row.in_hours_jobs }} · OT {{ row.ot_jobs }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-title">ชั่วโมงรวม</div>
+    <div class="stat-value" data-field="hours">{{ '%.1f' | format(row.hours) }}</div>
+    <div class="stat-desc">ระยะทาง {{ row.km }} กม.</div>
+  </div>
+  <div class="stat">
+    <div class="stat-title">งานที่จะมาถึง</div>
+    <div class="stat-value" data-field="upcoming">{{ row.upcoming }}</div>
+    <div class="stat-desc">จองไว้ {{ '%.1f' | format(row.upcoming_hours) }} ชม.</div>
+  </div>
+  <div class="stat">
+    <div class="stat-title">คะแนนประเมินเฉลี่ย</div>
+    <div class="stat-value" data-field="average-score">
+      {% if average_score is none %}<span class="text-base-content/30">-</span>{% else %}{{ '%.2f' | format(average_score) }}{% endif %}
+    </div>
+    <div class="stat-desc">จาก {{ feedback_count }} ผลตอบรับ</div>
+  </div>
+</div>
+
+<section class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-3">
+    <h2 class="card-title text-lg">งานที่ทำแล้ว</h2>
+    {% if done %}
+    <div class="overflow-x-auto">
+      <table class="table" data-role="done-jobs">
+        <thead>
+          <tr>
+            <th>วันเดินทาง</th>
+            <th>ปลายทาง</th>
+            <th>รถ</th>
+            <th class="text-right">ชั่วโมง</th>
+            <th class="text-right">กม.</th>
+            <th>ผลประเมิน</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in done %}
+          {% set rated = feedback.get(job.id) %}
+          <tr class="hover:bg-base-200/50" data-role="done-job">
+            <td class="whitespace-nowrap tabular-nums">{{ job.departure_datetime.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>
+              {{ job.location }}
+              {% if job.is_overtime %}{{ status_badge.overtime() }}{% endif %}
+            </td>
+            <td class="whitespace-nowrap">{{ job.car.license_plate if job.car else '-' }}</td>
+            <td class="text-right tabular-nums">{{ '%.1f' | format(worked_hours(job)) }}</td>
+            <td class="text-right tabular-nums">{{ job.distance_km if job.distance_km is not none else '-' }}</td>
+            <td class="whitespace-nowrap" data-field="feedback">
+              {% if rated %}
+              <span class="flex flex-wrap items-center gap-2">
+                {{ Score(rated.average) }}
+                <span class="text-xs text-base-content/60">{{ rated.count }} ผลตอบรับ</span>
+                {% if can_open_feedback %}
+                {% for template_id in rated.template_ids %}
+                <a class="link link-primary text-xs" data-role="open-feedback"
+                   href="{{ url_for('car_reservation.feedback.view_responses', template_id=template_id, organization_id=organization.id, driver_id=driver.id, car_reservation_id=job.id) }}">ดูผลประเมิน</a>
+                {% endfor %}
+                {% endif %}
+              </span>
+              {% else %}
+              <span class="text-sm text-base-content/40">ยังไม่มีผลประเมิน</span>
+              {% endif %}
+            </td>
+            <td class="text-right">
+              <a class="btn btn-ghost btn-sm btn-square" aria-label="ดูรายละเอียดคำขอ" title="ดูรายละเอียดคำขอ"
+                 href="{{ url_for('car_reservation.requests.detail', request_id=job.id, organization_id=organization.id) }}">
+                <i class="ph ph-eye text-lg"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    {{ EmptyState(None, 'ยังไม่มีงานในช่วงนี้', description='ลองเลือกช่วงเวลาที่ยาวขึ้น') }}
+    {% endif %}
+  </div>
+</section>
+
+<section class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-3">
+    <h2 class="card-title text-lg">งานที่จะมาถึง</h2>
+    {% if upcoming %}
+    <div class="overflow-x-auto">
+      <table class="table" data-role="upcoming-jobs">
+        <thead>
+          <tr>
+            <th>วันเดินทาง</th>
+            <th>ปลายทาง</th>
+            <th>รถ</th>
+            <th class="text-right">ชั่วโมงที่จองไว้</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in upcoming %}
+          <tr class="hover:bg-base-200/50" data-role="upcoming-job">
+            <td class="whitespace-nowrap tabular-nums">{{ job.departure_datetime.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>
+              {{ job.location }}
+              {% if job.is_overtime %}{{ status_badge.overtime() }}{% endif %}
+            </td>
+            <td class="whitespace-nowrap">{{ job.car.license_plate if job.car else '-' }}</td>
+            <td class="text-right tabular-nums">{{ '%.1f' | format(booked_hours(job)) }}</td>
+            <td class="text-right">
+              <a class="btn btn-ghost btn-sm btn-square" aria-label="ดูรายละเอียดคำขอ" title="ดูรายละเอียดคำขอ"
+                 href="{{ url_for('car_reservation.requests.detail', request_id=job.id, organization_id=organization.id) }}">
+                <i class="ph ph-eye text-lg"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="py-6 text-center text-sm text-base-content/60">ยังไม่มีงานที่กำหนดไว้</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

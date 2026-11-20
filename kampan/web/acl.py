@@ -2,7 +2,7 @@ from functools import wraps
 
 from flask import g, redirect, request, url_for
 from flask_login import LoginManager, current_user
-from werkzeug.exceptions import Forbidden
+from werkzeug.exceptions import Forbidden, NotFound
 
 from . import models
 
@@ -20,6 +20,64 @@ def get_requested_organization_id():
         return request.form.get("organization_id")
 
     return None
+
+
+# blueprint ที่อยู่ภายใต้โมดูลใด ถ้าองค์กรปิดโมดูลนั้น หน้าเหล่านี้ต้องเปิดไม่ได้
+# คีย์เป็นชื่อเต็มของ blueprint หรือชื่อระดับบนสุด (เช่น "procurement" ครอบคลุม
+# "procurement.requisitions" ทุกตัว) ส่วน account, site, organizations, admin
+# ไม่อยู่ในรายการ จึงเปิดได้เสมอ
+MODULE_OF_BLUEPRINT = {
+    "vehicle_lending.car_applications": "car",
+    "vehicle_lending.car_permissions": "car",
+    "vehicle_lending.cars": "car",
+    "vehicle_lending.car_tasks": "car",
+    "vehicle_lending.car_manuals": "car",
+    "vehicle_lending.history_car_lending": "car",
+    "vehicle_lending.motorcycle_applications": "motorcycle",
+    "vehicle_lending.motorcycle_permissions": "motorcycle",
+    "vehicle_lending.motorcycles": "motorcycle",
+    "vehicle_lending.motorcycle_manuals": "motorcycle",
+    "car_reservation": "car_reservation",
+    "procurement": "procurement",
+    "items": "inventory",
+    "item_orders": "inventory",
+    "item_checkouts": "inventory",
+    "item_positions": "inventory",
+    "item_registers": "inventory",
+    "inventories": "inventory",
+    "warehouses": "inventory",
+    "categories": "inventory",
+    "suppliers": "inventory",
+    "lost_breaks": "inventory",
+    "approve_orders": "inventory",
+    "dashboard": "inventory",
+    "notifications": "inventory",
+}
+
+
+def module_of_blueprint(blueprint_name):
+    if not blueprint_name:
+        return None
+    return MODULE_OF_BLUEPRINT.get(blueprint_name) or MODULE_OF_BLUEPRINT.get(
+        blueprint_name.split(".")[0]
+    )
+
+
+# หน้าสาธารณะที่ตรวจโมดูลจากองค์กรของข้อมูลที่เปิดเอง (เช่นองค์กรของรถ) ไม่ใช่องค์กรที่ผู้ที่ login อยู่กำลังดู
+MODULE_GATE_EXEMPT_ENDPOINTS = {"car_reservation.cars.feedback"}
+
+
+def enforce_enabled_module():
+    organization = getattr(g, "organization", None)
+    if organization is None:
+        return
+
+    if request.endpoint in MODULE_GATE_EXEMPT_ENDPOINTS:
+        return
+
+    module_key = module_of_blueprint(request.blueprint)
+    if module_key and not organization.has_module(module_key):
+        raise NotFound()
 
 
 def init_acl(app):
@@ -51,6 +109,10 @@ def init_acl(app):
             g.organization = organization
         else:
             g.organization_denied = True
+
+    @app.before_request
+    def gate_disabled_modules():
+        enforce_enabled_module()
 
     @app.errorhandler(403)
     def page_not_found(e):

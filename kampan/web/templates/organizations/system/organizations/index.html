@@ -28,7 +28,7 @@
     <div>
       <h2 class="text-xl font-bold">รายการองค์กร</h2>
       <p class="text-base-content/60">
-        {{ paginated_organizations.total }} องค์กร{% if keyword %} ที่ตรงกับ “{{ keyword }}”{% endif %}
+        ทั้งหมด {{ paginated_organizations.total }} รายการ{% if keyword %} ที่ตรงกับ “{{ keyword }}”{% endif %}
       </p>
     </div>
     <a class="btn btn-primary" href="{{ url_for('organizations.system_organizations.create_or_edit') }}">
@@ -37,44 +37,58 @@
     </a>
   </div>
   {% if paginated_organizations.items %}
-  <div class="overflow-x-auto mt-4 rounded-xl">
-    <table class="table-auto w-full">
+  {% macro OrgActions(org) %}
+    {{ IconButton('ph-sign-in', 'เข้าใช้งานองค์กรนี้', href=url_for('site.switch_organization', organization_id=org.id, next=url_for('organizations.overview.index', organization_id=org.id))) }}
+    {{ IconButton('ph-chart-bar', 'ภาพรวมองค์กร', href=url_for('organizations.overview.index', organization_id=org.id)) }}
+    {{ IconButton('ph-users-three', 'สมาชิกขององค์กร', href=url_for('organizations.members.index', organization_id=org.id)) }}
+    {{ IconButton('ph-user-circle-plus', 'เพิ่มสมาชิก', href=url_for('organizations.members.add_member', organization_id=org.id)) }}
+    {{ IconButton('ph-pen', 'แก้ไของค์กร', href=url_for('organizations.system_organizations.create_or_edit', organization_id=org.id)) }}
+    {{ IconButton('ph-trash', 'ลบองค์กร', onclick=open_modal('delete-org-%s' | format(org.id)), tone='error') }}
+  {% endmacro %}
+  <div class="overflow-x-auto mt-4 hidden md:block" data-table-view>
+    <table class="table">
       <thead>
         <tr>
-          <th class="table-style">ชื่อองค์กร</th>
-          <th class="table-style">คำอธิบาย</th>
-          <th class="table-style">วันลงทะเบียน</th>
-          <th class="table-style w-px whitespace-nowrap">จัดการ</th>
+          <th>ชื่อองค์กร</th>
+          <th>คำอธิบาย</th>
+          <th>วันลงทะเบียน</th>
+          <th class="text-right">จัดการ</th>
         </tr>
       </thead>
       <tbody>
         {% for org in paginated_organizations.items %}
         <tr>
-          <td class="table-style">{{ org.name }}</td>
-          <td class="table-style">{{ org.description }}</td>
-          <td class="table-style">{{ org.created_date.strftime('%d/%m/%Y') if org.created_date else '-' }}</td>
-          <td class="table-style whitespace-nowrap">
-            {{ IconButton('ph-sign-in', 'เข้าใช้งานองค์กรนี้', href=url_for('site.switch_organization', organization_id=org.id, next=url_for('organizations.overview.index', organization_id=org.id))) }}
-            {{ IconButton('ph-chart-bar', 'ภาพรวมองค์กร', href=url_for('organizations.overview.index', organization_id=org.id)) }}
-            {{ IconButton('ph-users-three', 'สมาชิกขององค์กร', href=url_for('organizations.members.index', organization_id=org.id)) }}
-            {{ IconButton('ph-user-circle-plus', 'เพิ่มสมาชิก', href=url_for('organizations.members.add_member', organization_id=org.id)) }}
-            {{ IconButton('ph-pen', 'แก้ไของค์กร', href=url_for('organizations.system_organizations.create_or_edit', organization_id=org.id)) }}
-            {{ IconButton('ph-trash', 'ลบองค์กร', onclick=open_modal('delete-org-%s' | format(org.id)), tone='error') }}
-            {{ DeleteModal(
-                'delete-org-%s' | format(org.id),
-                'ลบองค์กร',
-                url_for('organizations.system_organizations.delete', organization_id=org.id),
-                body='ต้องการลบองค์กร %s' | format(org.name),
-                confirm_label='ลบองค์กร') }}
-          </td>
+          <td class="font-medium">{{ org.name }}</td>
+          <td>{{ org.description or '-' }}</td>
+          <td class="whitespace-nowrap">{{ org.created_date.strftime('%d/%m/%Y') if org.created_date else '-' }}</td>
+          <td class="whitespace-nowrap text-right">{{ OrgActions(org) }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
-    {% if paginated_organizations.pages > 1 %}
-      {{ paginated.render_pagination(paginated_organizations, 'organizations.system_organizations.index', request.args) }}
-    {% endif %}
   </div>
+  <div class="mt-4 grid gap-3 md:hidden" data-mobile-list>
+    {% for org in paginated_organizations.items %}
+    <div class="rounded-box border border-base-300 p-4">
+      <p class="font-semibold break-words">{{ org.name }}</p>
+      <p class="text-sm text-base-content/70 break-words">{{ org.description or '-' }}</p>
+      <p class="text-sm text-base-content/60">ลงทะเบียน {{ org.created_date.strftime('%d/%m/%Y') if org.created_date else '-' }}</p>
+      <div class="mt-2 flex flex-wrap gap-1">{{ OrgActions(org) }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {# modal ลบอยู่นอกตารางและการ์ด เพื่อให้แต่ละองค์กรมี dialog id เดียว #}
+  {% for org in paginated_organizations.items %}
+  {{ DeleteModal(
+      'delete-org-%s' | format(org.id),
+      'ลบองค์กร',
+      url_for('organizations.system_organizations.delete', organization_id=org.id),
+      body='ต้องการลบองค์กร %s' | format(org.name),
+      confirm_label='ลบองค์กร') }}
+  {% endfor %}
+  {% if paginated_organizations.pages > 1 %}
+    {{ paginated.render_pagination(paginated_organizations, 'organizations.system_organizations.index', request.args) }}
+  {% endif %}
   {% else %}
   {{ EmptyState('ph-buildings', 'ยังไม่มีองค์กร',
                 description='สร้างองค์กรแรก แล้วเพิ่มผู้ดูแลเพื่อให้เริ่มใช้งานระบบได้',

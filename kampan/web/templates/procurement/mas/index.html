@@ -26,7 +26,7 @@
       </button>
       <div class="mt-4 md:mt-0">
         <a href="{{ url_for('admin.mas.create_or_edit', organization_id=organization.id) }}"
-          class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md">
+          class="btn btn-primary">
           <i class="ph ph-plus mr-2"></i>
           เพิ่มแหล่งเงิน
         </a>
@@ -44,7 +44,7 @@
     {{ renderer.render_field(form.description, placeholder="ค้นหาจากรายละเอียดแหล่งเงิน") }}
     {{ renderer.render_field(form.amount, placeholder="ค้นหาจากงบประมาณที่ขอจัดตั้ง") }}
     <div>
-      <button type="submit" class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md ">
+      <button type="submit" class="btn btn-primary">
         <i class="ph ph-magnifying-glass mr-2"></i>
         ค้นหา
       </button>

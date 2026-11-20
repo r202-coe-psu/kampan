@@ -1,0 +1,137 @@
+{% extends '/car_reservation/base/default-page.html' %}
+{% from '/car_reservation/components/form_section.html' import FormSection %}
+
+{% block title %}{{ request_type_label }}{% endblock %}
+
+{% block dashboard_title %}{{ request_type_label }}{% endblock %}
+
+{% block page_subtitle %}{% if urgent_by_dispatcher is defined %}ชื่อและอีเมลผู้ติดต่อคือผู้ใช้รถจริง จะได้รับแจ้งสถานะทางอีเมล · {% endif %}กรอกข้อมูลให้ครบถ้วน ช่องที่มี <span class="text-error">*</span> จำเป็นต้องกรอก{% endblock %}
+
+{% block content %}
+<form id="reservation-form" method="post" enctype="multipart/form-data" class="card bg-base-100 border border-base-300 shadow-sm"
+      {% if regular_from %}data-regular-from="{{ regular_from.isoformat() }}"{% endif %}>
+  <div class="card-body gap-8">
+    {{ form.csrf_token }}
+    {% if regular_from %}<input type="hidden" name="confirm_urgent" value="" data-role="confirm-urgent">{% endif %}
+
+    {% call FormSection('ข้อมูลผู้ขอ', icon='ph-user') %}
+    <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
+      {% if form.requester_unit %}{{ renderer.render_field(form.requester_unit) }}{% endif %}
+      {{ renderer.render_field(form.phone) }}
+      {{ renderer.render_field(form.contact_name) }}
+      {{ renderer.render_field(form.contact_email) }}
+    </div>
+    {% endcall %}
+
+    {% call FormSection('การเดินทาง', icon='ph-map-pin') %}
+    <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
+      {{ renderer.date_field(form.departure_date) }}
+      {{ renderer.render_field(form.departure_time) }}
+      {{ renderer.date_field(form.return_date) }}
+      {{ renderer.render_field(form.return_time) }}
+      {{ renderer.render_field(form.pickup_place) }}
+      {{ renderer.render_field(form.pickup_time) }}
+    </div>
+    {% endcall %}
+
+    {% include '/car_reservation/requests/form_' ~ request_type ~ '.html' %}
+
+    {% if urgent_by_dispatcher is defined %}
+    {% call FormSection('จัดรถและพนักงานขับรถ', icon='ph-user') %}
+    <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
+      {{ renderer.render_select_field(form.car) }}
+      {{ renderer.render_select_field(form.driver) }}
+    </div>
+    {{ renderer.render_checkbox(form.is_overtime) }}
+    {% endcall %}
+    {% endif %}
+
+    {% if request_type in ('domestic', 'airport') %}
+    {% call FormSection('ค่าใช้จ่าย', icon='ph-coins') %}
+    {% include '/car_reservation/requests/form_cost_responsibilities.html' %}
+    {% endcall %}
+    {% elif request_type == 'abroad' %}
+    {% call FormSection('แนบไฟล์', icon='ph-paperclip') %}
+    {% include '/car_reservation/requests/form_abroad_attachments.html' %}
+    {% endcall %}
+    {% endif %}
+
+    {# เตือนวันเดินทางกระชั้นชิด: หน้าเช็กเองก่อนส่ง (ไฟล์แนบไม่หาย) และเซิร์ฟเวอร์เปิดให้ (open) เมื่อ JS ไม่ได้เช็ก #}
+    {% if regular_from or short_notice_days %}
+    <dialog class="modal modal-bottom sm:modal-middle" id="short-notice-modal" data-role="short-notice" {% if short_notice_days %}open{% endif %}
+            aria-labelledby="short-notice-title">
+      <div class="modal-box flex flex-col gap-4 border-t-4 border-warning">
+        <div class="flex items-start gap-3">
+          <span class="flex size-11 shrink-0 items-center justify-center rounded-full bg-warning/15">
+            <i class="ph ph-warning text-2xl text-warning"></i>
+          </span>
+          <div class="flex flex-col gap-1">
+            <h3 id="short-notice-title" class="text-lg font-bold">ขอรถล่วงหน้าน้อยกว่า {{ short_notice_days or min_business_days }} วันทำการ</h3>
+            <p class="text-base-content/80">หน่วยยานพาหนะอาจจัดรถให้ไม่ทัน ถ้ายืนยัน คำขอนี้จะถูกยื่นแบบ <span class="font-semibold">เร่งด่วน</span></p>
+          </div>
+        </div>
+        {% if organization.car_reservation_contact_phone %}
+        <a class="flex items-center gap-3 rounded-box border border-base-300 bg-base-200/60 p-3 hover:border-primary"
+           data-role="contact-phone" href="tel:{{ organization.car_reservation_contact_phone }}">
+          <i class="ph ph-phone text-xl text-primary"></i>
+          <span class="flex flex-col">
+            <span class="text-sm text-base-content/70">สอบถามฝ่ายจองรถ</span>
+            <span class="font-semibold">{{ organization.car_reservation_contact_phone }}</span>
+          </span>
+        </a>
+        {% endif %}
+        <div class="modal-action mt-0 flex-col-reverse gap-2 sm:flex-row">
+          <button type="button" class="btn btn-ghost" data-role="short-notice-back">กลับไปแก้วันเดินทาง</button>
+          <button type="button" class="btn btn-warning" data-role="short-notice-confirm" autofocus>
+            รับทราบ และยื่นคำขอเร่งด่วน
+          </button>
+        </div>
+      </div>
+    </dialog>
+    <script>
+      (function () {
+        var form = document.getElementById("reservation-form");
+        var modal = document.getElementById("short-notice-modal");
+        var confirmInput = form.querySelector('[data-role="confirm-urgent"]');
+        if (modal.hasAttribute("open") && modal.showModal) {
+          modal.removeAttribute("open");
+          modal.showModal();
+        }
+        // ยืนยันแล้วปิด modal ก่อนส่ง: ถ้ามีช่องบังคับว่าง เบราว์เซอร์จะชี้ช่องนั้นได้ (ตอน modal เปิด ส่วนอื่นของหน้ากดไม่ได้)
+        modal.querySelector('[data-role="short-notice-confirm"]').addEventListener("click", function () {
+          modal.close();
+          confirmInput.value = "y";
+          if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
+        });
+        // เช็กวันเดินทางก่อนส่ง (หลังเบราว์เซอร์ตรวจช่องบังคับผ่านแล้ว) ไฟล์ที่แนบจึงไปกับการส่งครั้งเดียว
+        form.addEventListener("submit", function (event) {
+          var regularFrom = form.dataset.regularFrom;
+          var departure = document.getElementById("{{ form.departure_date.id }}").value;
+          if (regularFrom && departure && departure < regularFrom && confirmInput.value !== "y") {
+            event.preventDefault();
+            modal.showModal();
+          }
+        });
+        modal.querySelector('[data-role="short-notice-back"]').addEventListener("click", function () {
+          modal.close();
+          // ช่องวันที่เป็นปุ่มปฏิทินของ renderer.date_field (ช่องจริงเป็น hidden) จึง focus ปุ่มนั้น
+          var date = document.getElementById("cally-{{ form.departure_date.id }}");
+          if (date) { date.scrollIntoView({ block: "center" }); date.focus(); }
+        });
+      })();
+    </script>
+    {% endif %}
+
+    <div class="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t border-base-300 bg-base-100/95 px-6 py-4 backdrop-blur sm:flex-row sm:justify-end"
+         data-role="form-actions">
+      {% if reservation is defined %}
+      <a class="btn btn-ghost" href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">ยกเลิก</a>
+      <button type="submit" class="btn btn-primary">บันทึกการแก้ไข</button>
+      {% else %}
+      <a class="btn btn-ghost" href="{{ url_for('car_reservation.requests.index', organization_id=organization.id) }}">ยกเลิก</a>
+      <button type="submit" class="btn btn-primary">{{ 'สร้างคำขอเร่งด่วน' if urgent_by_dispatcher is defined else 'ยื่นคำขอ' }}</button>
+      {% endif %}
+    </div>
+  </div>
+</form>
+{% endblock %}

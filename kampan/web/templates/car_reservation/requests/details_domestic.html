@@ -1,0 +1,9 @@
+{% set details = reservation.details %}
+<div><dt class="text-sm text-base-content/60">ประเภทรถ</dt><dd class="font-medium break-words">{{ details.vehicle_kind }}</dd></div>
+<div><dt class="text-sm text-base-content/60">จำนวนรถ (คัน)</dt><dd class="font-medium break-words">{{ details.vehicle_count }}</dd></div>
+<div><dt class="text-sm text-base-content/60">อำเภอ</dt><dd class="font-medium break-words">{{ details.district }}</dd></div>
+<div><dt class="text-sm text-base-content/60">จังหวัด</dt><dd class="font-medium break-words">{{ details.province }}</dd></div>
+{% if details.in_office_of_president %}
+<div><dt class="text-sm text-base-content/60">หน่วยงานในสำนักงานอธิการบดี</dt><dd class="font-medium break-words">ใช่</dd></div>
+<div><dt class="text-sm text-base-content/60">ยินดีรับผิดชอบ</dt><dd class="font-medium break-words">{{ details.cost_responsibilities | join(', ') }}</dd></div>
+{% endif %}

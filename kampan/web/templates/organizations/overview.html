@@ -12,7 +12,7 @@
   <span class="text-xl font-medium tabular-nums" data-member-count>{{ total }}</span>
   <span class="text-base text-base-content/60">คน</span>
   {% if pending %}
-  <div><span class="badge badge-md badge-warning badge-outline mt-1">รอเข้าสู่ระบบ {{ pending }} คน</span></div>
+  <div><span class="badge badge-md badge-warning badge-soft mt-1">รอเข้าสู่ระบบ {{ pending }} คน</span></div>
   {% endif %}
 </td>
 {% endmacro %}
@@ -42,7 +42,10 @@
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h2 class="card-title text-2xl">สมาชิกในแต่ละแผนก</h2>
-        <p class="text-base text-base-content/60">นับสมาชิกที่ยังไม่ถูกนำออก รวมคนที่รอเข้าสู่ระบบ</p>
+        <p class="text-base text-base-content/60">
+          ทั้งหมด {{ division_rows | length + (1 if unassigned.total else 0) }} รายการ
+          · นับสมาชิกที่ยังไม่ถูกนำออก รวมคนที่รอเข้าสู่ระบบ
+        </p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         {{ IconButton('ph-users', 'สมาชิกทั้งหมด', href=url_for('organizations.members.index', organization_id=organization.id), placement='bottom', size='md') }}
@@ -53,22 +56,22 @@
     </div>
 
     {% if division_rows or unassigned.total %}
-    <div class="mt-2 overflow-x-auto">
-      <table class="table table-lg table-zebra w-full text-base">
+    <div class="mt-2 overflow-x-auto hidden md:block" data-table-view>
+      <table class="table w-full">
         <thead>
           <tr>
-            <th class="text-base">แผนก</th>
-            <th class="text-right text-base">จำนวนสมาชิก</th>
-            <th class="text-right text-base">จัดการ</th>
+            <th>แผนก</th>
+            <th class="text-right">จำนวนสมาชิก</th>
+            <th class="text-right">จัดการ</th>
           </tr>
         </thead>
         <tbody>
           {% for row in division_rows %}
           <tr class="hover" data-division-row>
             <td>
-              <p class="text-lg font-semibold break-words" data-division-name>{{ row.division.name }}</p>
+              <p class="font-medium break-words" data-division-name>{{ row.division.name }}</p>
               {% if row.division.description %}
-              <p class="line-clamp-1 text-base text-base-content/60" title="{{ row.division.description }}">{{ row.division.description }}</p>
+              <p class="line-clamp-1 text-sm text-base-content/60" title="{{ row.division.description }}">{{ row.division.description }}</p>
               {% endif %}
             </td>
             {{ MemberCount(row.total, row.pending) }}
@@ -80,7 +83,7 @@
           {% if unassigned.total %}
           <tr class="hover" data-division-row>
             <td>
-              <p class="text-lg font-semibold text-base-content/70" data-division-name>ยังไม่ได้ระบุแผนก</p>
+              <p class="font-medium text-base-content/70" data-division-name>ยังไม่ได้ระบุแผนก</p>
             </td>
             {{ MemberCount(unassigned.total, unassigned.pending) }}
             <td class="text-right">
@@ -90,6 +93,33 @@
           {% endif %}
         </tbody>
       </table>
+    </div>
+    <div class="mt-2 grid gap-3 md:hidden" data-mobile-list>
+      {% for row in division_rows %}
+      <div class="rounded-box border border-base-300 p-4">
+        <p class="font-semibold break-words">{{ row.division.name }}</p>
+        {% if row.division.description %}
+        <p class="line-clamp-1 text-sm text-base-content/60">{{ row.division.description }}</p>
+        {% endif %}
+        <p class="mt-1">{{ row.total }} คน
+          {% if row.pending %}<span class="badge badge-sm badge-warning badge-soft">รอเข้าสู่ระบบ {{ row.pending }} คน</span>{% endif %}
+        </p>
+        <div class="mt-2">
+          {{ IconButton('ph-users-three', 'ดูสมาชิกในแผนก', href=url_for('organizations.divisions.detail', organization_id=organization.id, division_id=row.division.id), placement='right') }}
+        </div>
+      </div>
+      {% endfor %}
+      {% if unassigned.total %}
+      <div class="rounded-box border border-base-300 p-4">
+        <p class="font-semibold text-base-content/70">ยังไม่ได้ระบุแผนก</p>
+        <p class="mt-1">{{ unassigned.total }} คน
+          {% if unassigned.pending %}<span class="badge badge-sm badge-warning badge-soft">รอเข้าสู่ระบบ {{ unassigned.pending }} คน</span>{% endif %}
+        </p>
+        <div class="mt-2">
+          {{ IconButton('ph-users-three', 'ดูสมาชิกที่ยังไม่มีแผนก', href=url_for('organizations.members.index', organization_id=organization.id, division='none'), placement='right') }}
+        </div>
+      </div>
+      {% endif %}
     </div>
     {% else %}
     {{ EmptyState('ph-tree-structure', 'ยังไม่มีแผนกและสมาชิกในองค์กรนี้',

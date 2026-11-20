@@ -38,8 +38,9 @@
   --color-base-200: oklch(97% 0.001 106.424);
   --color-base-300: oklch(92% 0.003 48.717);
   --color-base-content: oklch(21% 0.006 56.043);
-  --color-primary: oklch(62% 0.214 259.815);
-  --color-primary-content: oklch(97% 0.014 254.604);
+  /* navy แทนฟ้าสว่าง (blue-500 เดิม) ให้ปุ่ม/ลิงก์ดูสุขุม และอ่านตัวขาวบนพื้นได้ชัด */
+  --color-primary: oklch(37% 0.11 262);
+  --color-primary-content: oklch(98% 0.005 255);
   --color-secondary: oklch(76% 0.188 70.08);
   --color-secondary-content: oklch(98% 0.016 73.684);
   --color-accent: oklch(65% 0.241 354.308);
@@ -208,6 +209,31 @@ fieldset {
   .role-manager {
     --role-color: oklch(48% 0.09 45);
   }
+
+  /* ตำแหน่งผู้อนุมัติของระบบจองรถ */
+  .role-dispatcher {
+    --role-color: var(--color-info);
+  }
+
+  .role-vehicle_unit_head {
+    --role-color: oklch(58% 0.12 230);
+  }
+
+  .role-strategy_head {
+    --role-color: oklch(55% 0.13 265);
+  }
+
+  .role-physical_director {
+    --role-color: oklch(52% 0.14 320);
+  }
+
+  .role-vice_president_hatyai {
+    --role-color: oklch(52% 0.15 20);
+  }
+
+  .role-president {
+    --role-color: var(--color-error);
+  }
 }
 
 /* Module badge: บอกว่ารายการนี้เป็นของระบบไหน สีเดียวกับการ์ดหน้าเลือกระบบ
@@ -242,4 +268,69 @@ fieldset {
     --module-bg: var(--color-module-motorcycle);
     --module-fg: var(--color-module-motorcycle-content);
   }
+}
+
+/* เขียวโทนเข้ม (ใกล้ green-700) สำหรับ stepper / ป้ายสถานะ / timeline ของระบบรถ
+   เขียวของธีม (72% lightness) สว่างจนแสบตาและตัวอักษรบนพื้นเขียวอ่านยาก */
+.tone-deep-success {
+  --color-success: oklch(52.7% 0.154 150.069);
+  --color-success-content: oklch(98.2% 0.018 155.826);
+}
+
+/* ติ๊กถูกของ stepper เป็นเส้นมุมแหลม (miter) แทนตัวอักษร ✓ ของฟอนต์ที่โค้ง
+   วาดทับ background-color ของวงกลม (step-bg) */
+.steps .step[data-content="✓"]::after {
+  content: "";
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='square' stroke-linejoin='miter'%3E%3Cpolyline points='6 12.5 10 16.5 18 8'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 60%;
+}
+
+/* dropdown ของ .select (base-select) ไม่แสดงเครื่องหมายถูกหน้าตัวเลือกที่เลือกอยู่ */
+.select select option::checkmark {
+  display: none;
+}
+
+/* ขั้นอนุมัติของระบบจองรถ (car_reservation/components/approval_steps.html)
+   ผ่านแล้ว = เขียวเข้ม, ขั้นที่ค้างอยู่ = เขียวเข้มเหมือนกัน + วงกระพริบสีเขียว */
+.step-done::after,
+.step-current::after,
+.step-done + .step-done::before,
+.step-done + .step-current::before {
+  --step-bg: var(--color-green-700);
+  --step-fg: var(--color-white);
+}
+.step-current::after {
+  /* daisyUI ใช้ radius แบบ infinity ทำให้วงกระพริบ (box-shadow) เป็นเหลี่ยม: ใช้ 50% แทน */
+  border-radius: 50%;
+  animation: step-current-pulse 1.6s ease-out infinite;
+}
+/* .steps ของ daisyUI ตัด overflow: เผื่อที่ให้วงกระพริบ (กว้างสุด 10px) ไม่โดนตัด */
+.steps:has(.step-current) {
+  padding-block: 12px;
+}
+@keyframes step-current-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-green-600) 70%, transparent); }
+  70% { box-shadow: 0 0 0 10px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .step-current::after { animation: none; }
+}
+
+/* toast (base/components/toast.html): เลื่อนลงจากบนตอนแสดง เลื่อนขึ้นจางหายตอนปิด */
+@keyframes toast-enter {
+  from { opacity: 0; transform: translateY(-120%); }
+}
+.toast-card {
+  animation: toast-enter 260ms cubic-bezier(0.21, 1.02, 0.73, 1);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.toast-card.toast-leave {
+  opacity: 0;
+  transform: translateY(-40%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast-card { animation: none; transition: none; }
 }

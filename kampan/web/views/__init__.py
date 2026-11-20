@@ -20,12 +20,22 @@ def add_date_url(url):
 MODULE_HOME_ENDPOINTS = {
     "procurement": "procurement.requisitions.renewal_requested",
     "vehicle_lending": "vehicle_lending.car_applications.calendar",
+    "car_reservation": "car_reservation.requests.index",
     "organizations": "organizations.overview.index",
 }
 # หน้าแรกของ procurement เมื่อปิดระบบขอซื้อขอจ้าง (เหลือแต่ระบบ MA)
 PROCUREMENT_MA_HOME_ENDPOINT = "procurement.products.index"
 INVENTORY_HOME_ENDPOINT = "item_orders.index"
+CAR_RESERVATION_HOME_ENDPOINT = "car_reservation.requests.index"
 MOTORCYCLE_HOME_ENDPOINT = "vehicle_lending.motorcycle_applications.calendar"
+# หน้าแรกของแต่ละโมดูลตามคีย์ใน Organization.MODULES เรียงตามลำดับที่แสดงในหน้าเลือกระบบ
+MODULE_KEY_HOME_ENDPOINTS = {
+    "procurement": MODULE_HOME_ENDPOINTS["procurement"],
+    "inventory": INVENTORY_HOME_ENDPOINT,
+    "car": MODULE_HOME_ENDPOINTS["vehicle_lending"],
+    "car_reservation": CAR_RESERVATION_HOME_ENDPOINT,
+    "motorcycle": MOTORCYCLE_HOME_ENDPOINT,
+}
 NON_MODULE_BLUEPRINTS = {"site", "accounts", "notifications", "users"}
 
 
@@ -53,6 +63,10 @@ def switch_organization_next_url(organization):
             return None
         # โมดูลคลังพัสดุอยู่ที่ blueprint ระดับบนสุดหลายตัว จึงใช้หน้าแรกร่วมกัน
         endpoint = INVENTORY_HOME_ENDPOINT
+
+    # หน่วยงานปลายทางไม่ได้เปิดระบบจองรถ: ไม่พาไปหน้าที่เข้าไม่ได้ ให้ไปหน้าเลือกระบบแทน
+    if module_name == "car_reservation" and not organization.has_module("car_reservation"):
+        return None
 
     try:
         return url_for(endpoint, organization_id=str(organization.id))
