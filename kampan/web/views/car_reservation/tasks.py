@@ -112,6 +112,7 @@ def start(task_id):
     if not flow.can_start(task, user):
         abort(403)
     flow.start_trip(task, user)
+    flash(f"เริ่มงาน {task.location} แล้ว", "success")
     return redirect(
         url_for("car_reservation.tasks.index", organization_id=g.organization.id)
     )

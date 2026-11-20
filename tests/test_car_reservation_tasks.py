@@ -2,6 +2,7 @@
 
 import base64
 import datetime
+import re
 import io
 from unittest.mock import MagicMock, patch
 
@@ -345,6 +346,17 @@ def test_driver_starts_a_task_and_the_start_is_audited(world):
     last = reservation.audit_logs[-1]
     assert (last.action, last.actor) == ("started", world.driver)
     assert last.get_action_display() == "เริ่มงาน"
+
+
+def test_starting_a_task_shows_a_success_toast_on_the_task_list(world):
+    reservation = world.reservation(location="ศาลากลางสงขลา")
+    client = world.client_for(world.driver)
+
+    response = client.post(start_url(world, reservation))
+    page = client.get(response.headers["Location"]).get_data(as_text=True)
+
+    toast = re.search(r'<div[^>]*data-toast-category="success"[^>]*>(.*?)</div>', page, re.S)
+    assert toast and "เริ่มงาน ศาลากลางสงขลา แล้ว" in toast.group(1)
 
 
 def test_pressing_start_again_keeps_the_first_start_time(world):
