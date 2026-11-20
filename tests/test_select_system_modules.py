@@ -16,6 +16,12 @@ MODULE_ENDPOINTS = {
 }
 
 
+@pytest.fixture(autouse=True)
+def requisition_enabled(app, monkeypatch):
+    """หน้าขอซื้อขอจ้างตอบ 404 เมื่อปิด flag จึงเปิดไว้เพื่อทดสอบเฉพาะการเปิด/ปิดโมดูล"""
+    monkeypatch.setitem(app.config, "PROCUREMENT_REQUISITION_ENABLED", True)
+
+
 def _module_url(app, module_key, org):
     with app.test_request_context():
         return url_for(MODULE_ENDPOINTS[module_key], organization_id=org.id)

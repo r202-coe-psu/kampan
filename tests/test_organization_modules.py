@@ -4,6 +4,12 @@ import pytest
 
 from kampan import models
 
+
+@pytest.fixture(autouse=True)
+def requisition_enabled(app, monkeypatch):
+    """หน้าขอซื้อขอจ้างตอบ 404 เมื่อปิด flag จึงเปิดไว้เพื่อทดสอบเฉพาะการเปิด/ปิดโมดูล"""
+    monkeypatch.setitem(app.config, "PROCUREMENT_REQUISITION_ENABLED", True)
+
 CAR_CALENDAR = "/vehicle_lending/car_applications/calendar"
 CAR_RESERVATION_HOME = "/car_reservation/requests/"
 
@@ -28,7 +34,7 @@ MODULE_PAGES = {
         "/vehicle_lending/motorcycle_manuals",
     ],
     "procurement": [
-        "/procurement/requisitions",
+        "/procurement/requisitions/renewal_requested",
         "/procurement/products",
         "/procurement/manuals",
         "/procurement/requisition_timeline",
