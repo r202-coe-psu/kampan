@@ -92,7 +92,7 @@ from test_car_reservation import (  # noqa: E402  ใช้ world + helper ข�
 )
 
 
-def test_reservation_detail_shows_approvers_signature_only_when_they_have_one(world):
+def test_reservation_detail_does_not_show_approver_signatures(world):
     car_application = world.submit_domestic_request()
     upload_signature_as(world, world.supervisor)
     response = world.client_for(world.supervisor).post(
@@ -101,15 +101,7 @@ def test_reservation_detail_shows_approvers_signature_only_when_they_have_one(wo
     assert response.status_code == 302
 
     html = world.client_for(world.requester).get(detail_url(world, car_application)).get_data(as_text=True)
-    assert f"/accounts/{world.supervisor.id}/signature" in html
-    assert html.count('data-role="approver-signature"') == 1
-
-    # ผู้อนุมัติขั้นถัดไปไม่มีลายเซ็น จึงต้องไม่มีรูปเพิ่ม
-    world.client_for(world.dispatcher).post(
-        approve_url(world, car_application), data=step_data(world, "dispatcher")
-    )
-    html = world.client_for(world.requester).get(detail_url(world, car_application)).get_data(as_text=True)
-    assert html.count('data-role="approver-signature"') == 1
+    assert f"/accounts/{world.supervisor.id}/signature" not in html
 
 
 def upload_signature_as(world, user):

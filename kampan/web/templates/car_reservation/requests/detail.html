@@ -70,14 +70,7 @@
 <div class="card bg-base-100 border border-base-300 shadow-sm">
   <div class="card-body gap-4">
     <h2 class="card-title text-lg">สถานะการอนุมัติ</h2>
-    {% call(step) ApprovalSteps(steps) %}
-      {% set approval = reservation.step_approvals | selectattr('step_key', 'equalto', step.key) | first %}
-      {% if approval and approval.decided_by and approval.decided_by.signature %}
-      <img class="h-12 mt-1" data-role="approver-signature"
-           src="{{ url_for('accounts.user_signature', user_id=approval.decided_by.id) }}"
-           alt="ลายเซ็น {{ approval.decided_by.get_name() }}">
-      {% endif %}
-    {% endcall %}
+    {{ ApprovalSteps(steps) }}
   </div>
 </div>
 
