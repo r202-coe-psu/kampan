@@ -52,6 +52,11 @@ file_input -->
           {% endif %}
         </legend>
       {% endif %}
+      {% if field.type == "TextAreaField" %}
+        {# textarea มีกรอบของตัวเอง ห่อด้วย label.input จะเป็นกล่องซ้อนกล่อง จึงใช้ class textarea ของ DaisyUI ตรง ๆ #}
+        {% set textarea_class = "textarea w-full validator" ~ (" textarea-error" if field.errors else "") ~ (" " ~ class_ if class_ else "") %}
+        {{ field(class_=textarea_class, placeholder=placeholder, readonly=readonly, disabled=disabled, **kwargs) }}
+      {% else %}
       <label class="{{ style }} validator {% if readonly %}input-readonly{% endif %}">
         {% if prefix %}{{ prefix_icon }}{% endif %}
         {% if disabled %}
@@ -61,6 +66,7 @@ file_input -->
         {% endif %}
         {% if suffix %}{{ suffix_icon }}{% endif %}
       </label>
+      {% endif %}
       {% if field.errors %}
         <span class="fieldset-label text-error text-sm mt-1">
           {% for error in field.errors %}

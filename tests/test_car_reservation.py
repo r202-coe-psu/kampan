@@ -3701,3 +3701,16 @@ def test_quick_deny_modal_keeps_the_required_asterisk_inside_the_label_line(worl
         (textarea,) = dialog.xpath(".//textarea[@name='comment']")
         (label,) = dialog.xpath(f".//label[@for='{textarea.get('id')}']")
         assert label.xpath("./span[contains(@class, 'text-error')][normalize-space()='*']")
+
+
+def test_cancel_reason_is_a_single_daisyui_textarea_not_a_box_inside_an_input(world):
+    car_application = world.submit_request()
+
+    html = world.client_for(world.requester).get(detail_url(world, car_application)).get_data(
+        as_text=True
+    )
+
+    doc = lxml_html.fromstring(html)
+    (reason,) = doc.xpath("//dialog[@id='cancel-modal']//textarea[@name='reason']")
+    assert "textarea" in reason.get("class").split()
+    assert not reason.xpath("ancestor::label[contains(concat(' ', @class, ' '), ' input ')]")
