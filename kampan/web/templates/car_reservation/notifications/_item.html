@@ -1,10 +1,38 @@
-<a href="{{ url_for('car_reservation.notifications.open', notification_id=notification.id, organization_id=organization.id) }}"
-   class="flex items-start gap-3 rounded-box p-3 hover:bg-base-200 {% if not notification.read_at %}bg-primary/5{% endif %}"
-   data-role="notification-item">
-  <span class="mt-1.5 size-2 shrink-0 rounded-full {% if notification.read_at %}bg-transparent{% else %}bg-primary{% endif %}"></span>
-  <span class="min-w-0 flex-1">
-    <span class="block text-sm {% if not notification.read_at %}font-semibold{% endif %}">{{ notification.title }}</span>
-    {% if notification.message %}<span class="block truncate text-xs text-base-content/70">{{ notification.message }}</span>{% endif %}
-    <span class="block text-xs text-base-content/50">{{ notification.created_date | format_date('%d/%m/%Y %H:%M') }}</span>
-  </span>
-</a>
+{# ไอคอนและสีตามเหตุการณ์ของคำขอ เพื่อให้กวาดตาแยกเรื่องได้โดยไม่ต้องอ่านหัวข้อ #}
+{% set event_styles = {
+  'submitted': ('ph-hourglass-medium', 'bg-warning/15 text-warning'),
+  'approved': ('ph-hourglass-medium', 'bg-warning/15 text-warning'),
+  'active': ('ph-check-circle', 'bg-success/15 text-success'),
+  'completed': ('ph-flag-checkered', 'bg-success/15 text-success'),
+  'denied': ('ph-x-circle', 'bg-error/15 text-error'),
+  'cancelled': ('ph-prohibit', 'bg-error/15 text-error'),
+  'cancel_requested': ('ph-arrow-u-up-left', 'bg-warning/15 text-warning'),
+  'close_disputed': ('ph-chat-circle-text', 'bg-warning/15 text-warning'),
+  'driver_assigned': ('ph-steering-wheel', 'bg-info/15 text-info'),
+} %}
+{% set icon, tone = event_styles.get(notification.event, ('ph-bell', 'bg-base-200 text-base-content/70')) %}
+{% set unread = not notification.read_at %}
+<li>
+  <a href="{{ url_for('car_reservation.notifications.open', notification_id=notification.id, organization_id=organization.id) }}"
+     class="group flex items-start gap-3 px-4 py-3 transition-colors hover:bg-base-200 focus-visible:bg-base-200 focus-visible:outline-none {{ 'bg-primary/5' if unread }}"
+     data-role="notification-item" {% if unread %}data-unread{% endif %}>
+    <span class="flex size-10 shrink-0 items-center justify-center rounded-full {{ tone }}" aria-hidden="true">
+      <i class="ph {{ icon }} text-xl"></i>
+    </span>
+    <span class="min-w-0 flex-1">
+      <span class="flex items-baseline justify-between gap-3">
+        <span class="text-sm {{ 'font-semibold text-base-content' if unread else 'text-base-content/80' }}">{{ notification.title }}</span>
+        <time class="shrink-0 text-xs tabular-nums text-base-content/50"
+              datetime="{{ notification.created_date.isoformat() }}">{{ notification.created_date.strftime('%H:%M') }}</time>
+      </span>
+      {% if notification.message %}
+      <span class="mt-0.5 block line-clamp-2 text-sm text-base-content/60">{{ notification.message }}</span>
+      {% endif %}
+      {% if notification.actor %}
+      <span class="mt-1 block text-xs text-base-content/50">โดย {{ notification.actor.get_resources_fullname_th() }}</span>
+      {% endif %}
+    </span>
+    <span class="mt-2 size-2 shrink-0 rounded-full {{ 'bg-primary' if unread else 'bg-transparent' }}"
+          {% if unread %}aria-label="ยังไม่อ่าน"{% endif %}></span>
+  </a>
+</li>

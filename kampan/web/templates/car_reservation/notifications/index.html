@@ -3,26 +3,55 @@
 {% block title %}การแจ้งเตือน{% endblock %}
 
 {% block page_actions %}
-<form method="post" action="{{ url_for('car_reservation.notifications.read_all', organization_id=organization.id) }}">
-  <button type="submit" class="btn btn-outline btn-sm"><i class="ph ph-checks"></i> อ่านทั้งหมด</button>
+{% if unread_count %}
+<form method="post" action="{{ url_for('car_reservation.notifications.read_all', organization_id=organization.id, tab=tab) }}">
+  <button type="submit" class="btn btn-ghost btn-sm"><i class="ph ph-checks"></i> ทำเครื่องหมายว่าอ่านทั้งหมด</button>
 </form>
+{% endif %}
 {% endblock %}
 
 {% block content %}
-<section class="card border border-base-300 bg-base-100 shadow-sm">
-  <div class="card-body gap-1 p-2 sm:p-4">
-    {% for notification in notifications %}
-    {% include "/car_reservation/notifications/_item.html" %}
-    {% else %}
-    <p class="p-10 text-center text-base-content/60">ยังไม่มีการแจ้งเตือน</p>
-    {% endfor %}
-  </div>
-</section>
+<div role="tablist" class="tabs tabs-border mb-4" data-role="notification-tabs">
+  <a role="tab" class="tab gap-2 {{ 'tab-active' if tab == 'all' }}" {% if tab == 'all' %}aria-selected="true"{% endif %}
+     href="{{ url_for('car_reservation.notifications.index', organization_id=organization.id) }}">ทั้งหมด</a>
+  <a role="tab" class="tab gap-2 {{ 'tab-active' if tab == 'unread' }}" {% if tab == 'unread' %}aria-selected="true"{% endif %}
+     href="{{ url_for('car_reservation.notifications.index', organization_id=organization.id, tab='unread') }}">
+    ยังไม่อ่าน
+    {% if unread_count %}<span class="badge badge-error badge-sm" data-role="unread-tab-count">{{ unread_count }}</span>{% endif %}
+  </a>
+</div>
+
+{% if groups %}
+<div class="flex flex-col gap-6">
+  {% for label, notifications in groups %}
+  <section aria-labelledby="notification-day-{{ loop.index }}">
+    <h2 id="notification-day-{{ loop.index }}" class="mb-2 px-1 text-sm font-semibold text-base-content/60">{{ label }}</h2>
+    <ul class="divide-y divide-base-300 overflow-hidden rounded-box border border-base-300 bg-base-100">
+      {% for notification in notifications %}
+      {% include "/car_reservation/notifications/_item.html" %}
+      {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+</div>
+{% else %}
+<div class="flex flex-col items-center gap-2 rounded-box border border-dashed border-base-300 bg-base-100 px-6 py-14 text-center">
+  <i class="ph ph-bell-simple text-4xl text-base-content/30" aria-hidden="true"></i>
+  {% if tab == 'unread' %}
+  <p class="font-medium">อ่านครบทุกรายการแล้ว</p>
+  <a class="link link-primary text-sm" href="{{ url_for('car_reservation.notifications.index', organization_id=organization.id) }}">ดูการแจ้งเตือนทั้งหมด</a>
+  {% else %}
+  <p class="font-medium">ยังไม่มีการแจ้งเตือน</p>
+  <p class="text-sm text-base-content/60">เมื่อคำขอใช้รถของคุณมีความเคลื่อนไหว จะแสดงที่นี่</p>
+  {% endif %}
+</div>
+{% endif %}
+
 {% if page > 1 or has_next %}
-<div class="join mt-4 flex justify-center">
-  {% if page > 1 %}<a class="join-item btn btn-sm" href="{{ url_for('car_reservation.notifications.index', organization_id=organization.id, page=page - 1) }}">«</a>{% endif %}
+<div class="join mt-6 flex justify-center">
+  {% if page > 1 %}<a class="join-item btn btn-sm" aria-label="หน้าก่อนหน้า" href="{{ url_for('car_reservation.notifications.index', organization_id=organization.id, tab=tab, page=page - 1) }}"><i class="ph ph-caret-left"></i></a>{% endif %}
   <span class="join-item btn btn-sm btn-disabled">หน้า {{ page }}</span>
-  {% if has_next %}<a class="join-item btn btn-sm" href="{{ url_for('car_reservation.notifications.index', organization_id=organization.id, page=page + 1) }}">»</a>{% endif %}
+  {% if has_next %}<a class="join-item btn btn-sm" aria-label="หน้าถัดไป" href="{{ url_for('car_reservation.notifications.index', organization_id=organization.id, tab=tab, page=page + 1) }}"><i class="ph ph-caret-right"></i></a>{% endif %}
 </div>
 {% endif %}
 {% endblock %}

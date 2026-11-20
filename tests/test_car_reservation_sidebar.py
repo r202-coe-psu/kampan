@@ -23,6 +23,8 @@ MANAGE_CARS = "จัดการรถ"
 FEEDBACK = "แบบประเมินความพึงพอใจ"
 SETTINGS = "ตั้งค่า"
 SWITCH_SYSTEM = "เปลี่ยนระบบ"
+# ทุก role มีแจ้งเตือนของตัวเอง จึงเห็นเมนูนี้เสมอ
+NOTIFICATIONS = "การแจ้งเตือน"
 
 EVERYONE = {MY_REQUESTS, NEW_REQUEST, CALENDAR, DIRECTORY}
 # ขอใช้รถเร่งด่วนย้ายไปอยู่ใน modal เลือกประเภทคำขอแล้ว (test_car_reservation_new_request_picker.py)
@@ -136,7 +138,7 @@ def test_sidebar_shows_exactly_the_links_the_role_can_use(make_org, case):
 
     links = open_sidebar(client, org)
 
-    assert {text for text, _ in links} == expected
+    assert {text for text, _ in links} == expected | {NOTIFICATIONS}
 
 
 @pytest.mark.parametrize("case", ROLE_CASES)

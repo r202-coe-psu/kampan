@@ -14,25 +14,17 @@
   <ul class="menu w-[280px] min-h-screen bg-base-100 gap-3 " data-role="sidebar">
     <div class="mb-2 flex items-center justify-between gap-2 border-b border-base-300 py-2">
       <p class="flex items-center gap-2 text-3xl font-bold text-base-content"><i class="ph ph-car-profile text-4xl! text-primary" aria-hidden="true"></i>ระบบจองรถ</p>
-      {% if organization %}
-      {# กระดิ่ง: จำนวนที่ยังไม่อ่านดึงใหม่ทุก 60 วินาที รายการล่าสุดโหลดตอนเปิด dropdown #}
-      <div class="dropdown dropdown-end" data-role="notification-bell">
-        <div tabindex="0" role="button" class="btn btn-ghost btn-circle" aria-label="การแจ้งเตือน"
-             hx-get="{{ url_for('car_reservation.notifications.menu', organization_id=organization.id) }}"
-             hx-target="#notification-menu" hx-trigger="focus">
-          <div class="indicator">
-            <i class="ph ph-bell text-2xl"></i>
-            <span hx-get="{{ url_for('car_reservation.notifications.badge', organization_id=organization.id) }}"
-                  hx-trigger="load, every 60s" hx-swap="innerHTML"></span>
-          </div>
-        </div>
-        <div tabindex="0" id="notification-menu" class="dropdown-content z-30 mt-2 w-80 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
-          <p class="p-6 text-center text-sm text-base-content/60">กำลังโหลด…</p>
-        </div>
-      </div>
-      {% endif %}
     </div>
     {% if organization %}
+    {# จำนวนที่ยังไม่อ่านดึงใหม่ทุก 60 วินาที #}
+    {% call MenuItem(['car_reservation.notifications.index'], 'ph-bell', 'การแจ้งเตือน',
+                     url_for('car_reservation.notifications.index', organization_id=organization.id),
+                     'data-role="notification-menu"') %}
+      <span class="ml-auto"
+            hx-get="{{ url_for('car_reservation.notifications.badge', organization_id=organization.id) }}"
+            hx-trigger="load, every 60s" hx-swap="innerHTML"></span>
+    {% endcall %}
+
     <li class="menu-title">การจอง</li>
     {% if can_request %}
     {{ MenuItem(['car_reservation.requests.index'], 'ph-list-bullets', 'คำขอของฉัน',

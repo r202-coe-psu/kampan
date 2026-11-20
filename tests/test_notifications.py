@@ -61,15 +61,40 @@ def test_a_user_cannot_open_someone_elses_notification(world):
     assert notifications.unread_count(world.supervisor, world.org) == 1
 
 
-def test_bell_shows_the_unread_count_and_the_latest_notifications(world):
+def test_badge_shows_the_unread_count(world):
     world.submit_request()
     client = world.client_for(world.supervisor)
 
     badge = client.get(f"{NOTI}/badge?organization_id={world.org.id}").get_data(as_text=True)
-    menu = client.get(f"{NOTI}/menu?organization_id={world.org.id}").get_data(as_text=True)
 
     assert 'data-role="notification-count"' in badge and ">1<" in badge
-    assert "มีคำขอใช้รถรอการอนุมัติ" in menu
+
+
+def test_unread_tab_lists_only_unread_and_the_all_tab_keeps_read_ones(world):
+    world.submit_request()
+    notifications.send(
+        world.org, [world.supervisor], module="car_reservation", event="cancelled",
+        title="อ่านแล้วนะ",
+    )
+    read_one = notifications.inbox(world.supervisor, world.org).filter(title="อ่านแล้วนะ").first()
+    notifications.mark_read(read_one)
+    client = world.client_for(world.supervisor)
+
+    unread = client.get(f"{NOTI}?organization_id={world.org.id}&tab=unread").get_data(as_text=True)
+    everything = client.get(f"{NOTI}?organization_id={world.org.id}").get_data(as_text=True)
+
+    assert "มีคำขอใช้รถรอการอนุมัติ" in unread and "อ่านแล้วนะ" not in unread
+    assert 'data-role="unread-tab-count">1<' in unread
+    assert "มีคำขอใช้รถรอการอนุมัติ" in everything and "อ่านแล้วนะ" in everything
+    assert "วันนี้" in everything
+
+
+def test_unread_tab_says_everything_is_read_when_nothing_is_left(world):
+    page = world.client_for(world.supervisor).get(
+        f"{NOTI}?organization_id={world.org.id}&tab=unread"
+    ).get_data(as_text=True)
+
+    assert "อ่านครบทุกรายการแล้ว" in page
 
 
 def test_read_all_clears_the_unread_count(world):
@@ -101,11 +126,12 @@ def test_the_notifications_page_lists_only_my_notifications_in_this_organization
     assert "ของอีก org" not in html
 
 
-def test_sidebar_has_a_bell_that_polls_the_unread_count(world):
+def test_sidebar_has_a_notifications_menu_that_polls_the_unread_count(world):
     html = world.client_for(world.supervisor).get(
         f"/car_reservation/requests/?organization_id={world.org.id}"
     ).get_data(as_text=True)
 
-    assert 'data-role="notification-bell"' in html
+    assert 'data-role="notification-menu"' in html
+    assert 'data-role="notification-bell"' not in html
     assert f"{NOTI}/badge?organization_id={world.org.id}" in html
     assert "every 60s" in html
