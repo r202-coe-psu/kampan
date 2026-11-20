@@ -769,7 +769,6 @@ def close_trip(
     fuel_liters=None,
     cost_baht=None,
     client_ip=None,
-    photo_out=None,
     photo_in=None,
 ):
     """ปิดงาน: บันทึกรายงานท้ายใบ (กม. ออก/กลับ น้ำมัน กรณีค่าใช้จ่าย เป็นเงิน) และอัปเดตเลขไมล์รถ
@@ -789,13 +788,10 @@ def close_trip(
     app.expense_case = expense_case
     app.cost_baht = cost_baht
     app.completed_at = datetime.datetime.now()
-    for photo_field, upload in (
-        (app.mileage_photo_out, photo_out),
-        (app.mileage_photo_in, photo_in),
-    ):
-        photo_field.replace(
-            upload, filename=upload.filename, content_type=upload.content_type
-        )
+    # ถ่ายเฉพาะเลขไมล์ขากลับ (mileage_photo_out เก็บไว้ให้งานเก่าที่เคยถ่ายสองรูป)
+    app.mileage_photo_in.replace(
+        photo_in, filename=photo_in.filename, content_type=photo_in.content_type
+    )
     app.mileage_photos_at = app.completed_at
     networks = app.organization.car_reservation_campus_networks
     app.closed_ip = client_ip

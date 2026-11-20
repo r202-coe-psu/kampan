@@ -192,7 +192,6 @@ def test_driver_closing_the_trip_emails_the_requester_the_survey_link_job(world,
             "mileage_out": "0",
             "mileage_in": "120",
             "expense_case": "fleet_card",
-            "mileage_photo_out": (io.BytesIO(PNG_BYTES), "out.png"),
             "mileage_photo_in": (io.BytesIO(PNG_BYTES), "in.png"),
         },
     )

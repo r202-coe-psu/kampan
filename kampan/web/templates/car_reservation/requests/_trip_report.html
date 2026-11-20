@@ -17,18 +17,33 @@
       <div><dt class="font-semibold">เป็นเงิน (บาท)</dt><dd>{{ reservation.cost_baht | format_amount }}</dd></div>
       {% endif %}
     </dl>
-    {% if can_view_mileage_photos and reservation.mileage_photo_out and reservation.mileage_photo_in %}
-    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2" data-role="mileage-photos">
-      {% for side, label in (('out', 'รูปเลขไมล์ก่อนออก'), ('in', 'รูปเลขไมล์หลังกลับ')) %}
-      <a class="block" target="_blank" rel="noopener"
-         href="{{ url_for('car_reservation.requests.mileage_photo', request_id=reservation.id, side=side, organization_id=organization.id) }}">
-        <img class="w-full rounded-box" alt="{{ label }}" loading="lazy"
-             src="{{ url_for('car_reservation.requests.mileage_photo', request_id=reservation.id, side=side, organization_id=organization.id) }}">
-        <span class="text-sm">{{ label }}</span>
-      </a>
+    {# งานใหม่ถ่ายแค่ขากลับ งานเก่ามีรูปก่อนออกด้วย จึงแสดงเฉพาะรูปที่มี #}
+    {% set photos = [] %}
+    {% if reservation.mileage_photo_out %}{% set _ = photos.append(('out', 'รูปเลขไมล์ก่อนออก')) %}{% endif %}
+    {% if reservation.mileage_photo_in %}{% set _ = photos.append(('in', 'รูปเลขไมล์ขากลับ')) %}{% endif %}
+    {% if can_view_mileage_photos and photos %}
+    {# ปุ่มกดดูรูป เปิดใน modal: รูปโหลดตอนกดปุ่ม (modal ของ DaisyUI แค่ซ่อนไว้ ถ้าใส่ src ตรง ๆ จะโหลดพร้อมหน้า) #}
+    <div class="flex flex-wrap items-center gap-2" data-role="mileage-photos">
+      {% for side, label in photos %}
+      {% set photo_url = url_for('car_reservation.requests.mileage_photo', request_id=reservation.id, side=side, organization_id=organization.id) %}
+      <button type="button" class="btn btn-outline btn-sm" data-role="open-mileage-photo"
+              onclick="const d = document.getElementById('mileage-photo-{{ side }}'); const img = d.querySelector('img'); if (!img.getAttribute('src')) img.src = img.dataset.src; d.showModal()">
+        <i class="ph ph-image"></i> ดู{{ label }}
+      </button>
+      <dialog id="mileage-photo-{{ side }}" class="modal">
+        <div class="modal-box max-w-3xl">
+          <h3 class="text-lg font-bold">{{ label }}</h3>
+          <img class="mt-3 w-full rounded-box bg-base-200" alt="{{ label }}" data-src="{{ photo_url }}">
+          <div class="modal-action">
+            <a class="btn btn-ghost" href="{{ photo_url }}" target="_blank" rel="noopener">เปิดในแท็บใหม่</a>
+            <form method="dialog"><button class="btn">ปิด</button></form>
+          </div>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button>ปิด</button></form>
+      </dialog>
       {% endfor %}
       {% if reservation.mileage_photos_at %}
-      <p class="text-sm text-base-content/70 sm:col-span-2">ระบบรับรูปเมื่อ {{ reservation.mileage_photos_at.strftime('%d/%m/%Y %H:%M') }} น.</p>
+      <p class="w-full text-sm text-base-content/70">ระบบรับรูปเมื่อ {{ reservation.mileage_photos_at.strftime('%d/%m/%Y %H:%M') }} น.</p>
       {% endif %}
     </div>
     {% endif %}

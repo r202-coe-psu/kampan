@@ -843,17 +843,10 @@ class TripCloseForm(FlaskForm):
         validators=[validators.Optional(), validators.NumberRange(min=0)],
         widget=widgets.NumberInput(step="0.01"),
     )
-    mileage_photo_out = FileField(
-        "รูปเลขไมล์ก่อนออก",
-        validators=[
-            FileRequired("กรุณาถ่ายรูปเลขไมล์ก่อนออก"),
-            validate_mileage_photo,
-        ],
-    )
     mileage_photo_in = FileField(
-        "รูปเลขไมล์หลังกลับ",
+        "รูปเลขไมล์ขากลับ",
         validators=[
-            FileRequired("กรุณาถ่ายรูปเลขไมล์หลังกลับ"),
+            FileRequired("กรุณาถ่ายรูปเลขไมล์ขากลับ"),
             validate_mileage_photo,
         ],
     )

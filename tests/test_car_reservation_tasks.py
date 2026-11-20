@@ -147,7 +147,6 @@ def close_data(**overrides):
         "fuel_liters": "20.5",
         "expense_case": "fleet_card",
         "cost_baht": "1200.50",
-        "mileage_photo_out": (io.BytesIO(PNG_BYTES), "out.png"),
         "mileage_photo_in": (io.BytesIO(PNG_BYTES), "in.png"),
     }
     data.update(overrides)
@@ -416,6 +415,7 @@ def test_task_list_offers_close_only_for_tasks_that_can_be_closed_now(world):
     html = client.get(world.list_url).get_data(as_text=True)
 
     assert f"/{earlier.id}/close" in html
+    # งานที่ยังไม่กดเริ่มงานต้องเริ่มก่อน ไม่ได้รอให้งานก่อนหน้าของรถปิด
     assert f"/{later.id}/close" not in html
     assert f"/{later.id}/start" in html
     assert f"/{done.id}/close" not in html
@@ -671,11 +671,10 @@ def photo_url(world, reservation, which):
     )
 
 
-@pytest.mark.parametrize("missing", ["mileage_photo_out", "mileage_photo_in"])
-def test_a_trip_cannot_be_closed_without_both_odometer_photos(world, missing):
+def test_a_trip_cannot_be_closed_without_the_return_odometer_photo(world):
     reservation = world.reservation()
 
-    response = close(world, reservation, **{missing: None})
+    response = close(world, reservation, mileage_photo_in=None)
 
     reservation.reload()
     assert response.status_code == 200
@@ -683,7 +682,7 @@ def test_a_trip_cannot_be_closed_without_both_odometer_photos(world, missing):
     assert reservation.status == "active"
 
 
-def test_closing_with_both_photos_stores_them_with_the_server_receive_time(world):
+def test_closing_stores_the_return_photo_with_the_server_receive_time(world):
     reservation = world.reservation()
     before = datetime.datetime.now()
 
@@ -695,12 +694,11 @@ def test_closing_with_both_photos_stores_them_with_the_server_receive_time(world
     assert before <= reservation.mileage_photos_at <= datetime.datetime.now()
 
 
-@pytest.mark.parametrize("which", ["out", "in"])
-def test_the_requester_can_open_each_odometer_photo_as_an_image(world, which):
+def test_the_requester_can_open_the_return_odometer_photo_as_an_image(world):
     reservation = world.reservation()
     close(world, reservation)
 
-    response = world.client_for(world.requester).get(photo_url(world, reservation, which))
+    response = world.client_for(world.requester).get(photo_url(world, reservation, "in"))
 
     assert response.status_code == 200
     assert response.mimetype == "image/png"
@@ -713,8 +711,10 @@ def test_an_odometer_photo_url_is_404_for_an_unknown_side_or_before_closing(worl
     close(world, closed, mileage_out="10000")
     client = world.client_for(world.requester)
 
-    assert client.get(photo_url(world, reservation, "out")).status_code == 404
+    assert client.get(photo_url(world, reservation, "in")).status_code == 404
     assert client.get(photo_url(world, closed, "sideways")).status_code == 404
+    # ไม่ได้ถ่ายรูปก่อนออกแล้ว
+    assert client.get(photo_url(world, closed, "out")).status_code == 404
 
 
 @pytest.mark.parametrize(
@@ -742,7 +742,7 @@ def test_odometer_photos_are_visible_only_to_those_involved_in_the_trip(
     close(world, reservation)
 
     response = world.client_for(getattr(world, who)).get(
-        photo_url(world, reservation, "out")
+        photo_url(world, reservation, "in")
     )
 
     assert (response.status_code == 200) is allowed
@@ -759,7 +759,7 @@ def test_odometer_photos_are_visible_only_to_those_involved_in_the_trip(
 def test_a_photo_that_is_not_a_small_jpeg_or_png_is_refused(world, bad_upload):
     reservation = world.reservation()
 
-    response = close(world, reservation, mileage_photo_out=bad_upload)
+    response = close(world, reservation, mileage_photo_in=bad_upload)
 
     reservation.reload()
     assert response.status_code == 200
@@ -780,7 +780,7 @@ def test_close_page_captures_photos_with_the_camera_and_has_no_visible_file_pick
     assert "ถ่ายรูป" in html
     assert "ใช้เบราว์เซอร์บนมือถือและอนุญาตให้ใช้กล้อง" in html
     file_inputs = [part.split(">")[0] for part in html.split("<input")[1:] if 'type="file"' in part.split(">")[0]]
-    assert len(file_inputs) == 2
+    assert len(file_inputs) == 1
     assert all('class="hidden"' in tag for tag in file_inputs)
 
 
@@ -796,7 +796,6 @@ def test_close_page_photo_inputs_are_the_wtforms_file_fields_the_camera_script_f
     doc = lxml_html.fromstring(html)
     inputs = doc.xpath("//form[@id='close-form']//fieldset[@data-photo]//input[@type='file']")
     assert [(i.get("id"), i.get("name"), i.get("accept")) for i in inputs] == [
-        ("mileage_photo_out", "mileage_photo_out", "image/jpeg,image/png"),
         ("mileage_photo_in", "mileage_photo_in", "image/jpeg,image/png"),
     ]
     # ซ่อนไว้ และต้องไม่มี required (ช่องที่ซ่อนจะโฟกัสไม่ได้ ทำให้เบราว์เซอร์บล็อกการส่งฟอร์ม)
@@ -807,7 +806,7 @@ def test_close_page_photo_inputs_are_the_wtforms_file_fields_the_camera_script_f
     ]
 
 
-def test_request_detail_shows_both_odometer_photos_to_those_who_may_see_them(world):
+def test_request_detail_shows_the_return_odometer_photo_to_those_who_may_see_it(world):
     reservation = world.reservation()
     close(world, reservation)
 
@@ -818,6 +817,27 @@ def test_request_detail_shows_both_odometer_photos_to_those_who_may_see_them(wor
     )
 
     report = html.split('data-role="trip-report"')[1]
+    assert f"/requests/{reservation.id}/mileage_photo/out" not in report
+    assert f"/requests/{reservation.id}/mileage_photo/in" in report
+    # กดปุ่มดูรูป รูปอยู่ใน modal ไม่ได้แสดงเต็มในหน้า
+    assert 'data-role="open-mileage-photo"' in report
+    assert re.search(r'<dialog id="mileage-photo-in".*?mileage_photo/in', report, re.S)
+
+
+def test_an_old_trip_closed_with_both_photos_still_shows_both(world):
+    reservation = world.reservation()
+    close(world, reservation)
+    reservation.reload()
+    reservation.mileage_photo_out.put(io.BytesIO(PNG_BYTES), filename="out.png", content_type="image/png")
+    reservation.save()
+
+    report = (
+        world.client_for(world.requester)
+        .get(f"/car_reservation/requests/{reservation.id}?organization_id={world.org.id}")
+        .get_data(as_text=True)
+        .split('data-role="trip-report"')[1]
+    )
+
     assert f"/requests/{reservation.id}/mileage_photo/out" in report
     assert f"/requests/{reservation.id}/mileage_photo/in" in report
 
@@ -850,7 +870,7 @@ def test_close_page_camera_video_and_preview_share_one_fixed_aspect_box(world):
 
     doc = lxml_html.fromstring(html)
     blocks = doc.xpath("//form[@id='close-form']//fieldset[@data-photo]")
-    assert len(blocks) == 2
+    assert len(blocks) == 1
     for block in blocks:
         (video,) = block.xpath(".//video")
         (preview,) = block.xpath(".//img")

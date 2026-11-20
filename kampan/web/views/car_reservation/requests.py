@@ -518,7 +518,7 @@ def project_file(request_id):
 @module.route("/<request_id>/mileage_photo/<side>")
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def mileage_photo(request_id, side):
-    """รูปเลขไมล์ที่ พขร. ถ่ายตอนปิดงาน (side = out ก่อนออก / in หลังกลับ)"""
+    """รูปเลขไมล์ที่ พขร. ถ่ายตอนปิดงาน (side = in ขากลับ; out ก่อนออก มีเฉพาะงานเก่า)"""
     reservation = get_request_or_404(request_id)
     if not flow.can_view_mileage_photos(
         reservation, current_user._get_current_object()

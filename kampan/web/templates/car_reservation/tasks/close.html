@@ -20,8 +20,8 @@
       <i class="ph ph-camera-slash"></i>
       <span>ใช้กล้องไม่ได้ กรุณาใช้เบราว์เซอร์บนมือถือและอนุญาตให้ใช้กล้อง แล้วเปิดหน้านี้ใหม่</span>
     </div>
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {% for field, label in ((form.mileage_photo_out, 'รูปเลขไมล์ก่อนออก'), (form.mileage_photo_in, 'รูปเลขไมล์หลังกลับ')) %}
+    <div class="grid grid-cols-1 gap-4 sm:max-w-md">
+      {% for field, label in ((form.mileage_photo_in, 'รูปเลขไมล์ขากลับ'),) %}
       <fieldset class="fieldset" data-photo="{{ field.name }}">
         <legend class="fieldset-legend">{{ label }} <span class="text-error">*</span></legend>
         {{ field(class_="hidden", accept="image/jpeg,image/png", required=False) }}
