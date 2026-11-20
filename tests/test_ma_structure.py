@@ -1633,8 +1633,8 @@ def test_create_form_category_options_order_and_no_material(world, client_for):
 
     values = re.findall(r'data-value="([^"]*)"', menu)
 
-    assert values == ["ma", "service", "rental", "software", "intangible", "product"]
-    assert "วัสดุ" not in menu
+    assert values == ["ma", "service", "rental", "software", "product"]
+    assert "วัสดุ" not in menu and "สินทรัพย์ไม่มีตัวตน" not in menu
 
 
 def test_legacy_material_category_still_has_a_label(world, create_ma):

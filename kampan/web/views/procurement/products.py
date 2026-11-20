@@ -239,7 +239,7 @@ def _blank_item_data(member) -> dict:
         "has_sub_item_sn": False,
         "has_sub_item_asset": False,
         "sub_items": [{}],
-        "installment_mode": False,
+        "installment_mode": True,  # ประเภทตั้งต้นคือ MA
         "installments": [{}],
     }
 
@@ -343,7 +343,7 @@ def _renew_item_data(item, active_member_ids: set) -> dict:
         "reminder_kind": item.reminder_kind,
         "requires_activation": item.requires_activation,
         **_reminder_settings_data(item, include_custom_dates=False),
-        "installment_mode": False,
+        "installment_mode": item.category in models.INSTALLMENT_DEFAULT_CATEGORIES,
         "installments": [{}],
     }
 

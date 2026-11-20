@@ -1,6 +1,7 @@
 """MA ที่ไม่ใช่แบบร่างแก้ได้แค่หัว หรือรายการเดียว (?item_id=) และลบรายการย่อยด้วยปุ่มยืนยัน (ตัดสินใจ 2026-11-13)"""
 
 import datetime
+import re
 from decimal import Decimal
 
 import pytest
@@ -468,3 +469,42 @@ def test_delete_item_refused_when_sub_contract_copy_has_paid_installment(app, cr
         raise AssertionError("delete_item should refuse")
     assert models.Procurement.objects(id=child.id).count() == 1
     assert len(models.Procurement.objects(id=parent.id).get().get_items()) == 2
+
+
+# --- ประเภทรายการ: ตัด "สินทรัพย์ไม่มีตัวตน" ออกจากตัวเลือก / เปิดแบ่งจ่ายเป็นงวดไว้ให้ (2026-11-20) -----
+
+
+def _toggle_checked(html, index=0):
+    tag = re.search(rf'<input[^>]*name="items-{index}-installment_mode"[^>]*>', html).group(0)
+    return bool(re.search(r"\bchecked\b", tag))
+
+
+def test_new_item_has_installment_mode_on_by_default(world, client_for):
+    html = client_for(world.admin).get(f"/procurement/products/create?{_q(world.org)}").get_data(as_text=True)
+
+    assert _toggle_checked(html)
+
+
+def test_legacy_intangible_item_can_still_be_edited(world, client_for, two_item_ma):
+    first, _ = two_item_ma.get_items()
+    models.ProcurementItem.objects(id=first.id).update(set__category="intangible")
+
+    html = client_for(world.admin).get(_edit_url(world, two_item_ma, first)).get_data(as_text=True)
+
+    assert 'data-value="intangible"' in html
+
+
+def test_legacy_intangible_category_passes_item_form_validation(app):
+    from werkzeug.datastructures import MultiDict
+
+    from kampan.web.forms.procurement import ProcurementItemForm
+
+    with app.test_request_context():
+        legacy = ProcurementItemForm(formdata=MultiDict({"category": "intangible"}), meta={"csrf": False})
+        other = ProcurementItemForm(formdata=MultiDict({"category": "bogus"}), meta={"csrf": False})
+
+        legacy.category.validate(legacy)
+        other.category.validate(other)
+
+    assert not legacy.category.errors
+    assert other.category.errors

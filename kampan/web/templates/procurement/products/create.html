@@ -585,6 +585,13 @@
       }
 
       if (event.target.name && event.target.name.endsWith('-category') && card) {
+        // รายการใหม่: เลือก MA / จ้างเหมา / เช่า เปิดแบ่งจ่ายเป็นงวดไว้ให้ ประเภทอื่นปิด (ปรับเองได้หลังเลือก)
+        const itemId = card.querySelector('input[name$="-item_id"]');
+        const toggle = card.querySelector('.installment-toggle');
+        if (toggle && !(itemId && itemId.value)) {
+          toggle.checked = ['ma', 'service', 'rental'].includes(event.target.value);
+          syncInstallmentMode(card);
+        }
         syncAssetCodeSection(card);
         updateItemSummary(card);
       }

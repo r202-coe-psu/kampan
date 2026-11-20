@@ -284,7 +284,7 @@ def test_disbursement_date_is_labelled_vanthi_beikjai(world, client):
 
 def test_category_choices_put_rental_right_under_service():
     assert [value for value, _ in models.MA_CATEGORY_CHOICES] == [
-        "ma", "service", "rental", "software", "intangible", "product",
+        "ma", "service", "rental", "software", "product",
     ]
     assert dict(models.MA_CATEGORY_CHOICES)["rental"] == "เช่า"
 

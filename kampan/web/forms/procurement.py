@@ -160,11 +160,18 @@ class ProcurementItemForm(Form):
     # ช่องว่างไม่นับ (แถวที่ยังไม่กรอก) ช่องกำหนดจำนวนวันเอง (reminder_offsets_days) นำออกจากฟอร์มแล้ว (2026-11-16)
     custom_reminder_dates = fields.FieldList(fields.StringField(), label="วันที่เตือนเจาะจง (พ.ศ.)")
     # เปิด = แบ่งจ่ายเป็นงวด (กรอกวันครบกำหนดเอง) ปิด = จ่ายครั้งเดียว งวดเดียวครบกำหนดในวันสิ้นสุด (ระบบตั้งให้)
-    installment_mode = fields.BooleanField("แบ่งจ่ายเป็นงวด")
+    installment_mode = fields.BooleanField("แบ่งจ่ายเป็นงวด", default=True)
     # อ่านไม่เกิน MAX + 1 งวด (กัน request ที่ส่งงวดมาหลักหมื่น) แล้วให้ validate_installments ปฏิเสธ ไม่ตัดทิ้งเงียบ ๆ
     installments = fields.FieldList(
         fields.FormField(InstallmentForm), min_entries=1, max_entries=MAX_INSTALLMENTS_PER_ITEM + 1
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # ข้อมูลเดิมที่เป็นประเภทที่เลิกให้เลือกแล้ว (สินทรัพย์ไม่มีตัวตน) ยังต้องแสดงและบันทึกต่อได้
+        legacy = dict(models.ITEM_CATEGORY_CHOICES)
+        if self.category.data in legacy and self.category.data not in dict(self.category.choices):
+            self.category.choices = [*self.category.choices, (self.category.data, legacy[self.category.data])]
 
     def validate(self, extra_validators=None):
         # ปิดแบ่งงวด: ไม่ใช้แถวงวดที่ส่งมา (ระบบสร้างงวดเดียวจากวันสิ้นสุด) จึงไม่ validate
