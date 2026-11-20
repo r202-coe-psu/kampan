@@ -1,4 +1,5 @@
 import datetime
+import decimal
 
 import mongoengine as me
 
@@ -260,7 +261,9 @@ class CarReservation(me.Document):
     # รายงานท้ายใบที่ พขร. กรอกตอนปิดงาน (last_mileage_before = เลข กม. ออก, last_mileage = เลข กม. กลับ)
     fuel_liters = me.DecimalField(min_value=0, precision=2)
     expense_case = me.StringField(choices=EXPENSE_CASES)
-    cost_baht = me.DecimalField(min_value=0, max_value=1e12, precision=2)
+    cost_baht = me.DecimalField(
+        min_value=0, max_value=1e12, precision=2, rounding=decimal.ROUND_HALF_EVEN
+    )
     started_at = me.DateTimeField()
     completed_at = me.DateTimeField()
     # IP ที่ พขร. ปิดงาน และผลเทียบกับช่วง IP ของมหาวิทยาลัย (None = ไม่ได้ตั้งช่วงไว้ ไม่มีผลตรวจ)

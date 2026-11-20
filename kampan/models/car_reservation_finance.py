@@ -1,4 +1,5 @@
 import datetime
+import decimal
 
 import mongoengine as me
 
@@ -9,7 +10,7 @@ FINANCE_DOCUMENT_TYPES = [
 
 
 def money():
-    return me.DecimalField(min_value=0, precision=2)
+    return me.DecimalField(min_value=0, precision=2, rounding=decimal.ROUND_HALF_EVEN)
 
 
 class CarReservationFinanceDocument(me.Document):
