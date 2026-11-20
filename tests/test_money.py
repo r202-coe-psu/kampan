@@ -130,6 +130,12 @@ QUANTITY_FIELDS = {
     ("ItemSnapshot", "amount"),
 }
 
+# ListField ของ choice ผู้รับผิดชอบค่าใช้จ่าย ไม่ใช่จำนวนเงิน
+NON_MONEY_FIELDS = {
+    ("AirportDetails", "cost_responsibilities"),
+    ("DomesticDetails", "cost_responsibilities"),
+}
+
 
 def _leaf_field(field):
     while isinstance(field, (me.ListField, me.MapField)) and field.field is not None:
@@ -141,7 +147,11 @@ def find_bad_money_fields(registry):
     bad = []
     for class_name, document in sorted(registry.items()):
         for name, field in document._fields.items():
-            if not MONEY_NAME.search(name) or (class_name, name) in QUANTITY_FIELDS:
+            if (
+                not MONEY_NAME.search(name)
+                or (class_name, name) in QUANTITY_FIELDS
+                or (class_name, name) in NON_MONEY_FIELDS
+            ):
                 continue
             leaf = _leaf_field(field)
             if isinstance(leaf, (me.EmbeddedDocumentField, me.ReferenceField)):
