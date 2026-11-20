@@ -68,9 +68,8 @@
     {{ MenuItem(['car_reservation.settings.index'], 'ph-gear', 'ตั้งค่า',
                 url_for('car_reservation.settings.index', organization_id=organization.id)) }}
     {% endif %}
-    {% if can_switch_system %}
+    {# แสดงเสมอแม้หน่วยงานมีระบบเดียว เพราะหน้าเลือกระบบเป็นทางเข้าโปรไฟล์ด้วย #}
     {{ MenuItem([], 'ph-swap', 'เปลี่ยนระบบ', url_for('site.select_system', organization_id=organization.id)) }}
-    {% endif %}
     {% endif %}
 
     <div class="mt-auto"></div>

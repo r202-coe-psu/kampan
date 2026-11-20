@@ -1,4 +1,4 @@
-"""หน้าเลือกระบบแสดงเฉพาะโมดูลที่องค์กรเปิดใช้ และข้ามไปเข้าโมดูลเลยถ้าเปิดอยู่โมดูลเดียว"""
+"""หน้าเลือกระบบแสดงเฉพาะโมดูลที่องค์กรเปิดใช้ แม้มีโมดูลเดียวก็แสดง เพราะเป็นทางเข้าโปรไฟล์ด้วย"""
 
 import pytest
 from flask import url_for
@@ -64,11 +64,13 @@ def test_select_system_shows_the_car_reservation_card_when_the_module_is_enabled
     assert f'href="{_module_url(app, "car", org)}"' not in html
 
 
-def test_select_system_redirects_into_the_only_enabled_module(app, open_select_system):
+def test_select_system_still_shows_a_sole_enabled_module(app, open_select_system):
     org, response = open_select_system(enabled_modules=["car"])
+    html = response.get_data(as_text=True)
 
-    assert response.status_code == 302
-    assert response.headers["Location"].endswith(_module_url(app, "car", org))
+    assert response.status_code == 200
+    assert f'href="{_module_url(app, "car", org)}"' in html
+    assert 'data-role="edit-profile"' in html
 
 
 def test_select_system_shows_all_modules_when_organization_never_set_modules(

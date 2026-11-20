@@ -67,14 +67,6 @@ def select_system():
         enabled_modules = [
             key for key in MODULE_KEY_HOME_ENDPOINTS if organization.has_module(key)
         ]
-        if len(enabled_modules) == 1:
-            return redirect(
-                url_for(
-                    MODULE_KEY_HOME_ENDPOINTS[enabled_modules[0]],
-                    organization_id=organization.id,
-                )
-            )
-
         return render_template(
             "sites/select_system.html",
             organization=organization,

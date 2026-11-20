@@ -22,7 +22,7 @@ MANAGE_CARS = "จัดการรถ"
 FEEDBACK = "แบบประเมินความพึงพอใจ"
 SETTINGS = "ตั้งค่า"
 SWITCH_SYSTEM = "เปลี่ยนระบบ"
-# ทุก role มีแจ้งเตือนของตัวเอง จึงเห็นเมนูนี้เสมอ
+# ทุก role เห็นสองเมนูนี้เสมอ: แจ้งเตือนของตัวเอง และทางกลับหน้าเลือกระบบ (มีปุ่มโปรไฟล์)
 NOTIFICATIONS = "การแจ้งเตือน"
 
 # ยื่นคำขอเป็นปุ่มในหน้าคำขอของฉัน ไม่มีเมนูแยก
@@ -138,7 +138,7 @@ def test_sidebar_shows_exactly_the_links_the_role_can_use(make_org, case):
 
     links = open_sidebar(client, org)
 
-    assert {text for text, _ in links} == expected | {NOTIFICATIONS}
+    assert {text for text, _ in links} == expected | {NOTIFICATIONS, SWITCH_SYSTEM}
 
 
 @pytest.mark.parametrize("case", ROLE_CASES)
@@ -159,8 +159,8 @@ def test_every_sidebar_link_opens_its_own_page(make_org, case):
     assert broken == []
 
 
-def test_switch_system_link_is_shown_when_org_has_several_modules(make_org):
-    org, user_with = make_org(modules=("car_reservation", "procurement"))
+def test_switch_system_link_opens_the_system_picker_even_with_one_module(make_org):
+    org, user_with = make_org(modules=("car_reservation",))
     client = user_with(["staff"])
 
     links = open_sidebar(client, org)
@@ -173,21 +173,3 @@ def test_switch_system_link_is_shown_when_org_has_several_modules(make_org):
                 200,
                 "/select_system",
             )
-
-
-def test_switch_system_link_is_hidden_when_org_has_one_module(make_org):
-    org, user_with = make_org(modules=("car_reservation",))
-    client = user_with(["staff"])
-
-    links = open_sidebar(client, org)
-
-    assert SWITCH_SYSTEM not in {text for text, _ in links}
-
-
-def test_switch_system_link_is_hidden_for_member_without_division(make_org):
-    org, user_with = make_org(modules=("car_reservation", "procurement"))
-    client = user_with(["staff"], division_of=None)
-
-    links = open_sidebar(client, org)
-
-    assert SWITCH_SYSTEM not in {text for text, _ in links}
