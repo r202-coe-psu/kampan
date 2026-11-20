@@ -505,3 +505,27 @@ def test_renew_specific_sub_item_by_id(world, client_for):
     assert _input_value(html, "total_amount") == "40000.00"
     assert 'name="items-1-name"' not in html
 
+
+
+def test_renewal_chain_is_a_vertical_timeline_with_contract_periods(world, client_for):
+    client = client_for(world.admin)
+    client.post(_renew_url(world), data=_renew_form(world))
+    new = models.Procurement.objects(renewed_from=world.old).get()
+
+    html = client.get(_page(world, "detail", new)).get_data(as_text=True)
+    timeline = html[html.index("data-renewal-timeline"):]
+
+    # เรียงจากเก่าไปใหม่ และ MA เดิมมีช่วงสัญญา 1 ม.ค. - 31 ธ.ค. 2025 = 1 ปี พร้อมระยะเวลา
+    assert timeline.index(str(world.old.id)) < timeline.index(str(new.id))
+    assert "ครั้งที่ 1" in timeline and "ครั้งที่ 2" in timeline
+    assert "data-renewal-timeline-period" in timeline
+    assert "ระยะเวลาสัญญา 1 ปี" in timeline
+    assert "รายการนี้" in timeline
+
+
+def test_duration_text_formats_years_months_days():
+    from kampan.web.views.procurement.payment import _duration_text
+
+    assert _duration_text(14, 3) == "1 ปี 2 เดือน 3 วัน"
+    assert _duration_text(12, 0) == "1 ปี"
+    assert _duration_text(0, 0) == "0 วัน"

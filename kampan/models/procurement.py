@@ -777,6 +777,13 @@ class Procurement(me.Document):
         dates = [item.start_date for item in self.get_items() if item.start_date]
         return min(dates) if dates else None
 
+    def get_period(self):
+        """ช่วงสัญญาทั้งหมดของ MA: (วันเริ่มของรายการแรกสุด, วันสิ้นสุดของรายการที่หมดช้าสุด) ใช้แสดงในสายการต่ออายุ"""
+        items = self.get_items()
+        starts = [item.start_date for item in items if item.start_date]
+        ends = [item.end_date for item in items if item.end_date]
+        return (min(starts) if starts else None, max(ends) if ends else None)
+
     def get_end_date(self):
         """วันสิ้นสุดของรายการย่อยที่หมดอายุก่อน ใช้กับการต่ออายุและการเรียงตามวันหมดอายุ"""
         dates = [item.end_date for item in self.get_items() if item.end_date]
