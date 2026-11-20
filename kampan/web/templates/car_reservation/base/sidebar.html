@@ -53,7 +53,7 @@
     {{ MenuItem(['car_reservation.cars.directory'], 'ph-identification-card', 'ข้อมูลรถและพนักงานขับรถ',
                 url_for('car_reservation.cars.directory', organization_id=organization.id)) }}
     {% if can_view_stats %}
-    {{ MenuItem(['car_reservation.stats.drivers'], 'ph-chart-bar', 'ภาระงานพนักงานขับรถ',
+    {{ MenuItem(['car_reservation.stats.drivers'], 'ph-chart-bar', 'แดชบอร์ดพนักงานขับรถ',
                 url_for('car_reservation.stats.drivers', organization_id=organization.id)) }}
     {% endif %}
     {% if current_user.has_organization_roles("admin") %}

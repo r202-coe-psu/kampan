@@ -52,7 +52,7 @@ def inject_can_request():
 
 @module.context_processor
 def inject_can_view_stats():
-    """เห็นเมนูภาระงานพนักงานขับรถไหม: ผู้จัดรถ ผู้บริหาร และ admin"""
+    """เห็นเมนูแดชบอร์ดพนักงานขับรถไหม: ผู้จัดรถ ผู้บริหาร และ admin"""
     organization = getattr(g, "organization", None)
     if organization is None or not current_user.is_authenticated:
         return {"can_view_stats": False}
