@@ -140,6 +140,14 @@ def validate_submission(form, organization, request_type, urgent_by_dispatcher=F
     return submitted, short_notice_days, is_urgent
 
 
+def short_notice_context(organization, request_type):
+    """ให้หน้าฟอร์มเตือนวันเดินทางกระชั้นชิดได้ก่อนส่ง (ไฟล์แนบจึงไม่หายไปกับการส่งรอบแรก)"""
+    return {
+        "min_business_days": flow.min_business_days(request_type),
+        "regular_from": flow.earliest_regular_departure(organization, request_type),
+    }
+
+
 @module.route("/new", methods=["GET", "POST"])
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def create():
@@ -202,6 +210,7 @@ def create():
         organization=organization,
         form=form,
         short_notice_days=short_notice_days,
+        **short_notice_context(organization, request_type),
         request_type=request_type,
         request_type_label=dict(models.car_reservations.RESERVATION_TYPES)[
             request_type
@@ -494,6 +503,7 @@ def edit(request_id):
         organization=organization,
         form=form,
         short_notice_days=short_notice_days,
+        **short_notice_context(organization, request_type),
         request_type=request_type,
         request_type_label=dict(models.car_reservations.RESERVATION_TYPES)[
             request_type

@@ -44,3 +44,14 @@ def test_end_not_after_start_is_zero(app, create_org):
 def test_two_weekends_span_is_ten_business_days(app, create_org):
     org = create_org("Org Alpha")
     assert business_days.business_days_between(org, NEXT_MONDAY, MONDAY_AFTER_NEXT) == 10
+
+
+def test_nth_business_day_after_is_the_first_day_with_n_business_days_between(app, create_org):
+    org = create_org()
+    models.CarHoliday(organization=org, date=NEXT_MONDAY, name="วันหยุด").save()
+
+    for n in range(1, 11):
+        day = business_days.nth_business_day_after(org, FRIDAY, n)
+        assert business_days.business_days_between(org, FRIDAY, day) == n
+        assert business_days.business_days_between(org, FRIDAY, day - datetime.timedelta(days=1)) < n
+    assert business_days.nth_business_day_after(org, FRIDAY, 1) == NEXT_MONDAY + datetime.timedelta(days=1)

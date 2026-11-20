@@ -27,6 +27,28 @@ def business_days_between(organization, start_date, end_date):
     return count
 
 
+def nth_business_day_after(organization, start_date, n):
+    """วันทำการที่ n หลัง start_date (business_days_between(start, วันนั้น) == n ครั้งแรก)"""
+    if n <= 0:
+        return start_date
+    # วันหยุดยาวไม่น่าเกินช่วงนี้ ดึงครั้งเดียวพอ
+    window_end = start_date + datetime.timedelta(days=n * 3 + 60)
+    holidays = {
+        h.date
+        for h in models.CarHoliday.objects(
+            organization=organization, date__gt=start_date, date__lte=window_end
+        )
+    }
+    count = 0
+    day = start_date
+    while True:
+        day += datetime.timedelta(days=1)
+        if day.weekday() < 5 and day not in holidays:
+            count += 1
+            if count == n:
+                return day
+
+
 def all_days_off(organization, start_date, end_date):
     """True when every day from start_date to end_date (inclusive) is a Saturday, Sunday
     or one of the organization's CarHoliday dates."""

@@ -1087,11 +1087,25 @@ def test_request_departing_in_under_3_business_days_asks_for_urgent_confirmation
     doc = lxml_html.fromstring(html)
     (dialog,) = doc.xpath('//dialog[@data-role="short-notice"]')
     assert dialog.get("open") is not None
-    (ack,) = dialog.xpath('.//button[@name="confirm_urgent"]')
-    assert ack.get("type") == "submit" and ack.get("value") == "y"
+    (ack,) = dialog.xpath('.//button[@data-role="short-notice-confirm"]')
     assert "รับทราบ" in ack.text_content()
-    form_id = ack.get("form") or dialog.xpath("ancestor::form/@id")[0]
-    assert doc.xpath(f'//form[@id="{form_id}"]')
+    # ปุ่มรับทราบตั้งช่องซ่อน confirm_urgent ของฟอร์มเดียวกันแล้วส่ง (สคริปต์ปิด modal ก่อนส่ง)
+    (form,) = dialog.xpath("ancestor::form")
+    assert form.xpath('.//input[@type="hidden"][@name="confirm_urgent"][@data-role="confirm-urgent"]')
+
+
+def test_new_request_form_knows_the_first_regular_departure_date_to_warn_before_submitting(world):
+    """ฟอร์มเตือนวันกระชั้นชิดเองก่อนส่ง ไฟล์ที่แนบ (เช่นใบขอไปต่างประเทศ) จึงไม่หายไปกับการส่งรอบแรก"""
+    html = world.client_for(world.requester).get(
+        f"{BASE}/new?organization_id={world.org.id}&type=abroad"
+    ).get_data(as_text=True)
+
+    doc = lxml_html.fromstring(html)
+    (form,) = doc.xpath('//form[@id="reservation-form"]')
+    expected = flow.earliest_regular_departure(world.org, "abroad")
+    assert form.get("data-regular-from") == expected.isoformat()
+    (dialog,) = form.xpath('.//dialog[@data-role="short-notice"]')
+    assert dialog.get("open") is None
 
 
 def test_confirmed_short_notice_request_is_saved_as_urgent_and_shows_badge(world):

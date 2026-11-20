@@ -125,6 +125,13 @@ def is_short_notice(organization, request_type, departure_date, today=None):
     return lead < min_business_days(request_type)
 
 
+def earliest_regular_departure(organization, request_type, today=None):
+    """วันออกเดินทางวันแรกที่ไม่นับว่ากระชั้นชิด (ก่อนหน้านี้ต้องยืนยันเป็นคำขอเร่งด่วน)"""
+    return utils.business_days.nth_business_day_after(
+        organization, today or datetime.date.today(), min_business_days(request_type)
+    )
+
+
 def vehicle_allowed_for_trip(organization, vehicle_kind, first_day, last_day):
     """รถเก๋ง/มินิบัสใช้ได้เฉพาะเมื่อทุกวันของการเดินทางเป็นวันเสาร์-อาทิตย์หรือวันหยุด"""
     if vehicle_kind not in HOLIDAY_ONLY_VEHICLES:
