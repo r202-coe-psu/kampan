@@ -118,7 +118,7 @@ def test_renew_form_is_prefilled_from_old_ma_and_creates_nothing(world, client_f
     html = response.get_data(as_text=True)
     assert _input_value(html, "company") == "[TEST] บริษัทเดิม"
     assert _input_value(html, "total_amount") == "60000.00"
-    assert _input_value(html, "psu_disbursement_number") == ""
+    assert _input_value(html, "psu_disbursement_number") == "011/"
     assert _input_value(html, "items-0-name") == "[TEST] License A"
     assert _input_value(html, "items-0-amount") == "60000.00"
     assert _input_value(html, "items-0-sub_items-0-brand") == "ยี่ห้อ A"

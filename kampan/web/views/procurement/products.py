@@ -385,7 +385,7 @@ def _build_form(
         form = forms.procurement.ProcurementHeaderForm(
             formdata=None,
             data={
-                "psu_disbursement_number": procurement.psu_disbursement_number,
+                "psu_disbursement_number": procurement.psu_disbursement_number or forms.procurement.PSU_NUMBER_PREFIX,
                 "disbursement_date": _as_date(procurement.disbursement_date),
                 "name": procurement.name,
                 "company": procurement.company,
@@ -559,7 +559,7 @@ def _apply_header(form, procurement, user, items=(), is_draft=False) -> None:
     if form.mode == "item":
         procurement.last_updated_by = user
         return
-    procurement.psu_disbursement_number = (form.psu_disbursement_number.data or "").strip()
+    procurement.psu_disbursement_number = forms.procurement.clean_psu_number(form.psu_disbursement_number.data)
     procurement.disbursement_date = _as_datetime(form.disbursement_date.data) if form.disbursement_date.data else None
     procurement.name = (form.name.data or "").strip() or "แบบร่าง MA"
     procurement.company = (form.company.data or "").strip() or ("-" if is_draft else "")
@@ -703,7 +703,7 @@ def _save_form(
     if not is_draft and mode in ("header", "item"):
         # โหมดเต็มตรวจในฟอร์มแล้ว: เลขที่ ม.อ.เบิกจ่ายของหัวจำเป็นเมื่อมีรายการที่ไม่แบ่งจ่ายเป็นงวด (จ่ายแล้วตอนสร้าง MA)
         psu_number = form.psu_disbursement_number.data if mode == "header" else procurement.psu_disbursement_number
-        if not (psu_number or "").strip() and any(not item.pays_in_installments() for item in items):
+        if not forms.procurement.clean_psu_number(psu_number) and any(not item.pays_in_installments() for item in items):
             return _render_form(form, organization, member, procurement, [PSU_NUMBER_REQUIRED_MESSAGE], **render_kwargs)
 
     _apply_header(form, procurement, user, items=items, is_draft=is_draft)

@@ -287,3 +287,44 @@ def test_category_choices_put_rental_right_under_service():
         "ma", "service", "rental", "software", "intangible", "product",
     ]
     assert dict(models.MA_CATEGORY_CHOICES)["rental"] == "เช่า"
+
+
+# --- เลขที่ ม.อ.เบิกจ่ายขึ้นต้นด้วย 011/ ไว้ให้ (2026-11-20) ---------------------
+
+
+def _psu_input_value(html):
+    tag = re.search(r'<input[^>]*name="psu_disbursement_number"[^>]*>', html).group(0)
+    return re.search(r'value="([^"]*)"', tag).group(1)
+
+
+def test_psu_number_field_starts_with_011_prefix(world, client):
+    assert _psu_input_value(_create_page(client, world)) == "011/"
+
+
+def test_prefix_only_psu_number_is_treated_as_empty_when_required(world, client):
+    # รายการไม่แบ่งจ่ายเป็นงวด = จ่ายแล้วตอนสร้าง MA จึงต้องมีเลขที่จริง คำนำหน้าอย่างเดียวไม่พอ
+    data = _form(world)
+    data["psu_disbursement_number"] = "011/"
+
+    response = _create(client, world, data)
+
+    assert response.status_code == 200
+    assert "กรุณากรอกเลขที่ ม.อ.เบิกจ่าย" in response.get_data(as_text=True)
+    assert models.Procurement.objects.count() == 0
+
+
+def test_full_psu_number_with_prefix_is_saved(world, client):
+    data = _form(world)
+    data["psu_disbursement_number"] = "011/2569-0001"
+
+    assert _create(client, world, data).status_code == 302
+    assert models.Procurement.objects.get(parent_procurement=None).psu_disbursement_number == "011/2569-0001"
+
+
+def test_draft_with_prefix_only_stores_empty_psu_number(world, client):
+    data = _form(world)
+    data["psu_disbursement_number"] = "011/"
+    data["action"] = "draft"
+
+    assert _create(client, world, data).status_code == 302
+    assert models.Procurement.objects.get(parent_procurement=None).psu_disbursement_number == ""

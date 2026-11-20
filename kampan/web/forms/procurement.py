@@ -207,6 +207,15 @@ class ProcurementItemForm(Form):
         ]
 
 
+# ช่องเลขที่ ม.อ.เบิกจ่ายขึ้นต้นด้วย "011/" ไว้ให้ ถ้ายังมีแค่คำนำหน้า ถือว่ายังไม่ได้กรอก
+PSU_NUMBER_PREFIX = "011/"
+
+
+def clean_psu_number(value: str | None) -> str:
+    text = (value or "").strip()
+    return "" if text == PSU_NUMBER_PREFIX.strip() else text
+
+
 PSU_NUMBER_REQUIRED_MESSAGE = (
     "กรุณากรอกเลขที่ ม.อ.เบิกจ่าย เมื่อมีรายการที่ไม่แบ่งจ่ายเป็นงวด (จ่ายแล้วตอนสร้าง MA)"
 )
@@ -217,6 +226,7 @@ class ProcurementHeaderForm(FlaskForm):
     # ใส่เลขที่เบิกจ่ายตอนบันทึกจ่ายแต่ละงวดแทน ดู validate()
     psu_disbursement_number = fields.StringField(
         "เลขที่ มอ เบิกจ่าย",
+        default=PSU_NUMBER_PREFIX,
         validators=[validators.Optional(), validators.Length(max=128)],
     )
     disbursement_date = DateInputField(
@@ -334,7 +344,7 @@ class ProcurementHeaderForm(FlaskForm):
         if getattr(self, "is_draft", False) or self.mode != "full":
             return valid
 
-        if not (self.psu_disbursement_number.data or "").strip() and any(
+        if not clean_psu_number(self.psu_disbursement_number.data) and any(
             not entry.form.installment_mode.data for entry in self.items
         ):
             self.psu_disbursement_number.errors = [*self.psu_disbursement_number.errors, PSU_NUMBER_REQUIRED_MESSAGE]
