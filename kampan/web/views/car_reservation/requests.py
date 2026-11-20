@@ -435,6 +435,7 @@ def detail(request_id):
         finance_documents=finance.documents_for_reservation(reservation)
         if finance.can_issue(g.organization, current_user._get_current_object())
         else [],
+        finance_saved=finance.saved_docs(reservation),
     )
 
 
@@ -770,14 +771,28 @@ def finance_document(request_id, doc):
         abort(404)
     if reservation.status != "completed":
         abort(403)
-    form = forms.car_reservation_finance.FinanceForm()
+    saved = finance.saved_document(reservation, doc)
+    form = forms.car_reservation_finance.FinanceForm(obj=saved)
     if form.validate_on_submit():
-        pdf = finance.render(doc, reservation, finance.FinanceData.from_form(form))
-        return send_file(
-            io.BytesIO(pdf),
-            mimetype="application/pdf",
-            as_attachment=True,
-            download_name=finance_filename(reservation, doc),
+        saved = finance.save_document(
+            reservation, doc, form, current_user._get_current_object()
+        )
+        if request.form.get("action") != "save":
+            pdf = finance.render(doc, reservation, finance.FinanceData.from_form(form))
+            return send_file(
+                io.BytesIO(pdf),
+                mimetype="application/pdf",
+                as_attachment=True,
+                download_name=finance_filename(reservation, doc),
+            )
+        flash(f"บันทึก{finance.DOCUMENT_LABELS[doc]}แล้ว", "success")
+        return redirect(
+            url_for(
+                "car_reservation.requests.finance_document",
+                request_id=reservation.id,
+                doc=doc,
+                organization_id=g.organization.id,
+            )
         )
     return render_template(
         "/car_reservation/requests/finance_form.html",
@@ -786,4 +801,5 @@ def finance_document(request_id, doc):
         doc=doc,
         doc_label=finance.DOCUMENT_LABELS[doc],
         form=form,
+        saved=saved,
     )

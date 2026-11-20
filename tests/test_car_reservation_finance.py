@@ -267,3 +267,71 @@ def test_travel_times_printed_are_the_actual_start_and_end_the_duration_is_count
     assert "08.40" in text  # started_at, not the planned 08.30
     assert "16.10" in text  # completed_at, not the planned 16.30
     assert "08.30" not in text
+
+
+def saved_records(world, reservation):
+    return models.CarReservationFinanceDocument.objects(reservation=reservation)
+
+
+def test_saving_keeps_the_numbers_in_their_own_collection_and_reopens_the_form_with_them(world):
+    reservation = world.reservation()
+    client = world.client_for(world.head)
+
+    response = client.post(
+        finance_url(world, reservation, "travel"), data={**finance_data(), "action": "save"}
+    )
+
+    assert response.status_code == 302
+    (record,) = saved_records(world, reservation)
+    assert (record.doc, record.organization, record.created_by) == ("travel", world.org, world.head)
+    assert record.memo_number == "ศธ 0521.1/123"
+    assert record.memo_date == datetime.date(2026, 11, 18)
+    assert record.meal_rate_1 == Decimal("380.00") and record.evidence_count == 2
+    page = client.get(response.headers["Location"]).get_data(as_text=True)
+    assert 'value="ศธ 0521.1/123"' in page
+    assert 'value="380.00"' in page
+    assert 'data-role="finance-saved-at"' in page
+
+
+def test_the_travel_and_allowance_documents_are_saved_separately_and_updated_in_place(world):
+    reservation = world.reservation()
+    client = world.client_for(world.head)
+
+    client.post(finance_url(world, reservation, "travel"), data={**finance_data(), "action": "save"})
+    client.post(
+        finance_url(world, reservation, "allowance"),
+        data={**finance_data(memo_number="ศธ 999"), "action": "save"},
+    )
+    client.post(
+        finance_url(world, reservation, "travel"),
+        data={**finance_data(memo_number="ศธ 0521.1/124"), "action": "save"},
+    )
+
+    records = {r.doc: r for r in saved_records(world, reservation)}
+    assert set(records) == {"travel", "allowance"}
+    assert records["travel"].memo_number == "ศธ 0521.1/124"
+    assert records["allowance"].memo_number == "ศธ 999"
+
+
+def test_downloading_also_saves_the_numbers(world):
+    reservation = world.reservation()
+
+    response = world.client_for(world.head).post(
+        finance_url(world, reservation, "travel"), data={**finance_data(), "action": "download"}
+    )
+
+    assert response.mimetype == "application/pdf"
+    assert saved_records(world, reservation).count() == 1
+
+
+def test_detail_page_marks_which_documents_have_been_saved(world):
+    reservation = world.reservation()
+    client = world.client_for(world.head)
+    client.post(finance_url(world, reservation, "travel"), data={**finance_data(), "action": "save"})
+
+    html = client.get(f"{BASE}/{reservation.id}?organization_id={world.org.id}").get_data(as_text=True)
+
+    travel = html.split('data-doc="travel"')[1].split("</a>")[0]
+    allowance = html.split('data-doc="allowance"')[1].split("</a>")[0]
+    assert 'data-role="finance-saved"' in travel
+    assert 'data-role="finance-saved"' not in allowance

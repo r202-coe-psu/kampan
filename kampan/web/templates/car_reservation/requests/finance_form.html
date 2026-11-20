@@ -10,6 +10,12 @@
         action="{{ url_for('car_reservation.requests.finance_document', request_id=reservation.id, doc=doc, organization_id=organization.id) }}">
     {{ form.csrf_token }}
     <p class="text-sm text-base-content/60">กรอกตัวเลขที่ต้องการให้ปรากฏในเอกสาร ช่องที่เว้นว่างถือเป็น 0 ระบบคำนวณยอดรวมและจำนวนเงินตัวอักษรให้</p>
+    {% if saved %}
+    <p class="text-sm text-base-content/70" data-role="finance-saved-at">
+      บันทึกล่าสุดเมื่อ {{ saved.updated_date.strftime('%d/%m/%Y %H:%M') }} น.
+      {% if saved.updated_by %}โดย {{ saved.updated_by.get_name() }}{% endif %}
+    </p>
+    {% endif %}
 
     <section class="flex flex-col gap-2">
       <h3 class="font-semibold">อ้างอิงบันทึกอนุมัติ</h3>
@@ -57,7 +63,8 @@
     <div class="card-actions justify-end">
       <a class="btn btn-ghost"
          href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">ย้อนกลับ</a>
-      <button type="submit" class="btn btn-primary">ดาวน์โหลด PDF</button>
+      <button type="submit" name="action" value="save" class="btn btn-outline">บันทึก</button>
+      <button type="submit" name="action" value="download" class="btn btn-primary">บันทึกและดาวน์โหลด PDF</button>
     </div>
   </form>
 </div>

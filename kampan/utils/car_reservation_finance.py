@@ -83,10 +83,7 @@ DOCUMENTS_BY_REQUEST_TYPE = {
     "abroad": ("travel",),
     "airport": (),
 }
-DOCUMENT_LABELS = {
-    "travel": "ใบเบิกค่าใช้จ่ายในการเดินทาง + ใบสำคัญรับเงิน",
-    "allowance": "ใบเบิกค่าเบี้ยเลี้ยงเดินทาง",
-}
+DOCUMENT_LABELS = dict(models.car_reservation_finance.FINANCE_DOCUMENT_TYPES)
 DOCUMENT_PDFS = {"travel": "travel_expense.pdf", "allowance": "allowance.pdf"}
 
 THAI_MONTHS = [
@@ -131,6 +128,59 @@ def documents_for_reservation(reservation):
     if reservation.status != "completed":
         return []
     return [(doc, DOCUMENT_LABELS[doc]) for doc in documents_for(reservation.request_type)]
+
+
+# ช่องของฟอร์มที่บันทึกลง CarReservationFinanceDocument (ชื่อเดียวกันทั้งสองฝั่ง)
+SAVED_FIELDS = (
+    "memo_number",
+    "memo_date",
+    "allowance_type",
+    "allowance_days",
+    "allowance_amount",
+    "lodging_days",
+    "lodging_amount",
+    "vehicle_cost",
+    "meal_rate_1",
+    "meal_days_1",
+    "meal_rate_2",
+    "meal_days_2",
+    "evidence_count",
+)
+
+
+def saved_document(reservation, doc):
+    """ค่าที่บันทึกไว้ของเอกสารนี้ ไม่เคยบันทึกคืน None"""
+    return models.CarReservationFinanceDocument.objects(
+        organization=reservation.organization, reservation=reservation, doc=doc
+    ).first()
+
+
+def saved_docs(reservation):
+    """ประเภทเอกสารที่บันทึกไว้แล้วของคำขอนี้ {doc: เอกสาร}"""
+    return {
+        record.doc: record
+        for record in models.CarReservationFinanceDocument.objects(
+            organization=reservation.organization, reservation=reservation
+        )
+    }
+
+
+def save_document(reservation, doc, form, user):
+    """บันทึกค่าจากฟอร์มลงเอกสารของคำขอ/ประเภทนี้ (สร้างใหม่ถ้ายังไม่มี)"""
+    now = datetime.datetime.now()
+    record = saved_document(reservation, doc) or models.CarReservationFinanceDocument(
+        organization=reservation.organization,
+        reservation=reservation,
+        doc=doc,
+        created_by=user,
+        created_date=now,
+    )
+    for name in SAVED_FIELDS:
+        value = form[name].data
+        setattr(record, name, "" if value is None and name in ("memo_number", "allowance_type") else value)
+    record.updated_by = user
+    record.updated_date = now
+    return record.save()
 
 
 def thai_date(date):

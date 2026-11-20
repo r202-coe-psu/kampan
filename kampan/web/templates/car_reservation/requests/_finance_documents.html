@@ -8,6 +8,7 @@
       <a class="btn btn-primary btn-soft" data-role="finance-document" data-doc="{{ doc }}"
          href="{{ url_for('car_reservation.requests.finance_document', request_id=reservation.id, doc=doc, organization_id=organization.id) }}">
         {{ label }}
+        {% if doc in finance_saved %}<span class="badge badge-success badge-sm" data-role="finance-saved">บันทึกแล้ว</span>{% endif %}
       </a>
       {% endfor %}
     </div>
