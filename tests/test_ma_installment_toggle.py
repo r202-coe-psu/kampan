@@ -478,3 +478,40 @@ def test_excel_import_turns_installment_mode_on_only_when_more_than_one(world, g
 
     item = models.ProcurementItem.objects.get()
     assert item.installment_mode is mode and len(item.installments) == count
+
+
+# --- แยกเลขที่ ม.อ.เบิกจ่าย ออกจากเลขที่ใบเสร็จรับเงิน / ใบส่งของ (2026-11-20) ---------
+
+
+def test_pay_stores_receipt_number_separately_and_logs_it(world, client_for, existing_ma):
+    client = client_for(world.responsible)
+
+    _pay(client, world, existing_ma, payment_number="011/2569-0001", receipt_number="  RC-77  ")
+
+    installment = _first_installment(existing_ma)
+    assert installment.payment_number == "011/2569-0001"
+    assert installment.receipt_number == "RC-77"
+    assert installment.pay_log[0].payment_number == "011/2569-0001"
+    assert installment.pay_log[0].receipt_number == "RC-77"
+
+
+def test_receipt_number_is_optional_but_psu_number_is_still_required(world, client_for, existing_ma):
+    client = client_for(world.responsible)
+
+    _pay(client, world, existing_ma, payment_number="")
+    assert not _first_installment(existing_ma).is_paid()
+
+    _pay(client, world, existing_ma, payment_number="011/2569-0002")
+    installment = _first_installment(existing_ma)
+    assert installment.is_paid() and not installment.receipt_number
+
+
+def test_unpay_clears_receipt_number_but_keeps_it_in_the_log(world, client_for, existing_ma):
+    client = client_for(world.responsible)
+    _pay(client, world, existing_ma, receipt_number="RC-1")
+
+    client.post(f"{_installment_url(existing_ma, 'unpay')}?{_q(world.org)}")
+
+    installment = _first_installment(existing_ma)
+    assert not installment.receipt_number
+    assert [entry.receipt_number for entry in installment.pay_log] == ["RC-1", "RC-1"]

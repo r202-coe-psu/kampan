@@ -185,6 +185,7 @@ def pay_installment(procurement_id, item_id, installment_id):
         flash(DUPLICATE_PAYMENT_NUMBER_MESSAGE.format(number=payment_number), "error")
         return redirect(redirect_url)
 
+    receipt_number = (form.receipt_number.data or "").strip() or None
     was_paid = installment.is_paid()
     user = current_user._get_current_object()
     paid_date = datetime.datetime.combine(form.paid_date.data, datetime.time.min)
@@ -194,6 +195,7 @@ def pay_installment(procurement_id, item_id, installment_id):
         paid_date=paid_date,
         by=user,
         payment_number=payment_number,
+        receipt_number=receipt_number,
         paid_amount=form.paid_amount.data,
     )
     updated = _update_installment(
@@ -204,6 +206,7 @@ def pay_installment(procurement_id, item_id, installment_id):
         paid_date=paid_date,
         paid_by=user,
         payment_number=payment_number,
+        receipt_number=receipt_number,
         paid_amount=form.paid_amount.data,
     )
     if not updated:
@@ -238,6 +241,7 @@ def unpay_installment(procurement_id, item_id, installment_id):
         paid_date=installment.paid_date,
         by=current_user._get_current_object(),
         payment_number=installment.payment_number,
+        receipt_number=installment.receipt_number,
         paid_amount=installment.paid_amount,
     )
     updated = _update_installment(
@@ -248,6 +252,7 @@ def unpay_installment(procurement_id, item_id, installment_id):
         paid_date=None,
         paid_by=None,
         payment_number=None,
+        receipt_number=None,
         paid_amount=None,
     )
     if not updated:

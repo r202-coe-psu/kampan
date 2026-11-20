@@ -594,6 +594,7 @@ def _clone_item_for_procurement(item: models.ProcurementItem, new_procurement: m
             paid_date=inst.paid_date,
             paid_by=inst.paid_by,
             payment_number=inst.payment_number,
+            receipt_number=inst.receipt_number,
             paid_amount=inst.paid_amount,
             pay_log=[
                 models.PayLogEntry(
@@ -602,6 +603,7 @@ def _clone_item_for_procurement(item: models.ProcurementItem, new_procurement: m
                     paid_date=p.paid_date,
                     by=p.by,
                     payment_number=p.payment_number,
+                    receipt_number=p.receipt_number,
                     paid_amount=p.paid_amount,
                 )
                 for p in inst.pay_log or []

@@ -382,8 +382,12 @@ class InstallmentPaymentForm(FlaskForm):
         validators=[validators.InputRequired(message="กรุณาระบุวันที่จ่าย")],
     )
     payment_number = fields.StringField(
-        "เลขที่ ม.อ.เบิกจ่าย / เลขที่เอกสาร",
+        "เลขที่ ม.อ.เบิกจ่าย",
         validators=[validators.DataRequired(message=PAYMENT_NUMBER_REQUIRED_MESSAGE), validators.Length(max=128)],
+    )
+    receipt_number = fields.StringField(
+        "เลขที่ใบเสร็จรับเงิน / เลขที่ใบส่งของ",
+        validators=[validators.Optional(), validators.Length(max=128)],
     )
     paid_amount = money_field("ยอดที่จ่ายจริง (บาท)", required=False)
 

@@ -335,7 +335,8 @@ class PayLogEntry(me.EmbeddedDocument):
     # วันที่จ่ายที่บันทึก (action=unpaid: วันที่จ่ายเดิมที่ถูกยกเลิก)
     paid_date = me.DateTimeField()
     by = me.ReferenceField("User", dbref=True)
-    payment_number = me.StringField(max_length=128)
+    payment_number = me.StringField(max_length=128)  # เลขที่ ม.อ.เบิกจ่าย ของงวด
+    receipt_number = me.StringField(max_length=128)  # เลขที่ใบเสร็จรับเงิน / เลขที่ใบส่งของ
     paid_amount = me.DecimalField(
         min_value=0,
         max_value=1e12,
@@ -364,7 +365,8 @@ class Installment(me.EmbeddedDocument):
     )
     paid_date = me.DateTimeField()
     paid_by = me.ReferenceField("User", dbref=True)  # ผู้บันทึกการจ่าย
-    payment_number = me.StringField(max_length=128)  # เลขที่เอกสาร / ใบจ่ายเงิน
+    payment_number = me.StringField(max_length=128)  # เลขที่ ม.อ.เบิกจ่าย ของงวด (ข้อมูลเดิมคือ "เลขที่เอกสาร")
+    receipt_number = me.StringField(max_length=128)  # เลขที่ใบเสร็จรับเงิน / เลขที่ใบส่งของ (ไม่บังคับ)
     paid_amount = me.DecimalField(
         min_value=0,
         max_value=1e12,
