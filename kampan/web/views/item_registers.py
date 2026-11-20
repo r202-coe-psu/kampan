@@ -1,5 +1,6 @@
 from calendar import calendar
-from flask import Blueprint, render_template, redirect, url_for, request
+from bson import ObjectId
+from flask import Blueprint, render_template, redirect, url_for, request, abort, g
 from flask_login import login_required, current_user
 from kampan.web import forms, acl
 from kampan import models
@@ -7,6 +8,17 @@ import mongoengine as me
 from flask_mongoengine import Pagination
 
 module = Blueprint("item_registers", __name__, url_prefix="/item_registers")
+
+
+def get_item_register(organization, item_register_id):
+    if not organization or not ObjectId.is_valid(item_register_id):
+        abort(404)
+    item_register = models.RegistrationItem.objects(
+        id=item_register_id, organization=organization
+    ).first()
+    if not item_register:
+        abort(404)
+    return item_register
 
 
 @module.route("/", methods=["GET", "POST"])
@@ -71,7 +83,9 @@ def register():
     form = forms.item_registers.ItemRegisterationForm()
     form.supplier.choices = [
         (str(supplier.id), supplier.get_supplier_name())
-        for supplier in models.Supplier.objects(status="active")
+        for supplier in models.Supplier.objects(
+            status="active", organization=g.organization
+        )
     ]
     item_register = models.RegistrationItem()
 
@@ -98,7 +112,9 @@ def register():
 
     item_register.created_by = current_user._get_current_object()
     form.populate_obj(item_register)
-    item_register.supplier = models.Supplier.objects(id=form.supplier.data).first()
+    item_register.supplier = models.Supplier.objects(
+        id=form.supplier.data, organization=g.organization
+    ).first()
     item_register.status = "pending"
     item_register.organization = organization
     item_register.save()
@@ -118,11 +134,13 @@ def edit(item_register_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    item_register = models.RegistrationItem.objects().get(id=item_register_id)
+    item_register = get_item_register(g.organization, item_register_id)
     form = forms.item_registers.ItemRegisterationForm(obj=item_register)
     form.supplier.choices = [
         (str(supplier.id), supplier.get_supplier_name())
-        for supplier in models.Supplier.objects(status="active")
+        for supplier in models.Supplier.objects(
+            status="active", organization=g.organization
+        )
     ]
     if not form.validate_on_submit():
         if item_register:
@@ -148,9 +166,10 @@ def edit(item_register_id):
             )
 
     form.populate_obj(item_register)
-    item_register.supplier = models.Supplier.objects(id=form.supplier.data).first()
+    item_register.supplier = models.Supplier.objects(
+        id=form.supplier.data, organization=g.organization
+    ).first()
     item_register.status = "pending"
-    item_register.organization = organization
     item_register.save()
 
     return redirect(
@@ -165,7 +184,7 @@ def edit(item_register_id):
 @acl.organization_roles_required("admin", "endorser")
 def confirm_item_register(item_register_id):
     organization_id = request.args.get("organization_id")
-    item_register = models.RegistrationItem.objects().get(id=item_register_id)
+    item_register = get_item_register(g.organization, item_register_id)
     inventories = models.Inventory.objects(
         registration=item_register, status__ne="disactive"
     )
@@ -189,7 +208,7 @@ def confirm_item_register(item_register_id):
 def delete(item_register_id):
     organization_id = request.args.get("organization_id")
 
-    item_register = models.RegistrationItem.objects().get(id=item_register_id)
+    item_register = get_item_register(g.organization, item_register_id)
     item_register.status = "disactive"
     inventories = models.Inventory.objects(registration=item_register)
     for inventory in inventories:

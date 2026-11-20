@@ -7,6 +7,8 @@ from .fields import TagListField, TextListField
 from flask_mongoengine.wtf import model_form
 from kampan import models
 
+from .money_validators import MoneyPlaces
+
 BaseInventoryForm = model_form(
     models.Inventory,
     FlaskForm,
@@ -31,7 +33,7 @@ BaseInventoryForm = model_form(
         # },
         # "warehouse": {"label": "คลังวัสดุ", "label_modifier": lambda w: w.name},
         "set_": {"label": "จำนวนหน่วยใหญ่"},
-        "price": {"label": "ราคา (หน่วยใหญ่ละ)"},
+        "price": {"label": "ราคา (หน่วยใหญ่ละ)", "validators": [MoneyPlaces()]},
     },
 )
 

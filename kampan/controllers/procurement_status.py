@@ -17,26 +17,11 @@ class ProcurementStatusUpdater:
         if not procurement_id:
             return
 
-        procurement_id = str(procurement_id)
-        procurement = models.Procurement.objects(id=procurement_id).first()
-
-        if not procurement:
+        procurement = models.Procurement.objects(id=str(procurement_id)).first()
+        if not procurement or procurement.status == "draft":
             return
 
-        today = datetime.date.today()
-        old_status = procurement.payment_status
-        new_status = procurement.get_current_payment_status(today)
-        if old_status != new_status:
-            procurement.payment_status = new_status
-            procurement.save()
-
-        if procurement.end_date:
-            end_date = (
-                procurement.end_date.date()
-                if hasattr(procurement.end_date, "date")
-                else procurement.end_date
-            )
-            if end_date <= today + datetime.timedelta(days=90):
-                if procurement.status != "pending":
-                    procurement.status = "pending"
-                    procurement.save()
+        # สถานะการจ่ายคำนวณสดจากงวดของรายการย่อย ไม่ต้องเก็บ งานนี้อัปเดตเฉพาะสถานะการใช้งาน (usage_status)
+        # ของทุก MA ที่ไม่ใช่แบบร่าง (สถานะการต่ออายุเปลี่ยนด้วยคนเท่านั้น)
+        if procurement.refresh_usage_status(datetime.date.today()):
+            logger.info("Procurement %s usage status is now %s", procurement.id, procurement.usage_status)

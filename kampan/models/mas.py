@@ -1,4 +1,6 @@
 import datetime
+import decimal
+
 import mongoengine as me
 
 STATUS_CHOICES = [
@@ -20,13 +22,27 @@ class MAS(me.Document):
     mas_code = me.StringField(required=True, max_length=50)
     description = me.StringField(required=True, max_length=200)
     direction = me.StringField(required=True, max_length=100)
-    amount = me.DecimalField(required=True, min_value=0, max_value=1e12, precision=2)
+    amount = me.DecimalField(
+        required=True,
+        min_value=0,
+        max_value=1e12,
+        precision=2,
+        rounding=decimal.ROUND_HALF_EVEN,
+    )
 
     remaining_amount = me.DecimalField(
-        required=True, min_value=0, max_value=1e12, precision=2
+        required=True,
+        min_value=0,
+        max_value=1e12,
+        precision=2,
+        rounding=decimal.ROUND_HALF_EVEN,
     )
     reservable_amount = me.DecimalField(
-        required=True, min_value=0, max_value=1e12, precision=2
+        required=True,
+        min_value=0,
+        max_value=1e12,
+        precision=2,
+        rounding=decimal.ROUND_HALF_EVEN,
     )
     editable = me.BooleanField(default=True)
     status = me.StringField(max_length=20, choices=STATUS_CHOICES, default="active")
@@ -44,10 +60,14 @@ class Reservation(me.Document):
     requisition = me.ReferenceField("Requisition", required=True, dbref=True)
     mas = me.ReferenceField(MAS, required=True, dbref=True)
     amount = me.DecimalField(
-        required=True, min_value=0, max_value=1e12, precision=2
+        required=True,
+        min_value=0,
+        max_value=1e12,
+        precision=2,
+        rounding=decimal.ROUND_HALF_EVEN,
     )  # ค่าที่จอง
     actual_amount = me.DecimalField(
-        min_value=0, max_value=1e12, precision=2
+        min_value=0, max_value=1e12, precision=2, rounding=decimal.ROUND_HALF_EVEN
     )  # ค่าที่ใช้จริง (อาจน้อยกว่าหรือเท่ากับ amount)
     reservation_status = me.StringField(
         max_length=20, choices=RESERVATION_STATUS_CHOICES, default="reserved"

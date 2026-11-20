@@ -3,12 +3,15 @@ from flask_mongoengine.wtf import model_form
 from wtforms import fields, Form, validators
 
 from kampan import models
-from kampan.models.procurement import CATEGORY_CHOICES
+from kampan.models.procurement import CATEGORY_CHOICES, MA_CATEGORY_CHOICES
 from kampan.models.requisitions import (
     COMMITTEE_TYPE_CHOICES,
     COMMITTEE_POSITION_CHOICES,
     STATUS_CHOICES,
 )
+
+from .money_validators import MoneyPlaces
+from .procurement import sort_field
 
 BaseRequisitionForm = model_form(
     models.Requisition,
@@ -49,6 +52,7 @@ class RequisitionItemForm(Form):
         [
             validators.DataRequired(),
             validators.NumberRange(max=1e12, message="จำนวนเงินต้องไม่เกิน 1e12"),
+            MoneyPlaces(),
         ],
     )
     currency = fields.StringField("หน่วยนับ")
@@ -97,26 +101,29 @@ class RequisitionForm(BaseRequisitionForm):
 
 
 class RequisitionFilterForm(FlaskForm):
+    """ตัวกรองหน้ารายการ MA ขอต่ออายุ (ชื่อ field คงเดิมเพื่อไม่ให้ลิงก์เดิมเสีย)"""
+
     name = fields.StringField(
-        "ชื่อรายการ",
+        "ชื่อ MA",
         validators=[validators.Optional()],
     )
     category = fields.SelectField(
         "หมวดหมู่",
-        choices=[("", "ทั้งหมด")] + CATEGORY_CHOICES,
+        choices=[("", "ทั้งหมด")] + MA_CATEGORY_CHOICES,
         validators=[validators.Optional()],
     )
     product_number = fields.StringField(
-        "เลขที่เบิกจ่าย",
+        "เลขที่ ม.อ.เบิกจ่าย",
         validators=[validators.Optional()],
     )
     asset_code = fields.StringField(
-        "รหัสครุภัณฑ์",
+        "รายละเอียด (S/N, รหัสครุภัณฑ์)",
         validators=[validators.Optional()],
     )
     expiration_date_range = fields.SelectField(
         "ช่วงเวลาหมดอายุ",
         choices=[
+            ("", "ทั้งหมด"),
             ("expired", "หมดอายุแล้ว"),
             ("1_month", "1 เดือน"),
             ("3_months", "3 เดือน"),
@@ -124,9 +131,10 @@ class RequisitionFilterForm(FlaskForm):
             ("1_year", "1 ปี"),
             ("more_than_1_year", "มากกว่า 1 ปี"),
         ],
-        default="3_months",
+        default="",
         validators=[validators.Optional()],
     )
+    sort = sort_field()
 
 
 class RenewalRequestedFilterForm(FlaskForm):

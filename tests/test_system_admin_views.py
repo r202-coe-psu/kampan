@@ -218,7 +218,7 @@ def test_old_admin_urls_redirect_to_organization_module(app, login_as, setup):
     "endpoint",
     [
         "item_orders.index",
-        "procurement.requisitions.renewal_requested",
+        "procurement.products.index",
     ],
 )
 def test_org_admin_sees_manage_button_next_to_switcher(app, login_as, setup, endpoint):

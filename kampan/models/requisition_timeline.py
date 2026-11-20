@@ -1,4 +1,6 @@
 import datetime
+import decimal
+from decimal import Decimal
 
 import mongoengine as me
 from bson.objectid import ObjectId
@@ -52,7 +54,13 @@ class CompletedProgressDetail(me.EmbeddedDocument):
 
 class FundAllocationSource(me.EmbeddedDocument):
     reservation_id = me.ObjectIdField(required=True)
-    amount = me.DecimalField(required=True, min_value=0, max_value=1e12, precision=2)
+    amount = me.DecimalField(
+        required=True,
+        min_value=0,
+        max_value=1e12,
+        precision=2,
+        rounding=decimal.ROUND_HALF_EVEN,
+    )
     item_amount = me.IntField(required=True, min_value=0, default=0)
 
 
@@ -61,7 +69,13 @@ class FundAllocation(me.EmbeddedDocument):
     multi_source = me.BooleanField(default=False)
     allocations = me.EmbeddedDocumentListField(FundAllocationSource, default=list)
     account_code = me.StringField(max_length=200)
-    item_total = me.DecimalField(default=0.0, min_value=0, max_value=1e12, precision=2)
+    item_total = me.DecimalField(
+        default=Decimal("0"),
+        min_value=0,
+        max_value=1e12,
+        precision=2,
+        rounding=decimal.ROUND_HALF_EVEN,
+    )
 
 
 class RequisitionTimeline(me.Document):
@@ -75,9 +89,19 @@ class RequisitionTimeline(me.Document):
     note = me.StringField()
     quotation_winner = me.StringField()
     purchase_method = me.StringField(max_length=50)
-    payment_amount = me.DecimalField(min_value=0, max_value=1e12, precision=2)
-    total_amount = me.DecimalField(min_value=0, max_value=1e12, precision=2)
-    fund_usage_amounts = me.DictField(default=dict)
+    payment_amount = me.DecimalField(
+        min_value=0, max_value=1e12, precision=2, rounding=decimal.ROUND_HALF_EVEN
+    )
+    total_amount = me.DecimalField(
+        min_value=0, max_value=1e12, precision=2, rounding=decimal.ROUND_HALF_EVEN
+    )
+    # {reservation_id: ยอดใช้จริง} ข้อมูลเดิมเก็บเป็น double อ่านกลับเป็น Decimal ได้เลย
+    fund_usage_amounts = me.MapField(
+        me.DecimalField(
+            min_value=0, max_value=1e12, precision=2, rounding=decimal.ROUND_HALF_EVEN
+        ),
+        default=dict,
+    )
     fund_allocations = me.EmbeddedDocumentListField(FundAllocation, default=list)
     completed_progress_detail = me.EmbeddedDocumentField(CompletedProgressDetail)
     status = me.StringField(default="active", max_length=20)

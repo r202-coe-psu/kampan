@@ -2,6 +2,7 @@ import datetime
 from calendar import calendar
 from pyexpat import model
 from tabnanny import check
+from bson import ObjectId
 from flask import (
     Blueprint,
     render_template,
@@ -10,6 +11,7 @@ from flask import (
     request,
     send_file,
     abort,
+    flash,
     g,
 )
 from flask_mongoengine import Pagination
@@ -19,6 +21,31 @@ from kampan import models, utils
 from kampan.repositories.item_registers import RegisterItemRepository
 
 module = Blueprint("inventories", __name__, url_prefix="/inventories")
+
+INVALID_REQUEST_MESSAGE = "คำขอไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง"
+INVENTORY_IN_USE_MESSAGE = "ไม่สามารถลบได้ เพราะวัสดุนี้ถูกเบิกหรือถูกจองไปแล้ว"
+
+
+def get_inventory(organization, inventory_id):
+    if not organization or not ObjectId.is_valid(inventory_id):
+        abort(404)
+    inventory = models.Inventory.objects(
+        id=inventory_id, organization=organization
+    ).first()
+    if not inventory:
+        abort(404)
+    return inventory
+
+
+def get_item_register(organization, item_register_id):
+    if not organization or not ObjectId.is_valid(item_register_id):
+        abort(404)
+    item_register = models.RegistrationItem.objects(
+        id=item_register_id, organization=organization
+    ).first()
+    if not item_register:
+        abort(404)
+    return item_register
 
 
 @module.route("/", methods=["GET", "POST"])
@@ -32,7 +59,7 @@ def index():
     inventories = models.Inventory.objects(
         status="active", organization=organization
     ).order_by("-created_date")
-    items = models.Item.objects(status="active")
+    items = models.Item.objects(status="active", organization=organization)
     form.item.choices = [("", "เลือกวัสดุ")] + [
         (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
     ]
@@ -94,11 +121,11 @@ def register():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
+    item_register = get_item_register(g.organization, item_register_id)
     form = RegisterItemRepository.get_inventory_form(
-        organization_id=organization_id,
-        item_register_id=item_register_id,
+        organization_id=g.organization.id,
+        item_register_id=item_register.id,
     )
-    item_register = models.RegistrationItem.objects.get(id=item_register_id)
 
     if not form.validate_on_submit():
 
@@ -109,11 +136,16 @@ def register():
             organization=organization,
         )
 
+    item = models.Item.objects(id=form.item.data, organization=g.organization).first()
+    if not item:
+        abort(404)
     inventory = models.Inventory()
     form.populate_obj(inventory)
-    inventory.item = models.Item.objects(id=form.item.data).first()
+    inventory.item = item
     inventory.quantity = form.set_.data * inventory.item.piece_per_set
-    inventory.warehouse = models.Warehouse.objects(id=form.warehouse.data).first()
+    inventory.warehouse = models.Warehouse.objects(
+        id=form.warehouse.data, organization=g.organization
+    ).first()
     inventory.created_by = current_user._get_current_object()
     inventory.status = "pending"
     inventory.registration = item_register
@@ -137,7 +169,7 @@ def edit(inventory_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    inventory = models.Inventory.objects().get(id=inventory_id)
+    inventory = get_inventory(g.organization, inventory_id)
     form = forms.inventories.InventoryForm(obj=inventory)
     form.warehouse.choices = [
         (str(warehouse.id), warehouse.name)
@@ -147,12 +179,16 @@ def edit(inventory_id):
     ]
     item_register = inventory.registration
 
-    items = models.Item.objects(status="active")
+    items = models.Item.objects(status="active", organization=g.organization)
     if item_register.get_item_in_bill():
         items = items.filter(id__nin=item_register.get_item_in_bill())
         items = list(items)
         if inventory.item:
-            items.append(models.Item.objects(id=inventory.item.id).first())
+            items.append(
+                models.Item.objects(
+                    id=inventory.item.id, organization=g.organization
+                ).first()
+            )
     if items:
         form.item.choices = [(str(item.id), f"{item.name}") for item in items]
         form.item.process(
@@ -170,16 +206,20 @@ def edit(inventory_id):
             organization=organization,
         )
 
+    item = models.Item.objects(id=form.item.data, organization=g.organization).first()
+    if not item:
+        abort(404)
     form.populate_obj(inventory)
 
-    inventory.item = models.Item.objects(id=form.item.data).first()
-    inventory.warehouse = models.Warehouse.objects(id=form.warehouse.data).first()
+    inventory.item = item
+    inventory.warehouse = models.Warehouse.objects(
+        id=form.warehouse.data, organization=g.organization
+    ).first()
     inventory.quantity = form.set_.data * inventory.item.piece_per_set
     inventory.created_by = current_user._get_current_object()
     inventory.status = "pending"
     inventory.registration = item_register
     inventory.remain = inventory.quantity
-    inventory.organization = organization
     inventory.save()
 
     return redirect(
@@ -191,22 +231,38 @@ def edit(inventory_id):
     )
 
 
-@module.route("/<inventory_id>/delete")
+@module.route("/<inventory_id>/delete", methods=["POST"])
 @acl.organization_roles_required("admin")
 def delete(inventory_id):
     organization_id = request.args.get("organization_id")
 
-    inventory = models.Inventory.objects().get(id=inventory_id)
-    inventory.status = "disactive"
-    inventory.save()
-
-    return redirect(
-        url_for(
-            "inventories.bill_item",
-            item_register_id=inventory.registration.id,
-            organization_id=organization_id,
-        )
+    inventory = get_inventory(g.organization, inventory_id)
+    bill_url = url_for(
+        "inventories.bill_item",
+        item_register_id=inventory.registration.id,
+        organization_id=organization_id,
     )
+    form = forms.post_action.PostActionForm()
+    if not form.validate_on_submit():
+        flash(INVALID_REQUEST_MESSAGE, "error")
+        return redirect(bill_url)
+
+    # ห้ามลบถ้ามีการตัด stock ไปแล้ว หรือมีรายการเบิกอ้างถึงก้อนนี้
+    if inventory.remain != inventory.quantity or models.CheckoutItem.objects(
+        inventories=inventory, status__ne="disactive"
+    ).count():
+        flash(INVENTORY_IN_USE_MESSAGE, "warning")
+        return redirect(bill_url)
+
+    # atomic: ลบได้ครั้งเดียว และเฉพาะเมื่อ stock ยังไม่ถูกตัดระหว่างทาง
+    models.Inventory.objects(
+        id=inventory.id,
+        organization=g.organization,
+        status__ne="disactive",
+        remain=inventory.quantity,
+    ).update_one(set__status="disactive")
+
+    return redirect(bill_url)
 
 
 @module.route("/all-item", methods=["GET", "POST"])
@@ -217,7 +273,7 @@ def bill_item():
         id=organization_id, status="active"
     ).first()
     item_register_id = request.args.get("item_register_id")
-    item_register = models.RegistrationItem.objects.get(id=item_register_id)
+    item_register = get_item_register(g.organization, item_register_id)
     inventories = models.Inventory.objects(
         registration=item_register, status__ne="disactive", organization=organization
     )
@@ -234,11 +290,13 @@ def bill_item():
 @module.route("/<inventory_id>/file")
 @acl.organization_roles_required("admin")
 def bill(inventory_id):
-    inventory = models.Inventory.objects.get(id=inventory_id)
+    inventory = get_inventory(g.organization, inventory_id)
     registration_item = models.RegistrationItem.objects(
-        id=inventory.registration.id, status__ne="disactive"
+        id=inventory.registration.id,
+        status__ne="disactive",
+        organization=g.organization,
     ).first()
-    if not registration_item.bill:
+    if not registration_item or not registration_item.bill:
         return abort(404)
 
     response = send_file(
@@ -257,7 +315,7 @@ def upload_file_inventory_info(item_register_id):
         id=organization_id, status="active"
     ).first()
     form = forms.inventories.UploadInventoryFileForm()
-    item_register = models.RegistrationItem.objects.get(id=item_register_id)
+    item_register = get_item_register(g.organization, item_register_id)
 
     upload_completed = False
     errors = request.args.getlist("errors")

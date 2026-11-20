@@ -17,6 +17,7 @@
 
 
 {% block content %}
+{% include "/approve_orders/flash_messages.html" %}
 <div class="flex flex-row justify-between">
   <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary"
@@ -41,9 +42,10 @@
 
 
 <dialog class="modal denied" id="denied">
-  <form
+  <form method="POST"
     action="{{ url_for('approve_orders.supervisor_supplier_denied',order_id=order.id, organization_id=organization.id) }}"
     class="modal-box">
+    {{ action_form.hidden_tag() }}
 
     <div class="text-2xl font-bold">
       <span class="text-error">
@@ -57,8 +59,6 @@
     <fieldset class="fieldset">
       <legend class="fieldset-legend">เหตุผล</legend>
       <input type="text" id="reason" name="reason" class="input">
-      <input type="text" name="organization_id" id="organization_id" value="{{ organization.id|safe }}"
-        style="display: none;">
     </fieldset>
     <div class="modal-action">
       <button class="btn" type="button" onclick="denied.close()">
@@ -74,9 +74,10 @@
 
 
 <dialog class="modal approve" id="approve">
-  <form
+  <form method="POST"
     action="{{ url_for('approve_orders.supervisor_supplier_approve',order_id=order.id, organization_id=organization.id) }}"
     class="modal-box">
+    {{ action_form.hidden_tag() }}
 
     <div class="text-2xl font-bold">
       <span class="text-success">
@@ -90,8 +91,6 @@
     <fieldset class="fieldset">
       <legend class="fieldset-legend">เหตุผล</legend>
       <input type="text" id="reason" name="reason" class="input">
-      <input type="text" name="organization_id" id="organization_id" value="{{ organization.id|safe }}"
-        style="display: none;">
     </fieldset>
     <div class="modal-action">
       <button class="btn" type="button" onclick="approve.close()">
@@ -106,7 +105,9 @@
 </dialog>
 
 {% endif %}
-<form action="{{ url_for('approve_orders.change_quantity',order_id=order.id, organization_id=organization.id) }}">
+<form method="POST"
+  action="{{ url_for('approve_orders.change_quantity',order_id=order.id, organization_id=organization.id) }}">
+  {{ action_form.hidden_tag() }}
   {% if order.status=="pending on supervisor supplier" and checkouts %}
   <div class="flex flex-row w-full justify-between mt-4">
     <div class="flex justify-end w-full gap-2">

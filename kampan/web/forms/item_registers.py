@@ -9,7 +9,7 @@ from kampan import models
 BaseItemRegisterationForm = model_form(
     models.RegistrationItem,
     FlaskForm,
-    exclude=["created_date", "created_by", "bill"],
+    exclude=["created_date", "created_by", "bill", "organization"],
     field_args={
         "description": {"label": "คำอธิบาย"},
         "receipt_id": {"label": "เลขกำกับใบเสร็จ"},
