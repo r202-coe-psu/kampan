@@ -117,6 +117,19 @@ def test_select_system_links_to_the_profile_outside_the_inventory_layout(
     assert f'href="{profile_url}"' in html.replace("&amp;", "&")
 
 
+def test_profile_opened_from_select_system_has_no_inventory_sidebar(
+    app, create_user, login_as
+):
+    client = login_as(app.test_client(), create_user("Pro", "File"))
+
+    standalone = client.get("/accounts?from=select_system").get_data(as_text=True)
+    regular = client.get("/accounts").get_data(as_text=True)
+
+    assert 'data-role="back-to-select-system"' in standalone
+    assert 'id="drawer-menu"' not in standalone
+    assert 'id="drawer-menu"' in regular
+
+
 def test_member_without_division_stays_on_select_system_with_a_notice(
     app, create_org, create_user, assign_user_to_org, login_as
 ):

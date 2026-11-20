@@ -53,6 +53,16 @@ def get_user_and_remember():
         login_user(user, remember=True)
 
 
+PROFILE_FROM_SELECT_SYSTEM = "select_system"
+
+
+def redirect_to_profile(**params):
+    """กลับหน้าข้อมูลผู้ใช้ โดยคงมุมมองแบบเปิดจากหน้าเลือกระบบไว้ถ้ามาจากที่นั่น"""
+    if request.args.get("from") == PROFILE_FROM_SELECT_SYSTEM:
+        params["from"] = PROFILE_FROM_SELECT_SYSTEM
+    return redirect(url_for("accounts.index", **params))
+
+
 @module.route("/login", methods=("GET", "POST"))
 def login():
     if current_user.is_authenticated:
@@ -220,7 +230,7 @@ def upload_picture():
     form = forms.accounts.PictureForm()
     if not form.validate_on_submit():
         errors = " ".join(message for messages in form.errors.values() for message in messages)
-        return redirect(url_for("accounts.index", errors=errors))
+        return redirect_to_profile(errors=errors)
 
     user = current_user._get_current_object()
     upload = form.picture.data
@@ -234,7 +244,7 @@ def upload_picture():
         )
     user.save()
 
-    return redirect(url_for("accounts.index"))
+    return redirect_to_profile()
 
 
 @module.route("/accounts/<user_id>/picture")
@@ -258,7 +268,7 @@ def upload_signature():
         errors = " ".join(
             message for messages in form.errors.values() for message in messages
         )
-        return redirect(url_for("accounts.index", errors=errors))
+        return redirect_to_profile(errors=errors)
 
     user = current_user._get_current_object()
     image = io.BytesIO(form.image_bytes)
@@ -276,7 +286,7 @@ def upload_signature():
         )
     user.save()
 
-    return redirect(url_for("accounts.index"))
+    return redirect_to_profile()
 
 
 @module.route("/accounts/signature/remove", methods=["POST"])
@@ -287,7 +297,7 @@ def remove_signature():
         user.signature.delete()
         user.save()
 
-    return redirect(url_for("accounts.index"))
+    return redirect_to_profile()
 
 
 @module.route("/accounts/<user_id>/signature")

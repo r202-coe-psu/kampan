@@ -1,5 +1,10 @@
-{% extends '/base/template-page-login.html' %}
+{# เปิดจากหน้าเลือกระบบ (?from=select_system): ไม่ใช้ layout ของระบบเบิกวัสดุ
+   เพราะบางหน่วยงานไม่ได้เปิดระบบนี้ #}
+{% set standalone = request.args.get('from') == 'select_system' %}
+{% extends '/base/template-page-unlogin.html' if standalone else '/base/template-page-login.html' %}
 {% from '/base/components/file_dropzone.html' import FileDropzone %}
+
+{% block title %}ข้อมูลผู้ใช้งาน{% endblock %}
 
 {% block dashboard_title %}
 ข้อมูลผู้ใช้งาน
@@ -22,6 +27,15 @@
 {%- endmacro %}
 
 {% block content %}
+{% if standalone %}
+<div class="flex flex-wrap items-center justify-between gap-2 py-6">
+  <h1 class="text-3xl font-bold">ข้อมูลผู้ใช้งาน</h1>
+  <a class="btn btn-ghost btn-sm" data-role="back-to-select-system"
+     href="{{ url_for('site.select_system', organization_id=organization.id) if organization else url_for('site.select_system') }}">
+    <i class="ph ph-arrow-left"></i>กลับไปเลือกระบบ
+  </a>
+</div>
+{% endif %}
 {% set org_role = current_user.get_current_organization_user_role() %}
 {% set appointment = org_role.display_appointment() if org_role else None %}
 {% set division = current_user.get_current_division() %}
@@ -56,7 +70,7 @@
       </div>
 
       {% if picture_form %}
-      <form method="POST" action="{{ url_for('accounts.upload_picture') }}" enctype="multipart/form-data"
+      <form method="POST" action="{{ url_for('accounts.upload_picture', **({'from': 'select_system'} if standalone else {})) }}" enctype="multipart/form-data"
         class="flex w-full flex-col gap-3 border-t border-base-300 pt-4">
         {{ picture_form.csrf_token }}
         {{ FileDropzone(picture_form.picture, 'เปลี่ยนรูปโปรไฟล์', icon='ph-camera', preview_class='size-24 rounded-full object-cover') }}
@@ -110,7 +124,7 @@
           <p class="py-2 text-base-content/70">เอกสารที่พิมพ์หลังจากนี้จะไม่มีลายเซ็นของท่าน จนกว่าจะเพิ่มใหม่</p>
           <div class="modal-action">
             <form method="dialog"><button class="btn btn-ghost">ยกเลิก</button></form>
-            <form method="POST" action="{{ url_for('accounts.remove_signature') }}">
+            <form method="POST" action="{{ url_for('accounts.remove_signature', **({'from': 'select_system'} if standalone else {})) }}">
               {{ signature_form.csrf_token }}
               <button type="submit" class="btn btn-error"><i class="ph ph-trash"></i>ลบลายเซ็น</button>
             </form>
@@ -131,7 +145,7 @@
           <i class="ph ph-upload-simple"></i>อัปโหลดไฟล์
         </label>
         <div class="tab-content mt-3">
-          <form method="POST" action="{{ url_for('accounts.upload_signature') }}" enctype="multipart/form-data"
+          <form method="POST" action="{{ url_for('accounts.upload_signature', **({'from': 'select_system'} if standalone else {})) }}" enctype="multipart/form-data"
             class="flex flex-col gap-3">
             {{ signature_form.csrf_token }}
             {{ FileDropzone(signature_form.signature, 'ไฟล์ลายเซ็น', hint='JPEG หรือ PNG ขนาดไม่เกิน 2 MB · แนะนำ PNG พื้นหลังโปร่งใส',
@@ -147,7 +161,7 @@
           <i class="ph ph-pencil-simple-line"></i>วาดลายเซ็น
         </label>
         <div class="tab-content mt-3">
-          <form method="POST" action="{{ url_for('accounts.upload_signature') }}" class="flex flex-col gap-3"
+          <form method="POST" action="{{ url_for('accounts.upload_signature', **({'from': 'select_system'} if standalone else {})) }}" class="flex flex-col gap-3"
             id="signature-draw-form">
             {{ signature_form.csrf_token }}
             <div class="relative mx-auto w-full max-w-2xl">
