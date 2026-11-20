@@ -39,6 +39,8 @@ def switch_organization():
 
 @module.route("/")
 def index():
+    if current_user.is_authenticated:
+        return redirect(url_for("site.select_system"))
     return redirect(url_for("accounts.login"))
 
 
@@ -55,12 +57,11 @@ def select_system():
         if "admin" not in current_user.roles and not current_user.get_current_division(
             organization
         ):
-            return redirect(
-                url_for(
-                    "accounts.index",
-                    organization_id=organization.id,
-                    errors="กรุณาติดต่อผู้ดูแลระบบเพื่อตั้งค่าแผนก (Please contact the administrator to select a division.)",
-                )
+            return render_template(
+                "sites/select_system.html",
+                organization=organization,
+                enabled_modules=[],
+                notice="กรุณาติดต่อผู้ดูแลระบบเพื่อตั้งค่าแผนก (Please contact the administrator to select a division.)",
             )
 
         enabled_modules = [
@@ -84,7 +85,8 @@ def select_system():
         return redirect(url_for("organizations.system_organizations.index"))
 
     return render_template(
-        "/accounts/index.html",
-        user=current_user,
-        organization=organization,
+        "sites/select_system.html",
+        organization=None,
+        enabled_modules=[],
+        notice="ยังไม่ได้เป็นสมาชิกหน่วยงานใด กรุณาติดต่อผู้ดูแลระบบ",
     )

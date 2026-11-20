@@ -91,3 +91,41 @@ def test_select_system_tells_member_when_no_module_is_enabled(app, open_select_s
     assert EMPTY_MESSAGE in html
     for key in MODULE_ENDPOINTS:
         assert f'href="{_module_url(app, key, org)}"' not in html
+
+
+def test_signed_in_user_opening_the_site_lands_on_select_system(
+    app, create_user, login_as
+):
+    client = login_as(app.test_client(), create_user("Start", "Up"))
+
+    for path in ("/", "/login"):
+        response = client.get(path)
+        assert response.status_code == 302
+        assert response.headers["Location"].endswith("/select_system")
+
+
+def test_select_system_links_to_the_profile_outside_the_inventory_layout(
+    app, open_select_system
+):
+    org, response = open_select_system(enabled_modules=["car", "procurement"])
+    html = response.get_data(as_text=True)
+    with app.test_request_context():
+        profile_url = url_for(
+            "accounts.index", organization_id=org.id, **{"from": "select_system"}
+        )
+    assert 'data-role="edit-profile"' in html
+    assert f'href="{profile_url}"' in html.replace("&amp;", "&")
+
+
+def test_member_without_division_stays_on_select_system_with_a_notice(
+    app, create_org, create_user, assign_user_to_org, login_as
+):
+    org = create_org("No Division Org")
+    member = create_user("No", "Division")
+    assign_user_to_org(member, org, roles=["staff"])
+    client = login_as(app.test_client(), member)
+
+    response = client.get(f"/select_system?organization_id={org.id}")
+
+    assert response.status_code == 200
+    assert "ตั้งค่าแผนก" in response.get_data(as_text=True)

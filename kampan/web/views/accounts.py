@@ -56,7 +56,7 @@ def get_user_and_remember():
 @module.route("/login", methods=("GET", "POST"))
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for("accounts.index"))
+        return redirect(url_for("site.select_system"))
 
     # if "next" in request.args:
     #     session["next"] = request.args.get("next", None)
