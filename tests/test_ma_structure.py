@@ -110,7 +110,7 @@ def _two_item_form(world):
         [
             _item(
                 name="[TEST] License A",
-                category="intangible",
+                category="software",
                 account_code="1204010101 สินทรัพย์ไม่มีตัวตน",
                 amount="60000.00",
                 sub_items=[
@@ -169,7 +169,7 @@ def test_create_ma_with_two_items_saves_header_items_and_installments(world, cli
     assert [item.name for item in items] == ["[TEST] License A", "[TEST] MA B"]
     first, second = items
     assert first.organization.id == world.org.id
-    assert first.category == "intangible"
+    assert first.category == "software"
     assert first.account_code == "1204010101 สินทรัพย์ไม่มีตัวตน"
     assert first.amount == Decimal("60000.00")
     assert [(row.brand, row.model_name, row.details) for row in first.sub_items] == [

@@ -541,3 +541,16 @@ def test_confirm_dialogs_are_rendered_once_outside_the_hidden_installment_rows(w
         for dialog_id in ("renew_confirm_modal", "renewal_request_modal"):
             if f'id="{dialog_id}"' in html:
                 assert html.index(f'id="{dialog_id}"') > html.rindex('id="sub_items_')
+
+
+def test_renewed_tab_includes_waiting_review_ma_but_not_other_not_started_statuses(world):
+    waiting = _create_ma(world, end_in_days=60, status="review")
+    requested = _create_ma(world, end_in_days=60, status="renewal-requested")
+    stopped = _create_ma(world, end_in_days=60, status="disactive")
+    renewed = _create_ma(world, end_in_days=60, status="renewed")
+    for ma in (waiting, requested, stopped):
+        models.Procurement.objects(id=ma.id).update(set__usage_status="upcoming")
+
+    shown = set(_shown_mas(_get(world, PRODUCTS, usage_status="", renewal_status="renewed")))
+
+    assert shown == {waiting.name, renewed.name}

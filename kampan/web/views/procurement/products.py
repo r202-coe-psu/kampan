@@ -157,9 +157,10 @@ def index():
     if usage_status in dict(models.USAGE_STATUS_CHOICES):
         procurement_qs = procurement_qs.filter(_usage_q(usage_status))
     if renewal_status == "renewed":
-        # "ต่ออายุแล้ว" รวมรายการใหม่ที่ยังไม่ถึงวันเริ่มใช้งาน (รอใช้งาน)
+        # "ต่ออายุแล้ว" รวมรายการใหม่ที่ยังไม่ถึงวันเริ่มใช้งานและยังรอตรวจสอบ (รอใช้งาน) ไม่รวมรอต่ออายุ/ไม่ต่ออายุ
         procurement_qs = procurement_qs.filter(
-            Q(status__in=renewal_status_statuses("renewed")) | Q(usage_status="upcoming")
+            Q(status__in=renewal_status_statuses("renewed"))
+            | (Q(status__in=renewal_status_statuses("review")) & Q(usage_status="upcoming"))
         )
     elif renewal_status in FILTERABLE_RENEWAL_STATUSES:
         procurement_qs = procurement_qs.filter(status__in=renewal_status_statuses(renewal_status))
@@ -406,7 +407,28 @@ def _build_form(
             if div:
                 extra_division_ids.append(getattr(div, "id", div))
     form.set_division_choices(_division_choices(organization, extra_division_ids))
+    if procurement:
+        _allow_legacy_categories(form, procurement.get_items())
+    elif renew_from:
+        _allow_legacy_categories(form, [target_item] if target_item else renew_from.get_items(), any_item=True)
     return form
+
+
+def _allow_legacy_categories(form, existing_items, any_item: bool = False) -> None:
+    """รายการเดิมที่เป็นประเภทที่เลิกให้เลือกแล้ว (เช่น สินทรัพย์ไม่มีตัวตน) ยังแสดงและบันทึกต่อได้
+    โดยเพิ่มตัวเลือกเฉพาะประเภทที่รายการต้นทางมีอยู่ใน DB เท่านั้น (ไม่รับประเภทเลิกใช้ที่ client แต่งขึ้นเอง)
+    แก้ MA: จับคู่ตาม item_id · ต่ออายุ (any_item): รายการในฟอร์มเป็นรายการใหม่ ใช้ประเภทของรายการต้นทางทั้งหมด"""
+    legacy_labels = dict(models.ITEM_CATEGORY_CHOICES)
+    by_id = {str(item.id): item.category for item in existing_items}
+    source_categories = {item.category for item in existing_items}
+    for entry in form.item_entries():
+        choices = dict(entry.form.category.choices)
+        if any_item:
+            allowed = source_categories
+        else:
+            allowed = {by_id.get(entry.form.item_id.data or "")}
+        for category in sorted(c for c in allowed if c in legacy_labels and c not in choices):
+            entry.form.category.choices = [*entry.form.category.choices, (category, legacy_labels[category])]
 
 
 def _source_items(procurement, renew_from, target_item, mode="full") -> list:
@@ -705,7 +727,8 @@ def _save_form(
     if not is_draft and mode in ("header", "item"):
         # โหมดเต็มตรวจในฟอร์มแล้ว: เลขที่ ม.อ.เบิกจ่ายของหัวจำเป็นเมื่อมีรายการที่ไม่แบ่งจ่ายเป็นงวด (จ่ายแล้วตอนสร้าง MA)
         psu_number = form.psu_disbursement_number.data if mode == "header" else procurement.psu_disbursement_number
-        if not forms.procurement.clean_psu_number(psu_number) and any(not item.pays_in_installments() for item in items):
+        needs_psu_number = any(not item.pays_in_installments() for item in items)
+        if needs_psu_number and not forms.procurement.clean_psu_number(psu_number):
             return _render_form(form, organization, member, procurement, [PSU_NUMBER_REQUIRED_MESSAGE], **render_kwargs)
 
     _apply_header(form, procurement, user, items=items, is_draft=is_draft)

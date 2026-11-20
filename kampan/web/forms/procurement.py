@@ -166,13 +166,6 @@ class ProcurementItemForm(Form):
         fields.FormField(InstallmentForm), min_entries=1, max_entries=MAX_INSTALLMENTS_PER_ITEM + 1
     )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # ข้อมูลเดิมที่เป็นประเภทที่เลิกให้เลือกแล้ว (สินทรัพย์ไม่มีตัวตน) ยังต้องแสดงและบันทึกต่อได้
-        legacy = dict(models.ITEM_CATEGORY_CHOICES)
-        if self.category.data in legacy and self.category.data not in dict(self.category.choices):
-            self.category.choices = [*self.category.choices, (self.category.data, legacy[self.category.data])]
-
     def validate(self, extra_validators=None):
         # ปิดแบ่งงวด: ไม่ใช้แถวงวดที่ส่งมา (ระบบสร้างงวดเดียวจากวันสิ้นสุด) จึงไม่ validate
         if not self.installment_mode.data:

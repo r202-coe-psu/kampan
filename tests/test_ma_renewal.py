@@ -529,3 +529,20 @@ def test_duration_text_formats_years_months_days():
     assert _duration_text(14, 3) == "1 ปี 2 เดือน 3 วัน"
     assert _duration_text(12, 0) == "1 ปี"
     assert _duration_text(0, 0) == "0 วัน"
+
+
+def test_renewal_timeline_does_not_reveal_ma_the_user_cannot_see(world, client_for):
+    client = client_for(world.admin)
+    client.post(_renew_url(world), data=_renew_form(world))
+    new = models.Procurement.objects(renewed_from=world.old).get()
+    # คนที่เห็นเฉพาะ MA ใหม่ (ผู้รับผิดชอบรายการใหม่) แต่ไม่เห็น MA เดิม
+    models.ProcurementItem.objects(procurement=world.old).update(set__responsible_by=[world.role_admin])
+    models.ProcurementItem.objects(procurement=new).update(set__responsible_by=[world.role_other_staff])
+
+    response = client_for(world.other_staff).get(_page(world, "detail", new))
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    timeline = html[html.index("data-renewal-timeline"):]
+    assert "รายการที่คุณไม่มีสิทธิ์ดู" in timeline
+    assert "PSU-OLD-1" not in timeline and "ตั้งแต่ 1 ม.ค. 2568" not in timeline

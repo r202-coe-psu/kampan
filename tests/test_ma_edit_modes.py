@@ -494,17 +494,29 @@ def test_legacy_intangible_item_can_still_be_edited(world, client_for, two_item_
     assert 'data-value="intangible"' in html
 
 
-def test_legacy_intangible_category_passes_item_form_validation(app):
-    from werkzeug.datastructures import MultiDict
+def test_legacy_intangible_item_can_be_saved_with_its_own_category(world, client_for, two_item_ma):
+    _, second = two_item_ma.get_items()
+    models.ProcurementItem.objects(id=second.id).update(set__category="intangible")
+    second.reload()
+    data = ma_form(
+        [_item_fields(second, category="intangible", note="แก้แล้ว")], total_amount="1.00", version=two_item_ma.get_version()
+    )
 
-    from kampan.web.forms.procurement import ProcurementItemForm
+    response = client_for(world.admin).post(_edit_url(world, two_item_ma, second), data=data)
 
-    with app.test_request_context():
-        legacy = ProcurementItemForm(formdata=MultiDict({"category": "intangible"}), meta={"csrf": False})
-        other = ProcurementItemForm(formdata=MultiDict({"category": "bogus"}), meta={"csrf": False})
+    assert response.status_code == 302
+    second.reload()
+    assert second.category == "intangible" and second.note == "แก้แล้ว"
 
-        legacy.category.validate(legacy)
-        other.category.validate(other)
 
-    assert not legacy.category.errors
-    assert other.category.errors
+@pytest.mark.parametrize("retired", ["intangible", "material"])
+def test_retired_category_is_rejected_for_an_item_that_does_not_have_it(world, client_for, two_item_ma, retired):
+    _, second = two_item_ma.get_items()
+    before = second.category
+    data = ma_form([_item_fields(second, category=retired)], total_amount="1.00", version=two_item_ma.get_version())
+
+    response = client_for(world.admin).post(_edit_url(world, two_item_ma, second), data=data)
+
+    assert response.status_code == 200
+    second.reload()
+    assert second.category == before
