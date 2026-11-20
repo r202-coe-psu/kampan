@@ -61,7 +61,6 @@
       <table class="table">
         <thead>
           <tr>
-            <th>เลขที่</th>
             <th>วัตถุประสงค์</th>
             <th>ผู้ขอ</th>
             <th>ประเภท</th>
@@ -74,11 +73,10 @@
         <tbody>
           {% for reservation in reservations %}
           <tr class="hover:bg-base-200/50">
-            <td>
-              {{ reservation.id }}
+            <td class="font-medium">
+              {{ reservation.request_reason }}
               {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
             </td>
-            <td class="font-medium">{{ reservation.request_reason }}</td>
             <td>{{ reservation.creator.get_resources_fullname_th() if reservation.creator else '-' }}</td>
             <td>{{ reservation.get_request_type_display() }}</td>
             <td>{{ reservation.location }}</td>
