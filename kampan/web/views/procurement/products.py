@@ -39,6 +39,7 @@ NO_RENEW_PERMISSION_MESSAGE = "คุณไม่มีสิทธิ์ต่�
 ALREADY_RENEWED_MESSAGE = "MA รายการนี้ต่ออายุไปแล้ว"
 NOT_RENEWAL_APPROVER_MESSAGE = "เฉพาะเจ้าหน้าที่พัสดุ (admin) เท่านั้นที่อนุมัติการต่ออายุได้"
 RENEW_NOT_REQUESTED_MESSAGE = "ผู้รับผิดชอบยังไม่ได้ขอต่ออายุ MA รายการนี้ หรือสถานะเปลี่ยนไปแล้ว"
+INVALID_REQUEST_MESSAGE = "คำขอไม่ถูกต้องหรือหมดอายุ กรุณาลองใหม่อีกครั้ง"
 ITEM_FORM_MISMATCH_MESSAGE = "ข้อมูลรายการย่อยไม่ตรงกับรายการที่เลือกแก้ไข กรุณาเปิดหน้าแก้ไขใหม่"
 STALE_FORM_MESSAGE = "MA นี้ถูกแก้ไขหรือบันทึกจ่ายงวดโดยผู้อื่นหลังจากคุณเปิดฟอร์ม กรุณาเปิดหน้าแก้ไขใหม่แล้วบันทึกอีกครั้ง"
 
@@ -902,6 +903,11 @@ def delete(procurement_id):
 
     if not ma_permissions.can_edit_procurement(procurement, organization):
         flash(NO_EDIT_PERMISSION_MESSAGE, "error")
+        return redirect(url_for("procurement.products.index", organization_id=organization.id))
+
+    # ลบข้อมูลต้อง POST + CSRF (แอปไม่มี CSRFProtect ทั้งระบบ ตรวจเฉพาะ route ที่ validate ฟอร์ม)
+    if not forms.post_action.PostActionForm().validate_on_submit():
+        flash(INVALID_REQUEST_MESSAGE, "error")
         return redirect(url_for("procurement.products.index", organization_id=organization.id))
 
     if procurement.status != "draft":

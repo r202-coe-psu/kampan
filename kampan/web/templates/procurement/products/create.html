@@ -57,6 +57,15 @@
     {% if renew_from %}<input type="hidden" name="expected_request" value="{{ renew_from.renewal_request or '' }}">{% endif %}
     {{ form.hidden_tag() }}
 
+    {% if form.items is defined and form.items.errors %}
+      <div role="alert" class="alert alert-error">
+        <i class="ph ph-warning-circle text-xl"></i>
+        <div>
+          {% for error in form.items.errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
     {% if form_errors %}
       <div role="alert" class="alert alert-error">
         <i class="ph ph-warning-circle text-xl"></i>

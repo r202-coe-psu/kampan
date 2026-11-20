@@ -82,6 +82,10 @@ MAX_INSTALLMENTS_PER_ITEM = 120
 MAX_SUB_ITEMS_PER_ITEM = 100
 MAX_SUB_ITEMS_MESSAGE = f"จำนวนแถวยี่ห้อ / รุ่น / รายละเอียดต้องไม่เกิน {MAX_SUB_ITEMS_PER_ITEM} แถว"
 MAX_INSTALLMENTS_MESSAGE = f"จำนวนงวดต้องไม่เกิน {MAX_INSTALLMENTS_PER_ITEM}"
+# จำนวนรายการย่อยสูงสุดต่อ MA (กันคำขอเดียวสร้างรายการและอีเมลมอบหมายจำนวนมาก)
+MAX_ITEMS_PER_PROCUREMENT = 20
+MAX_ITEMS_MESSAGE = f"MA หนึ่งรายการมีรายการย่อยได้ไม่เกิน {MAX_ITEMS_PER_PROCUREMENT} รายการ"
+RESPONSIBLE_REQUIRED_MESSAGE = "ต้องเลือกผู้รับผิดชอบอย่างน้อย 1 คน"
 
 
 def default_reminder_offsets() -> list[str]:

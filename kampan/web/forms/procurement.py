@@ -7,6 +7,9 @@ from kampan import models
 from kampan.models.procurement import (
     MAX_INSTALLMENTS_MESSAGE,
     MAX_INSTALLMENTS_PER_ITEM,
+    MAX_ITEMS_MESSAGE,
+    MAX_ITEMS_PER_PROCUREMENT,
+    RESPONSIBLE_REQUIRED_MESSAGE,
     MAX_SUB_ITEMS_MESSAGE,
     MAX_SUB_ITEMS_PER_ITEM,
     check_item_sum,
@@ -172,6 +175,11 @@ class ProcurementItemForm(Form):
             self.installments.entries = []
         return super().validate(extra_validators=extra_validators)
 
+    def validate_responsible_by(self, field):
+        # MA ที่ไม่มีผู้รับผิดชอบไม่มีใครขอต่ออายุได้และไม่มีผู้รับอีเมลเตือน (แบบร่างบันทึกไปก่อนได้)
+        if not getattr(self, "is_draft", False) and not field.data:
+            raise ValidationError(RESPONSIBLE_REQUIRED_MESSAGE)
+
     def validate_end_date(self, field):
         if self.start_date.data and field.data and field.data < self.start_date.data:
             raise ValidationError("วันที่สิ้นสุดต้องมากกว่าหรือเท่ากับวันที่เริ่มต้น")
@@ -242,7 +250,10 @@ class ProcurementHeaderForm(FlaskForm):
         validators=[validators.InputRequired(message=REQUIRED_MESSAGE), validators.Length(max=255)],
     )
     total_amount = money_field("ยอดเงินรวม (บาท)")
-    items = fields.FieldList(fields.FormField(ProcurementItemForm), min_entries=1)
+    # อ่านไม่เกิน MAX + 1 รายการ แล้ว validate_items ปฏิเสธ (ไม่ตัดทิ้งเงียบ ๆ)
+    items = fields.FieldList(
+        fields.FormField(ProcurementItemForm), min_entries=1, max_entries=MAX_ITEMS_PER_PROCUREMENT + 1
+    )
     # เวลาแก้ไขล่าสุดตอนเปิดฟอร์มแก้ไข (กันบันทึกทับการแก้ / การจ่ายงวดของคนอื่นที่เกิดระหว่างนั้น)
     version = fields.HiddenField()
 
@@ -266,6 +277,10 @@ class ProcurementHeaderForm(FlaskForm):
                 delattr(self, name)
         if is_draft:
             self.prepare_for_draft()
+
+    def validate_items(self, field):
+        if len(field.entries) > MAX_ITEMS_PER_PROCUREMENT:
+            raise ValidationError(MAX_ITEMS_MESSAGE)
 
     def item_entries(self) -> list:
         return list(self._fields["items"]) if "items" in self._fields else []

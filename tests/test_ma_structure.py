@@ -20,6 +20,9 @@ from kampan.utils import upload_files
 from kampan.utils.money import MONEY_PLACES_ERROR
 
 
+DEFAULT_RESPONSIBLE: list = []
+
+
 @pytest.fixture
 def world(app, create_org, create_user, assign_user_to_org):
     org = create_org("[TEST] Org A")
@@ -43,6 +46,9 @@ def world(app, create_org, create_user, assign_user_to_org):
     # เห็น MA ทั้งหน่วยงาน (#31) แต่ไม่ใช่ผู้แก้ไข MA ได้
     head, role_head = member("Head", org, ["head"], division_fin)
     admin_b, role_admin_b = member("AdminB", other_org, ["admin"])
+    # ผู้รับผิดชอบตั้งต้นของฟอร์มทดสอบ (MA ที่ไม่ใช่แบบร่างต้องมีผู้รับผิดชอบอย่างน้อย 1 คน)
+    global DEFAULT_RESPONSIBLE
+    DEFAULT_RESPONSIBLE = [str(role_admin.id)]
     return SimpleNamespace(**locals())
 
 
@@ -80,7 +86,7 @@ def _item(**overrides):
         "end_date": "2030-12-31",
         "amount": "50000.00",
         "reminder_kind": "ma",
-        "responsible_by": [],
+        "responsible_by": None,  # None = ผู้รับผิดชอบตั้งต้นของ world · [] = ไม่มีผู้รับผิดชอบ (ใช้ทดสอบกติกาบังคับ)
         "installments": [{"due_date": "2030-12-31"}],
     }
     item.update(overrides)
@@ -92,6 +98,8 @@ def ma_form(items, total_amount="100000.00", psu="PSU-25/2569", name="[TEST] MA"
     data.update(extra)
     for index, item in enumerate(items):
         item = dict(item)
+        if item.get("responsible_by") is None and "responsible_by" in item:
+            item["responsible_by"] = DEFAULT_RESPONSIBLE
         installments = item.pop("installments")
         sub_items = item.pop("sub_items", [])
         for key, value in item.items():
@@ -1135,7 +1143,10 @@ def test_upload_responsible_lookup_is_scoped_to_document_org(world, gridfs_enabl
 
     upload_files.save_ma_db(document, None, world.admin.id)
 
-    assert models.ProcurementItem.objects.get().responsible_by == []
+    # ชื่อของสมาชิกหน่วยงานอื่นไม่ถูกจับคู่ และ MA ที่ไม่มีผู้รับผิดชอบไม่ถูกนำเข้า
+    assert models.ProcurementItem.objects.count() == 0
+    document.reload()
+    assert any(models.procurement.RESPONSIBLE_REQUIRED_MESSAGE in error for error in document.error_messages)
 
 
 # ---------------------------------------------------------------------------
@@ -1644,3 +1655,122 @@ def test_legacy_material_category_still_has_a_label(world, create_ma):
     assert ma.get_items()[0].get_category_label() or True
     item = models.ProcurementItem.objects(procurement=ma).get()
     assert item.get_category_label() == "วัสดุ"
+
+
+# ---------------------------------------------------------------------------
+# ผลรีวิว 2026-11-20: ลบแบบร่าง / เอกสารนำเข้าของ admin ต้อง POST + CSRF · ผู้รับผิดชอบอย่างน้อย 1 คน · เพดานรายการ
+# ---------------------------------------------------------------------------
+
+
+def _make_draft(client, world):
+    data = _two_item_form(world)
+    data["action"] = "draft"
+    assert _create(client, world, data).status_code == 302
+    return models.Procurement.objects.get(parent_procurement=None)
+
+
+def test_delete_draft_without_csrf_token_is_refused(world, client_for, csrf_enabled, monkeypatch):
+    client = client_for(world.admin)
+    with monkeypatch.context() as patch:
+        patch.setitem(client.application.config, "WTF_CSRF_ENABLED", False)
+        draft = _make_draft(client, world)
+
+    client.post(f"/procurement/products/{draft.id}/delete?{_q(world.org)}")
+
+    assert models.Procurement.objects(id=draft.id).count() == 1
+
+
+def test_delete_draft_with_csrf_token_from_the_list_page(world, client_for, csrf_enabled, monkeypatch):
+    client = client_for(world.admin)
+    with monkeypatch.context() as patch:
+        patch.setitem(client.application.config, "WTF_CSRF_ENABLED", False)
+        draft = _make_draft(client, world)
+    token = _csrf_token(client.get(f"/procurement/products?{_q(world.org)}").get_data(as_text=True))
+
+    client.post(f"/procurement/products/{draft.id}/delete?{_q(world.org)}", data={"csrf_token": token})
+
+    assert models.Procurement.objects(id=draft.id).count() == 0
+
+
+def _upload_doc_for_admin(world, status="waiting"):
+    return models.Document(
+        organization=world.org, category="ma", status=status, created_by=world.admin, updated_by=world.admin
+    ).save()
+
+
+@pytest.mark.parametrize("action", ["delete", "process"])
+def test_admin_upload_actions_refuse_get(world, client_for, action):
+    document = _upload_doc_for_admin(world)
+
+    response = client_for(world.admin).get(f"/admin/upload_files/{document.id}/{action}?{_q(world.org)}")
+
+    assert response.status_code == 405
+    document.reload()
+    assert document.status == "waiting"
+
+
+@pytest.mark.parametrize("action", ["delete", "process"])
+def test_admin_upload_actions_without_csrf_token_do_nothing(world, client_for, csrf_enabled, action):
+    document = _upload_doc_for_admin(world)
+
+    client_for(world.admin).post(f"/admin/upload_files/{document.id}/{action}?{_q(world.org)}")
+
+    document.reload()
+    assert document.status == "waiting"
+
+
+def test_admin_upload_delete_with_token_disables_the_document(world, client_for, csrf_enabled, monkeypatch):
+    document = _upload_doc_for_admin(world)
+    client = client_for(world.admin)
+    with monkeypatch.context() as patch:
+        patch.setitem(client.application.config, "WTF_CSRF_ENABLED", False)
+        page = client.get(f"/procurement/products?{_q(world.org)}")
+    token = _csrf_token(page.get_data(as_text=True))
+
+    client.post(f"/admin/upload_files/{document.id}/delete?{_q(world.org)}", data={"csrf_token": token})
+
+    document.reload()
+    assert document.status == "disable"
+
+
+@pytest.mark.parametrize("action", ["delete", "process"])
+def test_admin_upload_actions_return_404_for_unknown_or_foreign_document(world, client_for, action):
+    other_doc = models.Document(
+        organization=world.other_org, category="ma", status="waiting", created_by=world.admin_b, updated_by=world.admin_b
+    ).save()
+    client = client_for(world.admin)
+
+    foreign = client.post(f"/admin/upload_files/{other_doc.id}/{action}?{_q(world.org)}")
+    unknown = client.post(f"/admin/upload_files/{'0' * 24}/{action}?{_q(world.org)}")
+    malformed = client.post(f"/admin/upload_files/not-an-id/{action}?{_q(world.org)}")
+
+    assert (foreign.status_code, unknown.status_code, malformed.status_code) == (404, 404, 404)
+    other_doc.reload()
+    assert other_doc.status == "waiting"
+
+
+def test_ma_without_responsible_is_rejected_but_draft_is_allowed(world, client_for):
+    client = client_for(world.admin)
+    data = ma_form([_item(responsible_by=[])])
+
+    rejected = _create(client, world, data)
+
+    assert rejected.status_code == 200
+    assert models.procurement.RESPONSIBLE_REQUIRED_MESSAGE in rejected.get_data(as_text=True)
+    assert models.Procurement.objects.count() == 0
+
+    data["action"] = "draft"
+    assert _create(client, world, data).status_code == 302
+    assert models.Procurement.objects.get().status == "draft"
+
+
+def test_ma_item_limit_is_enforced(world, client_for):
+    client = client_for(world.admin)
+    limit = models.procurement.MAX_ITEMS_PER_PROCUREMENT
+    too_many = ma_form([_item(name=f"[TEST] รายการ {index}", amount="1.00") for index in range(limit + 1)], total_amount=str(limit + 1))
+
+    response = _create(client_for(world.admin), world, too_many)
+
+    assert response.status_code == 200
+    assert models.procurement.MAX_ITEMS_MESSAGE in response.get_data(as_text=True)
+    assert models.Procurement.objects.count() == 0
