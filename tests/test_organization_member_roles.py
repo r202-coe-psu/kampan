@@ -1,11 +1,10 @@
-"""ผู้ดูแลองค์กรให้ role แก่สมาชิกได้เฉพาะ role ที่องค์กรเปิดใช้ และคนขับรถเป็นผู้อนุมัติไม่ได้"""
+"""ผู้ดูแลองค์กรให้ role แก่สมาชิกได้เฉพาะ role ที่องค์กรเปิดใช้ (คนขับรถเป็นผู้อนุมัติด้วยได้)"""
 
 import pytest
 from flask import url_for
 
 from kampan import models
 
-DRIVER_CANNOT_APPROVE = "พนักงานขับรถเป็นผู้อนุมัติไม่ได้"
 
 
 @pytest.fixture
@@ -89,12 +88,11 @@ def test_add_member_with_a_role_not_enabled_for_the_organization_is_refused(worl
     assert _candidate_membership(world) is None
 
 
-def test_add_member_cannot_be_both_driver_and_approver(world):
+def test_add_member_can_be_both_driver_and_approver(world):
     response = _add(world, ["driver", "dispatcher"])
 
-    assert response.status_code == 200
-    assert DRIVER_CANNOT_APPROVE in response.get_data(as_text=True)
-    assert _candidate_membership(world) is None
+    assert response.status_code == 302
+    assert sorted(_candidate_membership(world).roles) == ["dispatcher", "driver"]
 
 
 def test_edit_roles_with_a_role_not_enabled_for_the_organization_is_refused(world):
@@ -105,16 +103,15 @@ def test_edit_roles_with_a_role_not_enabled_for_the_organization_is_refused(worl
     assert world.member_role.roles == ["staff"]
 
 
-def test_edit_roles_cannot_make_a_driver_an_approver(world):
-    world.member_role.roles = ["driver"]
+def test_edit_roles_can_make_an_approver_a_driver_too(world):
+    world.member_role.roles = ["dispatcher"]
     world.member_role.save()
 
-    response = _edit(world, ["driver", "dispatcher"])
+    response = _edit(world, ["dispatcher", "driver"])
 
-    assert response.status_code == 200
-    assert DRIVER_CANNOT_APPROVE in response.get_data(as_text=True)
+    assert response.status_code == 302
     world.member_role.reload()
-    assert world.member_role.roles == ["driver"]
+    assert sorted(world.member_role.roles) == ["dispatcher", "driver"]
 
 
 def test_edit_roles_keeps_a_role_the_organization_has_since_disabled(world):
@@ -143,8 +140,8 @@ def test_edit_roles_success_shows_a_success_toast_on_the_members_page(world):
 
 
 def test_edit_roles_refused_shows_an_error_toast_with_the_reason(world):
-    response = _edit(world, ["driver", "dispatcher"])
+    response = _edit(world, ["staff", "president"])
 
     toasts = _toasts(response.get_data(as_text=True))
     assert [category for category, _ in toasts] == ["error"]
-    assert DRIVER_CANNOT_APPROVE in toasts[0][1]
+    assert "บันทึกไม่สำเร็จ" in toasts[0][1]

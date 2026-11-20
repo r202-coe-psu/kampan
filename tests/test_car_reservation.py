@@ -1280,6 +1280,26 @@ def request_at_dispatcher(world, **submit_args):
     return car_application
 
 
+def test_dispatcher_who_is_also_a_driver_can_assign_themselves(world):
+    membership = models.OrganizationUserRole.objects(
+        organization=world.org, user=world.dispatcher
+    ).first()
+    membership.roles = [*membership.roles, "driver"]
+    membership.save()
+    car_application = request_at_dispatcher(world)
+
+    form_page = world.client_for(world.dispatcher).get(detail_url(world, car_application))
+    assert f'value="{world.dispatcher.id}"' in form_page.get_data(as_text=True)
+    response = world.client_for(world.dispatcher).post(
+        approve_url(world, car_application),
+        data={**step_data(world, "dispatcher"), "driver": str(world.dispatcher.id)},
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.driver == world.dispatcher
+
+
 def test_dispatcher_step_logs_the_assignment_as_changes_and_skips_what_stayed_the_same(
     world,
 ):
