@@ -54,6 +54,9 @@ SAMPLE_PARAGRAPHS = {
 }
 # ค่าตัวอย่างที่แทรกอยู่ในบรรทัดที่มีจุดไข่ปลา (ลบเฉพาะ run นั้น เก็บจุดไว้)
 SAMPLE_RUNS = {"แปดร้อยสามสิบบาทถ้วน"}
+# ต้นฉบับพิมพ์ "ได้" เกินมาหนึ่ง run หน้าย่อหน้า "ได้ตรวจสอบหลักฐาน..." (หน้า 2) ย่อหน้านี้เยื้องเข้า
+# คำที่เกินจึงไปโผล่นอกกรอบตาราง: ลบ run แรกของย่อหน้าที่ขึ้นต้นด้วยข้อความเหล่านี้
+STRAY_LEADING_RUNS = {"ได้ตรวจสอบหลักฐานการเบิกจ่ายเงินที่แนบ": "ได้"}
 # แถวรายการในใบสำคัญรับเงิน (ลบทิ้ง ระบบพิมพ์ใหม่ตามอัตรา x จำนวนวัน)
 SAMPLE_PREFIXES = ("เงินช่วยเหลือค่าอาหาร พขร. (",)
 
@@ -78,6 +81,10 @@ def blank_samples(root):
         if text in PAGE_BREAK_BEFORE:
             properties = paragraph.find(W + "pPr")
             properties.insert(0, etree.Element(W + "pageBreakBefore"))
+        for rest, stray in STRAY_LEADING_RUNS.items():
+            first = next(paragraph.iter(W + "t"), None)
+            if first is not None and first.text == stray and text[len(stray):].strip() == rest:
+                first.text = ""
         if text in SAMPLE_PARAGRAPHS or text.startswith(SAMPLE_PREFIXES):
             for t in paragraph.iter(W + "t"):
                 t.text = ""
