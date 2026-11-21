@@ -202,7 +202,16 @@ class AbroadDetails(me.EmbeddedDocument):
 
 
 class CarReservation(me.Document):
-    meta = {"collection": "car_reservations"}
+    meta = {
+        "collection": "car_reservations",
+        # ทุก query กรอง org + status แล้วตามด้วยช่วงเวลา รถ คนขับ หรือผู้ขอ
+        "indexes": [
+            ("organization", "status", "departure_datetime"),
+            ("organization", "car", "status", "departure_datetime"),
+            ("organization", "driver", "status", "departure_datetime"),
+            ("organization", "creator", "-created_date"),
+        ],
+    }
 
     organization = me.ReferenceField("Organization", dbref=True, required=True)
     division = me.ReferenceField("Division", dbref=True)
