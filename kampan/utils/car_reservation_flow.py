@@ -467,10 +467,58 @@ def is_driver_only(organization, user):
 
 def inbox_for(organization, user):
     """คำขอที่รออนุมัติหรือรอรับทราบการยกเลิก และ user ทำแทนขั้นปัจจุบันได้ เรียงตามวันเดินทาง"""
-    waiting = models.CarReservation.objects(
-        organization=organization, status__in=["pending", "cancel_requested"]
-    ).order_by("departure_datetime")
-    return [app for app in waiting if can_act(app, user) or can_confirm_cancel(app, user)]
+    ids = _inbox_ids(organization, user)
+    if not ids:
+        return []
+    return list(models.CarReservation.objects(id__in=ids).order_by("departure_datetime"))
+
+
+def inbox_count(organization, user):
+    """จำนวนใน inbox_for โดยไม่โหลดเอกสารเต็ม (sidebar นับทุกหน้า)"""
+    return len(_inbox_ids(organization, user))
+
+
+def _ref_id(value):
+    return getattr(value, "id", value)
+
+
+def _inbox_ids(organization, user):
+    """กฎเดียวกับ can_act / can_confirm_cancel แต่โหลด role ของ user ครั้งเดียว แทนการ query ต่อคำขอ"""
+    if user is None:
+        return []
+    roles, head_divisions = set(), set()
+    for member in (
+        models.OrganizationUserRole.objects(
+            organization=organization, user=user, status="active"
+        )
+        .no_dereference()
+        .only("roles", "division")
+    ):
+        roles.update(member.roles)
+        if "head" in member.roles and member.division is not None:
+            head_divisions.add(_ref_id(member.division))
+    if not roles:
+        return []
+    waiting = (
+        models.CarReservation.objects(
+            organization=organization, status__in=["pending", "cancel_requested"]
+        )
+        .no_dereference()
+        .only("status", "current_step", "route_snapshot", "division")
+    )
+    ids = []
+    for app in waiting:
+        if app.status == "cancel_requested":
+            allowed = "dispatcher" in roles
+        else:
+            key = current_step_key(app)
+            if key == "supervisor":
+                allowed = app.division is not None and _ref_id(app.division) in head_divisions
+            else:
+                allowed = key is not None and key in roles
+        if allowed:
+            ids.append(app.id)
+    return ids
 
 
 def assignable_cars(organization):

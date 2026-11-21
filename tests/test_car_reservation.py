@@ -3924,3 +3924,25 @@ def test_cancel_with_the_token_from_the_detail_page_goes_through(world, csrf_ena
     assert response.status_code == 302
     reservation.reload()
     assert reservation.status != "pending"
+
+
+def test_inbox_lists_exactly_what_can_act_allows_for_every_user(world):
+    pending = world.submit_request()
+    at_dispatcher = request_at_dispatcher(world)
+    cancelling = request_with_car_assigned(world)
+    cancelling.reload()
+    cancelling.status = "cancel_requested"
+    cancelling.save()
+    everyone = [world.requester, world.supervisor, world.dispatcher, world.stranger, world.driver]
+    waiting = list(
+        models.CarReservation.objects(organization=world.org, status__in=["pending", "cancel_requested"])
+    )
+
+    for user in everyone:
+        expected = sorted(
+            str(app.id) for app in waiting if flow.can_act(app, user) or flow.can_confirm_cancel(app, user)
+        )
+        assert sorted(str(app.id) for app in flow.inbox_for(world.org, user)) == expected, user
+        assert flow.inbox_count(world.org, user) == len(expected)
+    assert {str(pending.id)} <= {str(a.id) for a in flow.inbox_for(world.org, world.supervisor)}
+    assert str(at_dispatcher.id) in {str(a.id) for a in flow.inbox_for(world.org, world.dispatcher)}

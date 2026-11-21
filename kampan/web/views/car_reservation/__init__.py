@@ -19,7 +19,7 @@ def inject_inbox():
     user = current_user._get_current_object()
     flow = utils.car_reservation_flow
     return {
-        "inbox_count": len(flow.inbox_for(organization, user)),
+        "inbox_count": flow.inbox_count(organization, user),
         "is_approver": flow.is_approver(organization, user),
     }
 
