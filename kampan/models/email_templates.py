@@ -16,17 +16,22 @@ EMAIL_TYPE = [
     ("lost_break", "แจ้งเตือนวัสดุชำรุด/สูญหาย/แก้ไข"),
     ("car_application", "ขอยืมรถยนต์"),
     ("car_application_result", "แจ้งผลการขอใช้รถยนต์ถึงผู้ขอ"),
+    ("ma_assigned", "MA: แจ้งมอบหมายผู้รับผิดชอบ"),
+    ("ma_expiry", "MA: เตือนใกล้หมดอายุ / สิ้นสุดสัญญา"),
+    ("ma_payment", "MA: เตือนครบกำหนดจ่ายงวด"),
 ]
 
 EMAIL_SYSTEMS = [
     ("inventory", "ระบบพัสดุ"),
     ("vehicle_lending", "ระบบยืมรถ"),
+    ("procurement", "ระบบ MA"),
 ]
 
 # ระบบ -> class สีประจำ module ใน setup.css (.module-<name>)
 EMAIL_SYSTEM_MODULE = {
     "inventory": "module-inventory",
     "vehicle_lending": "module-car",
+    "procurement": "module-procurement",
 }
 
 # ข้อมูลประกอบของแต่ละประเภทอีเมล เก็บในโค้ด ไม่ได้เก็บใน DB (ไม่ต้อง migrate)
@@ -66,6 +71,21 @@ EMAIL_TYPE_INFO = {
         "recipient": "ผู้ขอใช้รถ",
         "trigger": "เมื่อสถานะคำขอใช้รถเปลี่ยน (อนุมัติ / ปฏิเสธ)",
     },
+    "ma_assigned": {
+        "system": "procurement",
+        "recipient": "ผู้รับผิดชอบรายการย่อยที่ถูกเพิ่มใหม่",
+        "trigger": "เมื่อบันทึก MA หรือเพิ่มผู้รับผิดชอบในรายการย่อย (1 ฉบับต่อคนต่อรายการ)",
+    },
+    "ma_expiry": {
+        "system": "procurement",
+        "recipient": "ผู้รับผิดชอบรายการย่อย",
+        "trigger": "ก่อนวันสิ้นสุดตามช่วงที่ติ๊ก, วันสิ้นสุด, วันที่ activate และวันที่เตือนเจาะจง",
+    },
+    "ma_payment": {
+        "system": "procurement",
+        "recipient": "ผู้รับผิดชอบรายการย่อย",
+        "trigger": "วันครบกำหนดจ่ายแต่ละงวด และ 7 / 5 / 3 วันก่อนที่ติ๊กไว้",
+    },
 }
 
 
@@ -100,6 +120,25 @@ _ORDER_VARIABLES = [
     ("sender_email", "อีเมลผู้ส่ง"),
     ("endorser_name", "ชื่อผู้รับอีเมล"),
     ("endorsement_url", "ลิงก์ไปหน้าอนุมัติ"),
+]
+
+# อีเมล MA ใช้เฉพาะ template ขององค์กร (kampan/utils/ma_email_templates.py) ตัวแปรต้องตรงกับ context ที่ ma_send_emails ส่งให้
+_MA_COMMON_VARIABLES = [
+    ("organization_name", "ชื่อองค์กร"),
+    ("ma_name", "ชื่อสัญญา MA"),
+    ("psu_number", "เลขที่ ม.อ.เบิกจ่ายของสัญญา (เป็น - ถ้าไม่มี)"),
+    ("company", "บริษัท / ร้านค้า"),
+    ("item_name", "ชื่อรายการย่อย"),
+    ("noun", "คำเรียกรายการ เช่น MA / License / สัญญาเช่า-จ้างเหมา"),
+    ("start_date", "วันเริ่มสัญญา"),
+    ("end_date", "วันสิ้นสุดสัญญา"),
+    ("detail_url", "ลิงก์ไปหน้ารายละเอียด MA"),
+]
+_MA_REMINDER_VARIABLES = _MA_COMMON_VARIABLES + [
+    ("reminder_title", "หัวข้อการเตือน เช่น หมดอายุใน 30 วัน"),
+    ("reminder_message", "ข้อความอธิบายการเตือน (หลายบรรทัด)"),
+    ("target_date", "วันครบกำหนดที่เตือน (วันสิ้นสุด หรือวันครบกำหนดจ่ายงวด)"),
+    ("days_text", "จำนวนวันที่เหลือ เช่น (อีก 7 วัน) / (วันนี้) / (เลยมาแล้ว 3 วัน)"),
 ]
 
 EMAIL_TEMPLATE_VARIABLES = {
@@ -152,6 +191,13 @@ EMAIL_TEMPLATE_VARIABLES = {
         ("sender_name", "ชื่อผู้พิจารณา"),
         ("sender_email", "อีเมลผู้พิจารณา"),
         ("application_url", "ลิงก์ไปหน้ารายการขอใช้รถของผู้ขอ"),
+    ],
+    "ma_assigned": _MA_COMMON_VARIABLES + [("assigner_name", "ชื่อผู้มอบหมาย")],
+    "ma_expiry": _MA_REMINDER_VARIABLES,
+    "ma_payment": _MA_REMINDER_VARIABLES
+    + [
+        ("installment_index", "งวดที่ (ตัวเลข เป็นค่าว่างถ้าไม่ทราบ)"),
+        ("due_date", "วันครบกำหนดจ่ายของงวด"),
     ],
 }
 

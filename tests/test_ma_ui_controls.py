@@ -85,7 +85,7 @@ def test_dropdown_posts_the_original_field_value(world, client_for):
     assert _create(client_for(world.admin), world, data).status_code == 302
 
     first = models.ProcurementItem.objects.order_by("id").first()
-    assert first.category == "intangible" and first.reminder_kind == "license"
+    assert first.category == "software" and first.reminder_kind == "license"
 
 
 def _item_edit_url(world, procurement):

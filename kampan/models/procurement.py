@@ -29,18 +29,21 @@ CATEGORY_CHOICES = [
 ]
 
 # ตัวเลือกประเภทรายการ MA ในแบบฟอร์มและตัวกรอง เรียงตามที่ใช้งาน (ไม่มี "วัสดุ"):
-# การบำรุงรักษา (MA) / จ้างเหมาบริการ / เช่า / ซอฟต์แวร์ / สินทรัพย์ไม่มีตัวตน / ครุภัณฑ์
+# การบำรุงรักษา (MA) / จ้างเหมาบริการ / เช่า / ซอฟต์แวร์ / ครุภัณฑ์
 MA_CATEGORY_CHOICES = [
     ("ma", "การบำรุงรักษา (MA)"),
     ("service", "จ้างเหมาบริการ"),
     ("rental", "เช่า"),
     ("software", "ซอฟต์แวร์"),
-    ("intangible", "สินทรัพย์ไม่มีตัวตน"),
     ("product", "ครุภัณฑ์"),
 ]
 
-# รวมทุกประเภทที่ระบบเคยรองรับ เพื่ออ่านข้อมูลเดิม (เช่น "วัสดุ") และแสดงป้ายได้ ไม่ใช้เป็นตัวเลือกในฟอร์ม
+# ประเภทที่เปิดการแบ่งจ่ายเป็นงวดไว้ให้ตอนเลือก (ผู้ใช้ปิดเองได้)
+INSTALLMENT_DEFAULT_CATEGORIES = ("ma", "service", "rental")
+
+# รวมทุกประเภทที่ระบบเคยรองรับ เพื่ออ่านข้อมูลเดิม (เช่น "วัสดุ", "สินทรัพย์ไม่มีตัวตน") และแสดงป้ายได้ ไม่ใช้เป็นตัวเลือกในฟอร์ม
 ITEM_CATEGORY_CHOICES = MA_CATEGORY_CHOICES + [
+    ("intangible", "สินทรัพย์ไม่มีตัวตน"),
     ("material", "วัสดุ"),
 ]
 
@@ -79,6 +82,10 @@ MAX_INSTALLMENTS_PER_ITEM = 120
 MAX_SUB_ITEMS_PER_ITEM = 100
 MAX_SUB_ITEMS_MESSAGE = f"จำนวนแถวยี่ห้อ / รุ่น / รายละเอียดต้องไม่เกิน {MAX_SUB_ITEMS_PER_ITEM} แถว"
 MAX_INSTALLMENTS_MESSAGE = f"จำนวนงวดต้องไม่เกิน {MAX_INSTALLMENTS_PER_ITEM}"
+# จำนวนรายการย่อยสูงสุดต่อ MA (กันคำขอเดียวสร้างรายการและอีเมลมอบหมายจำนวนมาก)
+MAX_ITEMS_PER_PROCUREMENT = 20
+MAX_ITEMS_MESSAGE = f"MA หนึ่งรายการมีรายการย่อยได้ไม่เกิน {MAX_ITEMS_PER_PROCUREMENT} รายการ"
+RESPONSIBLE_REQUIRED_MESSAGE = "ต้องเลือกผู้รับผิดชอบอย่างน้อย 1 คน"
 
 
 def default_reminder_offsets() -> list[str]:
@@ -332,7 +339,8 @@ class PayLogEntry(me.EmbeddedDocument):
     # วันที่จ่ายที่บันทึก (action=unpaid: วันที่จ่ายเดิมที่ถูกยกเลิก)
     paid_date = me.DateTimeField()
     by = me.ReferenceField("User", dbref=True)
-    payment_number = me.StringField(max_length=128)
+    payment_number = me.StringField(max_length=128)  # เลขที่ ม.อ.เบิกจ่าย ของงวด
+    receipt_number = me.StringField(max_length=128)  # เลขที่ใบเสร็จรับเงิน / เลขที่ใบส่งของ
     paid_amount = me.DecimalField(
         min_value=0,
         max_value=1e12,
@@ -361,7 +369,8 @@ class Installment(me.EmbeddedDocument):
     )
     paid_date = me.DateTimeField()
     paid_by = me.ReferenceField("User", dbref=True)  # ผู้บันทึกการจ่าย
-    payment_number = me.StringField(max_length=128)  # เลขที่เอกสาร / ใบจ่ายเงิน
+    payment_number = me.StringField(max_length=128)  # เลขที่ ม.อ.เบิกจ่าย ของงวด (ข้อมูลเดิมคือ "เลขที่เอกสาร")
+    receipt_number = me.StringField(max_length=128)  # เลขที่ใบเสร็จรับเงิน / เลขที่ใบส่งของ (ไม่บังคับ)
     paid_amount = me.DecimalField(
         min_value=0,
         max_value=1e12,
@@ -771,6 +780,13 @@ class Procurement(me.Document):
     def get_start_date(self):
         dates = [item.start_date for item in self.get_items() if item.start_date]
         return min(dates) if dates else None
+
+    def get_period(self):
+        """ช่วงสัญญาทั้งหมดของ MA: (วันเริ่มของรายการแรกสุด, วันสิ้นสุดของรายการที่หมดช้าสุด) ใช้แสดงในสายการต่ออายุ"""
+        items = self.get_items()
+        starts = [item.start_date for item in items if item.start_date]
+        ends = [item.end_date for item in items if item.end_date]
+        return (min(starts) if starts else None, max(ends) if ends else None)
 
     def get_end_date(self):
         """วันสิ้นสุดของรายการย่อยที่หมดอายุก่อน ใช้กับการต่ออายุและการเรียงตามวันหมดอายุ"""

@@ -111,28 +111,30 @@
   </div>
 {% endmacro %}
 
-{% macro list_row(name, value="", placeholder="", inputmode="text", has_error=False) %}
-  <div class="list-row flex items-center gap-1">
-    <input type="text" name="{{ name }}" value="{{ value or '' }}" placeholder="{{ placeholder }}" inputmode="{{ inputmode }}"
-           class="input input-sm w-36{{ ' input-error' if has_error else '' }}" aria-label="{{ placeholder }}" />
+{# แถววันที่เตือนเจาะจง: ปฏิทินเลือกวัน (แสดงปี พ.ศ. ส่งค่าเป็น ISO) · field_like = dict ที่ date_field อ่านได้ (id, name, data, errors) #}
+{% macro date_list_row(field_id, name, value=None, errors=[]) %}
+  {% set field_like = {"id": field_id, "name": name, "data": value, "errors": errors, "flags": {"required": False}, "label": {"text": "วันที่เตือน"}} %}
+  <div class="list-row flex items-center gap-2 w-full rounded-lg border border-base-300 bg-base-100 px-3 py-2">
+    <i class="ph ph-calendar-blank text-lg text-primary shrink-0"></i>
+    <div class="flex-1 min-w-0">
+      {{ date_field(field_like, compact=True, hide_label=True, aria_label="วันที่เตือน", placeholder_text="เลือกวันที่", fixed_popover=True, show_errors=False, auto_init=False, buddhist=True) }}
+    </div>
     <button type="button" class="btn btn-ghost btn-sm btn-square text-error" data-action="remove-list-row" title="ลบ">
       <i class="ph ph-x"></i>
     </button>
   </div>
 {% endmacro %}
 
-{# รายการช่องข้อความที่เพิ่ม/ลบแถวได้ (FieldList ของ StringField) แถวว่างไม่นับ #}
-{% macro list_rows(field, placeholder, hint, add_label, inputmode="text") %}
-  {% set has_error = field.errors | select("string") | list | length > 0 %}
+{% macro date_list_rows(field, hint, add_label) %}
   <fieldset class="fieldset w-full list-field">
     <legend class="fieldset-legend">{{ field.label.text }}</legend>
     <p class="text-sm text-base-content/70">{{ hint }}</p>
-    <div class="list-rows flex flex-wrap gap-2">
+    <div class="list-rows flex flex-col gap-2 w-full">
       {% for entry in field %}
-        {{ list_row(entry.name, entry.data, placeholder, inputmode, has_error) }}
+        {{ date_list_row(entry.id, entry.name, entry.data, entry.errors) }}
       {% endfor %}
     </div>
-    <template class="list-row-template">{{ list_row(field.name ~ "-__ROW__", "", placeholder, inputmode) }}</template>
+    <template class="list-row-template">{{ date_list_row(field.id ~ "-__ROW__", field.name ~ "-__ROW__") }}</template>
     <button type="button" class="btn btn-ghost btn-sm text-primary justify-start w-fit" data-action="add-list-row">
       <i class="ph ph-plus-circle"></i> {{ add_label }}
     </button>
@@ -423,7 +425,7 @@
         <p class="text-sm text-base-content/70">ส่งอีเมลถึงผู้รับผิดชอบรายการนี้ 1 ฉบับต่อทุกช่วงที่ติ๊ก และอีก 1 ฉบับในวันสิ้นสุด</p>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
           {{ offset_checkboxes(f.expiry_reminder_offsets, "ก่อนวันที่สิ้นสุดของรายการย่อย", "data-expiry-offsets") }}
-          {{ list_rows(f.custom_reminder_dates, "28/05/2570", "วว/ดด/ปปปป ปี พ.ศ. ส่งเตือนในวันนั้น", "เพิ่มวันที่") }}
+          {{ date_list_rows(f.custom_reminder_dates, "เลือกวันจากปฏิทิน (ปี พ.ศ.) ระบบส่งเตือนในวันนั้น", "เพิ่มวันที่") }}
         </div>
       {% endcall %}
 

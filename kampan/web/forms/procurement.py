@@ -7,11 +7,14 @@ from kampan import models
 from kampan.models.procurement import (
     MAX_INSTALLMENTS_MESSAGE,
     MAX_INSTALLMENTS_PER_ITEM,
+    MAX_ITEMS_MESSAGE,
+    MAX_ITEMS_PER_PROCUREMENT,
+    RESPONSIBLE_REQUIRED_MESSAGE,
     MAX_SUB_ITEMS_MESSAGE,
     MAX_SUB_ITEMS_PER_ITEM,
     check_item_sum,
 )
-from kampan.utils.date_utils import parse_thai_date
+from kampan.utils.date_utils import format_thai_date_input, parse_thai_date
 
 from .money_validators import MoneyPlaces
 
@@ -81,10 +84,6 @@ class OffsetCheckboxField(fields.SelectMultipleField):
             raise ValidationError("ช่วงเตือนไม่ถูกต้อง")
 
 
-
-
-def _filled(field_list) -> list[str]:
-    return [(entry.data or "").strip() for entry in field_list.entries if (entry.data or "").strip()]
 
 
 class InstallmentForm(Form):
@@ -158,9 +157,12 @@ class ProcurementItemForm(Form):
         "เตือนจ่ายงวดล่วงหน้า", choices=models.PAYMENT_REMINDER_OFFSET_CHOICES
     )
     # ช่องว่างไม่นับ (แถวที่ยังไม่กรอก) ช่องกำหนดจำนวนวันเอง (reminder_offsets_days) นำออกจากฟอร์มแล้ว (2026-11-16)
-    custom_reminder_dates = fields.FieldList(fields.StringField(), label="วันที่เตือนเจาะจง (พ.ศ.)")
+    # เลือกจากปฏิทิน (ปฏิทินแสดงปี พ.ศ. ส่งค่ากลับเป็น ISO ค.ศ.) แถวที่ยังไม่เลือกวันถูกข้าม
+    custom_reminder_dates = fields.FieldList(
+        DateInputField(validators=[validators.Optional()]), label="วันที่เตือนเจาะจง (พ.ศ.)"
+    )
     # เปิด = แบ่งจ่ายเป็นงวด (กรอกวันครบกำหนดเอง) ปิด = จ่ายครั้งเดียว งวดเดียวครบกำหนดในวันสิ้นสุด (ระบบตั้งให้)
-    installment_mode = fields.BooleanField("แบ่งจ่ายเป็นงวด")
+    installment_mode = fields.BooleanField("แบ่งจ่ายเป็นงวด", default=True)
     # อ่านไม่เกิน MAX + 1 งวด (กัน request ที่ส่งงวดมาหลักหมื่น) แล้วให้ validate_installments ปฏิเสธ ไม่ตัดทิ้งเงียบ ๆ
     installments = fields.FieldList(
         fields.FormField(InstallmentForm), min_entries=1, max_entries=MAX_INSTALLMENTS_PER_ITEM + 1
@@ -171,6 +173,11 @@ class ProcurementItemForm(Form):
         if not self.installment_mode.data:
             self.installments.entries = []
         return super().validate(extra_validators=extra_validators)
+
+    def validate_responsible_by(self, field):
+        # MA ที่ไม่มีผู้รับผิดชอบไม่มีใครขอต่ออายุได้และไม่มีผู้รับอีเมลเตือน (แบบร่างบันทึกไปก่อนได้)
+        if not getattr(self, "is_draft", False) and not field.data:
+            raise ValidationError(RESPONSIBLE_REQUIRED_MESSAGE)
 
     def validate_end_date(self, field):
         if self.start_date.data and field.data and field.data < self.start_date.data:
@@ -190,21 +197,63 @@ class ProcurementItemForm(Form):
 
     def validate_custom_reminder_dates(self, field):
         dates = []
-        for text in _filled(field):
-            try:
-                value = parse_thai_date(text)
-            except ValueError as error:
-                raise ValidationError(f"{error} ({text})")
+        for value in self._custom_dates():
             if value in dates:
-                raise ValidationError(f"วันที่เตือนซ้ำ ({text})")
+                raise ValidationError(f"วันที่เตือนซ้ำ ({format_thai_date_input(value)})")
             dates.append(value)
+
+    def _custom_dates(self) -> list[datetime.date]:
+        return [entry.data for entry in self.custom_reminder_dates.entries if entry.data]
 
     def get_custom_reminder_dates(self) -> list[datetime.datetime]:
         """วันที่เตือนเจาะจงเป็น ค.ศ. เที่ยงคืน (เรียกหลัง validate ผ่านแล้ว)"""
-        return [
-            datetime.datetime.combine(parse_thai_date(text), datetime.time.min)
-            for text in _filled(self.custom_reminder_dates)
-        ]
+        return [datetime.datetime.combine(value, datetime.time.min) for value in self._custom_dates()]
+
+
+# ช่องเลขที่ ม.อ.เบิกจ่ายขึ้นต้นด้วย "011/" ไว้ให้ ถ้ายังมีแค่คำนำหน้า ถือว่ายังไม่ได้กรอก
+PSU_NUMBER_PREFIX = "011/"
+
+
+# ชื่อแถวของ FieldList ที่แสดงในข้อความ error (label ของ field เป็นภาษาอังกฤษ / ไม่ได้ตั้งไว้)
+_ROW_LABELS = {
+    "installments": "งวดที่",
+    "sub_items": "แถวย่อยที่",
+    "custom_reminder_dates": "วันที่เตือนเจาะจงลำดับที่",
+}
+
+
+def _field_error_lines(field, prefix: str) -> list[str]:
+    """ข้อความผิดพลาดของ field หนึ่งตัว (รวม FieldList / FormField ซ้อนกัน) เป็นบรรทัดอ่านง่าย"""
+    lines = []
+    entries = getattr(field, "entries", None)
+    if entries is not None:
+        for index, entry in enumerate(entries, start=1):
+            row_label = _ROW_LABELS.get(field.short_name, field.label.text)
+            lines += _field_error_lines(entry, f"{prefix} {row_label} {index}".strip())
+        lines += [f"{prefix}: {e}" for e in field.errors if isinstance(e, str)]
+        return lines
+    if hasattr(field, "form"):
+        for sub in field.form:
+            lines += _field_error_lines(sub, prefix)
+        return lines
+    label = field.label.text if getattr(field, "label", None) else ""
+    return [f"{prefix} {label}: {e}".strip() if label else f"{prefix}: {e}" for e in field.errors if isinstance(e, str)]
+
+
+def describe_item_errors(form) -> list[str]:
+    """สรุปข้อผิดพลาดในรายการย่อยให้ผู้ใช้อ่านรู้เรื่อง เช่น รายการที่ 1 งวดที่ 2 วันครบกำหนด: กรุณาระบุวันครบกำหนด"""
+    items = getattr(form, "items", None)
+    if items is None:
+        return []
+    lines = [e for e in items.errors if isinstance(e, str)]
+    for number, entry in enumerate(items.entries, start=1):
+        lines += _field_error_lines(entry, f"รายการที่ {number}")
+    return lines
+
+
+def clean_psu_number(value: str | None) -> str:
+    text = (value or "").strip()
+    return "" if text == PSU_NUMBER_PREFIX.strip() else text
 
 
 PSU_NUMBER_REQUIRED_MESSAGE = (
@@ -217,6 +266,7 @@ class ProcurementHeaderForm(FlaskForm):
     # ใส่เลขที่เบิกจ่ายตอนบันทึกจ่ายแต่ละงวดแทน ดู validate()
     psu_disbursement_number = fields.StringField(
         "เลขที่ มอ เบิกจ่าย",
+        default=PSU_NUMBER_PREFIX,
         validators=[validators.Optional(), validators.Length(max=128)],
     )
     disbursement_date = DateInputField(
@@ -232,7 +282,10 @@ class ProcurementHeaderForm(FlaskForm):
         validators=[validators.InputRequired(message=REQUIRED_MESSAGE), validators.Length(max=255)],
     )
     total_amount = money_field("ยอดเงินรวม (บาท)")
-    items = fields.FieldList(fields.FormField(ProcurementItemForm), min_entries=1)
+    # อ่านไม่เกิน MAX + 1 รายการ แล้ว validate_items ปฏิเสธ (ไม่ตัดทิ้งเงียบ ๆ)
+    items = fields.FieldList(
+        fields.FormField(ProcurementItemForm), min_entries=1, max_entries=MAX_ITEMS_PER_PROCUREMENT + 1
+    )
     # เวลาแก้ไขล่าสุดตอนเปิดฟอร์มแก้ไข (กันบันทึกทับการแก้ / การจ่ายงวดของคนอื่นที่เกิดระหว่างนั้น)
     version = fields.HiddenField()
 
@@ -256,6 +309,10 @@ class ProcurementHeaderForm(FlaskForm):
                 delattr(self, name)
         if is_draft:
             self.prepare_for_draft()
+
+    def validate_items(self, field):
+        if len(field.entries) > MAX_ITEMS_PER_PROCUREMENT:
+            raise ValidationError(MAX_ITEMS_MESSAGE)
 
     def item_entries(self) -> list:
         return list(self._fields["items"]) if "items" in self._fields else []
@@ -334,7 +391,7 @@ class ProcurementHeaderForm(FlaskForm):
         if getattr(self, "is_draft", False) or self.mode != "full":
             return valid
 
-        if not (self.psu_disbursement_number.data or "").strip() and any(
+        if not clean_psu_number(self.psu_disbursement_number.data) and any(
             not entry.form.installment_mode.data for entry in self.items
         ):
             self.psu_disbursement_number.errors = [*self.psu_disbursement_number.errors, PSU_NUMBER_REQUIRED_MESSAGE]
@@ -365,8 +422,12 @@ class InstallmentPaymentForm(FlaskForm):
         validators=[validators.InputRequired(message="กรุณาระบุวันที่จ่าย")],
     )
     payment_number = fields.StringField(
-        "เลขที่ ม.อ.เบิกจ่าย / เลขที่เอกสาร",
+        "เลขที่ ม.อ.เบิกจ่าย",
         validators=[validators.DataRequired(message=PAYMENT_NUMBER_REQUIRED_MESSAGE), validators.Length(max=128)],
+    )
+    receipt_number = fields.StringField(
+        "เลขที่ใบเสร็จรับเงิน / เลขที่ใบส่งของ",
+        validators=[validators.Optional(), validators.Length(max=128)],
     )
     paid_amount = money_field("ยอดที่จ่ายจริง (บาท)", required=False)
 
@@ -414,8 +475,6 @@ def sort_field() -> fields.SelectField:
 
 # สถานะการต่ออายุที่กรองในรายการ MA ได้ (ไม่มีแบบร่าง และไม่แสดงค่าเดิม active / pending แยก)
 RENEWAL_FILTER_STATUSES = ("review", "renewal-requested", "renewed", "disactive")
-# "waiting" ไม่ใช่ค่าที่เก็บ: รายการที่ยังไม่ถึงวันเริ่มใช้งาน (รอใช้งาน เช่น รายการใหม่ที่ต่ออายุแล้ว)
-RENEWAL_FILTER_WAITING = ("waiting", "รอใช้งาน")
 
 
 class ProductFilterForm(FlaskForm):
@@ -441,8 +500,7 @@ class ProductFilterForm(FlaskForm):
     renewal_status = fields.SelectField(
         "สถานะการต่ออายุ",
         choices=[("", "ทั้งหมด")]
-        + [(value, label) for value, label in models.RENEWAL_STATUS_CHOICES if value in RENEWAL_FILTER_STATUSES]
-        + [RENEWAL_FILTER_WAITING],
+        + [(value, label) for value, label in models.RENEWAL_STATUS_CHOICES if value in RENEWAL_FILTER_STATUSES],
         validators=[validators.Optional()],
     )
     sort = sort_field()

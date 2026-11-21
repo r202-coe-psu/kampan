@@ -1,6 +1,7 @@
 """MA ที่ไม่ใช่แบบร่างแก้ได้แค่หัว หรือรายการเดียว (?item_id=) และลบรายการย่อยด้วยปุ่มยืนยัน (ตัดสินใจ 2026-11-13)"""
 
 import datetime
+import re
 from decimal import Decimal
 
 import pytest
@@ -468,3 +469,54 @@ def test_delete_item_refused_when_sub_contract_copy_has_paid_installment(app, cr
         raise AssertionError("delete_item should refuse")
     assert models.Procurement.objects(id=child.id).count() == 1
     assert len(models.Procurement.objects(id=parent.id).get().get_items()) == 2
+
+
+# --- ประเภทรายการ: ตัด "สินทรัพย์ไม่มีตัวตน" ออกจากตัวเลือก / เปิดแบ่งจ่ายเป็นงวดไว้ให้ (2026-11-20) -----
+
+
+def _toggle_checked(html, index=0):
+    tag = re.search(rf'<input[^>]*name="items-{index}-installment_mode"[^>]*>', html).group(0)
+    return bool(re.search(r"\bchecked\b", tag))
+
+
+def test_new_item_has_installment_mode_on_by_default(world, client_for):
+    html = client_for(world.admin).get(f"/procurement/products/create?{_q(world.org)}").get_data(as_text=True)
+
+    assert _toggle_checked(html)
+
+
+def test_legacy_intangible_item_can_still_be_edited(world, client_for, two_item_ma):
+    first, _ = two_item_ma.get_items()
+    models.ProcurementItem.objects(id=first.id).update(set__category="intangible")
+
+    html = client_for(world.admin).get(_edit_url(world, two_item_ma, first)).get_data(as_text=True)
+
+    assert 'data-value="intangible"' in html
+
+
+def test_legacy_intangible_item_can_be_saved_with_its_own_category(world, client_for, two_item_ma):
+    _, second = two_item_ma.get_items()
+    models.ProcurementItem.objects(id=second.id).update(set__category="intangible")
+    second.reload()
+    data = ma_form(
+        [_item_fields(second, category="intangible", note="แก้แล้ว")], total_amount="1.00", version=two_item_ma.get_version()
+    )
+
+    response = client_for(world.admin).post(_edit_url(world, two_item_ma, second), data=data)
+
+    assert response.status_code == 302
+    second.reload()
+    assert second.category == "intangible" and second.note == "แก้แล้ว"
+
+
+@pytest.mark.parametrize("retired", ["intangible", "material"])
+def test_retired_category_is_rejected_for_an_item_that_does_not_have_it(world, client_for, two_item_ma, retired):
+    _, second = two_item_ma.get_items()
+    before = second.category
+    data = ma_form([_item_fields(second, category=retired)], total_amount="1.00", version=two_item_ma.get_version())
+
+    response = client_for(world.admin).post(_edit_url(world, two_item_ma, second), data=data)
+
+    assert response.status_code == 200
+    second.reload()
+    assert second.category == before

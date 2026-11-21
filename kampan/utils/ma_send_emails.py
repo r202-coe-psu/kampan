@@ -7,6 +7,7 @@ import datetime
 import logging
 
 from kampan import models
+from . import ma_email_templates
 from .date_utils import format_date_th
 from .email_utils import PSUSMTP, get_host_url
 
@@ -35,14 +36,6 @@ OFFSET_LABELS = {
     "5d": "5 วัน",
     "3d": "3 วัน",
 }
-
-EMAIL_FOOTER = """
-ดูรายละเอียด: {ma_url}
-
-ด้วยความเคารพ
-งานพัสดุ
-อีเมลติดต่อ patsadu_diis@psu.ac.th
-"""
 
 
 def _as_date(value):
@@ -140,54 +133,58 @@ def _detail_procurement(procurement, item):
     return procurement
 
 
-def build_assigned_email(log, settings) -> tuple[str, str]:
-    """(subject, body) ของอีเมลแจ้งการมอบหมายผู้รับผิดชอบ"""
-    item = log.item
-    procurement = log.procurement
-    psu_number = procurement.psu_disbursement_number or "-"
-    assigner = log.created_by.get_resources_fullname_th() if log.created_by else "เจ้าหน้าที่"
-    target = _detail_procurement(procurement, item)
-    ma_url = (
+def _common_context(log, item, procurement) -> dict:
+    organization = log.organization
+    return {
+        "organization_name": organization.name if organization else "",
+        "ma_name": procurement.name,
+        "psu_number": procurement.psu_disbursement_number or "-",
+        "company": procurement.company or "-",
+        "item_name": item.name,
+        "noun": REMINDER_KIND_NOUNS.get(item.reminder_kind, "MA"),
+        "start_date": format_date_th(_as_date(item.start_date)),
+        "end_date": format_date_th(_as_date(item.end_date)),
+        "detail_url": "",
+    }
+
+
+def _detail_url(log, settings, target, item) -> str:
+    return (
         f"{get_host_url(settings)}/procurement/payment/{target.id}"
         f"?organization_id={log._data['organization'].id}#item-{item.id}"
     )
-    subject = f"[มอบหมาย] คุณได้รับมอบหมายให้เป็นผู้รับผิดชอบ {item.name} (ม.อ.เบิกจ่าย {psu_number})"
-    body = (
-        "เรียน ผู้รับผิดชอบ\n\n"
-        f"{assigner} ได้มอบหมายให้คุณเป็นผู้รับผิดชอบรายการต่อไปนี้\n\n"
-        f"สัญญา MA: {procurement.name} (เลขที่ ม.อ.เบิกจ่าย {psu_number})\n"
-        f"รายการ: {item.name}\n"
-        f"บริษัท: {procurement.company or '-'}\n"
-        f"ช่วงสัญญา: {format_date_th(_as_date(item.start_date))} – {format_date_th(_as_date(item.end_date))}\n\n"
-        "ระบบจะแจ้งเตือนก่อนหมดอายุและก่อนครบกำหนดจ่ายแต่ละงวด และเมื่อใกล้หมดอายุ "
-        "กรุณากด \"ขอต่ออายุ\" หรือ \"ไม่ต่ออายุ\" ที่หน้ารายละเอียด\n" + EMAIL_FOOTER.format(ma_url=ma_url)
+
+
+def build_email_context(log, settings) -> dict:
+    """ตัวแปรที่ใช้ใน template อีเมล MA (ต้องตรงกับ EMAIL_TEMPLATE_VARIABLES ของชนิด ma_*)"""
+    item = log.item
+    procurement = log.procurement
+    context = _common_context(log, item, procurement)
+    if log.kind == "assigned":
+        context["assigner_name"] = log.created_by.get_resources_fullname_th() if log.created_by else "เจ้าหน้าที่"
+        context["detail_url"] = _detail_url(log, settings, _detail_procurement(procurement, item), item)
+        return context
+
+    context["detail_url"] = _detail_url(log, settings, procurement, item)
+    target = _target_date(log, item)
+    context.update(
+        reminder_title=reminder_title(log, item),
+        reminder_message=_reminder_message(log, item, context["noun"]),
+        target_date=format_date_th(target) if target else "",
+        days_text=_days_text(target, _send_date(log)) if target else "",
     )
-    return subject, body
+    if log.kind == "payment":
+        context["installment_index"] = log.installment_index or ""
+        context["due_date"] = context["target_date"]
+    return context
 
 
 def build_reminder_email(log, settings) -> tuple[str, str]:
-    """(subject, body) ของ reminder นี้"""
-    if log.kind == "assigned":
-        return build_assigned_email(log, settings)
-    item = log.item
-    procurement = log.procurement
-    noun = REMINDER_KIND_NOUNS.get(item.reminder_kind, "MA")
-    psu_number = procurement.psu_disbursement_number or "-"
-    subject = f"[แจ้งเตือน] {reminder_title(log, item)} {item.name} (ม.อ.เบิกจ่าย {psu_number})"
-
-    ma_url = (
-        f"{get_host_url(settings)}/procurement/payment/{procurement.id}"
-        f"?organization_id={log._data['organization'].id}#item-{item.id}"
-    )
-    body = (
-        "เรียน ผู้รับผิดชอบ\n\n"
-        f"{noun}: {item.name}\n"
-        f"สัญญา MA: {procurement.name} (เลขที่ ม.อ.เบิกจ่าย {psu_number})\n"
-        f"บริษัท: {procurement.company or '-'}\n"
-        f"ช่วงสัญญา: {format_date_th(_as_date(item.start_date))} – {format_date_th(_as_date(item.end_date))}\n\n"
-        f"{_reminder_message(log, item, noun)}\n" + EMAIL_FOOTER.format(ma_url=ma_url)
-    )
-    return subject, body
+    """(subject, body) ของ log นี้ จาก template ขององค์กรเท่านั้น
+    raise MaEmailTemplateError เมื่อองค์กรไม่มี template เริ่มต้นของชนิดนี้ หรือ template ไม่ถูกต้อง"""
+    organization = log.organization
+    template = ma_email_templates.get_template(organization, ma_email_templates.email_type_for(log.kind))
+    return ma_email_templates.render(template, build_email_context(log, settings))
 
 
 def _deliver(log, settings) -> tuple[str, str | None]:
@@ -196,7 +193,10 @@ def _deliver(log, settings) -> tuple[str, str | None]:
     if not recipients:
         return "failed", NO_RECIPIENT_ERROR
 
-    subject, body = build_reminder_email(log, settings)
+    try:
+        subject, body = build_reminder_email(log, settings)
+    except ma_email_templates.MaEmailTemplateError as error:
+        return "failed", str(error)
     psu_smtp = PSUSMTP(settings)
     try:
         if not psu_smtp.login():

@@ -497,7 +497,7 @@ def test_products_cards_count_usage_and_renewal_and_default_filters(world):
         waiting.name,
         requested.name,
     }
-    assert set(_shown_mas(_get(world, PRODUCTS, usage_status="", renewal_status="waiting"))) == {waiting.name}
+    assert set(_shown_mas(_get(world, PRODUCTS, usage_status="", renewal_status="renewed"))) == {waiting.name}
     assert set(_shown_mas(_get(world, PRODUCTS, usage_status="", renewal_status="renewal-requested"))) == {requested.name}
 
 
@@ -505,13 +505,15 @@ def test_sidebar_has_filter_tabs_for_procurement_staff(world):
     html = _get(world, PRODUCTS, usage_status="", renewal_status="renewal-requested").get_data(as_text=True)
 
     for key, label in [
-        ("review", "รอตรวจสอบเอกสาร"),
         ("renewal-requested", "รอต่ออายุ"),
         ("renewed", "ต่ออายุแล้ว"),
         ("disactive", "ไม่ต่ออายุ"),
-        ("waiting", "รอใช้งาน"),
     ]:
         assert f'data-ma-tab="{key}"' in html and label in html
+    # ไม่มีแท็บ "รอตรวจสอบเอกสาร" / "รอใช้งาน" และไม่มีกลุ่ม "งานเจ้าหน้าที่พัสดุ" แยก (รวมอยู่ใน "ระบบการจัดการ MA")
+    for key in ("review", "waiting"):
+        assert f'data-ma-tab="{key}"' not in html
+    assert "งานเจ้าหน้าที่พัสดุ" not in html
     # แท็บที่ตรงกับตัวกรองปัจจุบันเป็น active และ "รายการบำรุงรักษา" ชี้ไปที่ MA ทั้งหมด (ไม่กรอง)
     assert re.search(r'menu-active[^>]*\n?[^>]*data-ma-tab="renewal-requested"', html)
     assert "usage_status=&amp;renewal_status=" in html
@@ -539,3 +541,16 @@ def test_confirm_dialogs_are_rendered_once_outside_the_hidden_installment_rows(w
         for dialog_id in ("renew_confirm_modal", "renewal_request_modal"):
             if f'id="{dialog_id}"' in html:
                 assert html.index(f'id="{dialog_id}"') > html.rindex('id="sub_items_')
+
+
+def test_renewed_tab_includes_waiting_review_ma_but_not_other_not_started_statuses(world):
+    waiting = _create_ma(world, end_in_days=60, status="review")
+    requested = _create_ma(world, end_in_days=60, status="renewal-requested")
+    stopped = _create_ma(world, end_in_days=60, status="disactive")
+    renewed = _create_ma(world, end_in_days=60, status="renewed")
+    for ma in (waiting, requested, stopped):
+        models.Procurement.objects(id=ma.id).update(set__usage_status="upcoming")
+
+    shown = set(_shown_mas(_get(world, PRODUCTS, usage_status="", renewal_status="renewed")))
+
+    assert shown == {waiting.name, renewed.name}

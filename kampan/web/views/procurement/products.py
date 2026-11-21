@@ -23,7 +23,6 @@ from mongoengine.queryset.visitor import Q
 from kampan import models
 from kampan.models.procurement import _reference_id, payment_statuses, procurement_ids_of, renewal_status_statuses
 from kampan.utils import ma_assignments
-from kampan.utils.date_utils import format_thai_date_input
 from kampan.web import acl, forms
 from kampan.web.forms.procurement import PSU_NUMBER_REQUIRED_MESSAGE
 
@@ -39,6 +38,7 @@ NO_RENEW_PERMISSION_MESSAGE = "คุณไม่มีสิทธิ์ต่�
 ALREADY_RENEWED_MESSAGE = "MA รายการนี้ต่ออายุไปแล้ว"
 NOT_RENEWAL_APPROVER_MESSAGE = "เฉพาะเจ้าหน้าที่พัสดุ (admin) เท่านั้นที่อนุมัติการต่ออายุได้"
 RENEW_NOT_REQUESTED_MESSAGE = "ผู้รับผิดชอบยังไม่ได้ขอต่ออายุ MA รายการนี้ หรือสถานะเปลี่ยนไปแล้ว"
+INVALID_REQUEST_MESSAGE = "คำขอไม่ถูกต้องหรือหมดอายุ กรุณาลองใหม่อีกครั้ง"
 ITEM_FORM_MISMATCH_MESSAGE = "ข้อมูลรายการย่อยไม่ตรงกับรายการที่เลือกแก้ไข กรุณาเปิดหน้าแก้ไขใหม่"
 STALE_FORM_MESSAGE = "MA นี้ถูกแก้ไขหรือบันทึกจ่ายงวดโดยผู้อื่นหลังจากคุณเปิดฟอร์ม กรุณาเปิดหน้าแก้ไขใหม่แล้วบันทึกอีกครั้ง"
 
@@ -154,11 +154,14 @@ def index():
         procurement_qs = procurement_qs.filter(
             id__in=[procurement_id for procurement_id, status in statuses.items() if status == payment_status]
         )
-    # "รอใช้งาน" ของสถานะการต่ออายุคือรายการที่ยังไม่เริ่มใช้งาน จึงไม่ซ้อนกับตัวกรองการใช้งาน
-    if usage_status in dict(models.USAGE_STATUS_CHOICES) and renewal_status != "waiting":
+    if usage_status in dict(models.USAGE_STATUS_CHOICES):
         procurement_qs = procurement_qs.filter(_usage_q(usage_status))
-    if renewal_status == "waiting":
-        procurement_qs = procurement_qs.filter(usage_status="upcoming")
+    if renewal_status == "renewed":
+        # "ต่ออายุแล้ว" รวมรายการใหม่ที่ยังไม่ถึงวันเริ่มใช้งานและยังรอตรวจสอบ (รอใช้งาน) ไม่รวมรอต่ออายุ/ไม่ต่ออายุ
+        procurement_qs = procurement_qs.filter(
+            Q(status__in=renewal_status_statuses("renewed"))
+            | (Q(status__in=renewal_status_statuses("review")) & Q(usage_status="upcoming"))
+        )
     elif renewal_status in FILTERABLE_RENEWAL_STATUSES:
         procurement_qs = procurement_qs.filter(status__in=renewal_status_statuses(renewal_status))
 
@@ -237,7 +240,7 @@ def _blank_item_data(member) -> dict:
         "has_sub_item_sn": False,
         "has_sub_item_asset": False,
         "sub_items": [{}],
-        "installment_mode": False,
+        "installment_mode": True,  # ประเภทตั้งต้นคือ MA
         "installments": [{}],
     }
 
@@ -250,7 +253,7 @@ def _reminder_settings_data(item, include_custom_dates: bool = True) -> dict:
         ],
     }
     if include_custom_dates:
-        data["custom_reminder_dates"] = [format_thai_date_input(value) for value in item.custom_reminder_dates or []]
+        data["custom_reminder_dates"] = [value.date() for value in item.custom_reminder_dates or [] if value]
     return data
 
 
@@ -341,7 +344,7 @@ def _renew_item_data(item, active_member_ids: set) -> dict:
         "reminder_kind": item.reminder_kind,
         "requires_activation": item.requires_activation,
         **_reminder_settings_data(item, include_custom_dates=False),
-        "installment_mode": False,
+        "installment_mode": item.category in models.INSTALLMENT_DEFAULT_CATEGORIES,
         "installments": [{}],
     }
 
@@ -383,7 +386,7 @@ def _build_form(
         form = forms.procurement.ProcurementHeaderForm(
             formdata=None,
             data={
-                "psu_disbursement_number": procurement.psu_disbursement_number,
+                "psu_disbursement_number": procurement.psu_disbursement_number or forms.procurement.PSU_NUMBER_PREFIX,
                 "disbursement_date": _as_date(procurement.disbursement_date),
                 "name": procurement.name,
                 "company": procurement.company,
@@ -404,7 +407,28 @@ def _build_form(
             if div:
                 extra_division_ids.append(getattr(div, "id", div))
     form.set_division_choices(_division_choices(organization, extra_division_ids))
+    if procurement:
+        _allow_legacy_categories(form, procurement.get_items())
+    elif renew_from:
+        _allow_legacy_categories(form, [target_item] if target_item else renew_from.get_items(), any_item=True)
     return form
+
+
+def _allow_legacy_categories(form, existing_items, any_item: bool = False) -> None:
+    """รายการเดิมที่เป็นประเภทที่เลิกให้เลือกแล้ว (เช่น สินทรัพย์ไม่มีตัวตน) ยังแสดงและบันทึกต่อได้
+    โดยเพิ่มตัวเลือกเฉพาะประเภทที่รายการต้นทางมีอยู่ใน DB เท่านั้น (ไม่รับประเภทเลิกใช้ที่ client แต่งขึ้นเอง)
+    แก้ MA: จับคู่ตาม item_id · ต่ออายุ (any_item): รายการในฟอร์มเป็นรายการใหม่ ใช้ประเภทของรายการต้นทางทั้งหมด"""
+    legacy_labels = dict(models.ITEM_CATEGORY_CHOICES)
+    by_id = {str(item.id): item.category for item in existing_items}
+    source_categories = {item.category for item in existing_items}
+    for entry in form.item_entries():
+        choices = dict(entry.form.category.choices)
+        if any_item:
+            allowed = source_categories
+        else:
+            allowed = {by_id.get(entry.form.item_id.data or "")}
+        for category in sorted(c for c in allowed if c in legacy_labels and c not in choices):
+            entry.form.category.choices = [*entry.form.category.choices, (category, legacy_labels[category])]
 
 
 def _source_items(procurement, renew_from, target_item, mode="full") -> list:
@@ -442,6 +466,7 @@ def _render_form(
         item_prototype=item_prototype,
         installment_prototype=installment_prototype,
         form_errors=[error for error in form_errors if error],
+        item_errors=forms.procurement.describe_item_errors(form),
         renew_from=renew_from,
         target_item=target_item,
         mode=mode,
@@ -557,7 +582,7 @@ def _apply_header(form, procurement, user, items=(), is_draft=False) -> None:
     if form.mode == "item":
         procurement.last_updated_by = user
         return
-    procurement.psu_disbursement_number = (form.psu_disbursement_number.data or "").strip()
+    procurement.psu_disbursement_number = forms.procurement.clean_psu_number(form.psu_disbursement_number.data)
     procurement.disbursement_date = _as_datetime(form.disbursement_date.data) if form.disbursement_date.data else None
     procurement.name = (form.name.data or "").strip() or "แบบร่าง MA"
     procurement.company = (form.company.data or "").strip() or ("-" if is_draft else "")
@@ -592,6 +617,7 @@ def _clone_item_for_procurement(item: models.ProcurementItem, new_procurement: m
             paid_date=inst.paid_date,
             paid_by=inst.paid_by,
             payment_number=inst.payment_number,
+            receipt_number=inst.receipt_number,
             paid_amount=inst.paid_amount,
             pay_log=[
                 models.PayLogEntry(
@@ -600,6 +626,7 @@ def _clone_item_for_procurement(item: models.ProcurementItem, new_procurement: m
                     paid_date=p.paid_date,
                     by=p.by,
                     payment_number=p.payment_number,
+                    receipt_number=p.receipt_number,
                     paid_amount=p.paid_amount,
                 )
                 for p in inst.pay_log or []
@@ -701,7 +728,8 @@ def _save_form(
     if not is_draft and mode in ("header", "item"):
         # โหมดเต็มตรวจในฟอร์มแล้ว: เลขที่ ม.อ.เบิกจ่ายของหัวจำเป็นเมื่อมีรายการที่ไม่แบ่งจ่ายเป็นงวด (จ่ายแล้วตอนสร้าง MA)
         psu_number = form.psu_disbursement_number.data if mode == "header" else procurement.psu_disbursement_number
-        if not (psu_number or "").strip() and any(not item.pays_in_installments() for item in items):
+        needs_psu_number = any(not item.pays_in_installments() for item in items)
+        if needs_psu_number and not forms.procurement.clean_psu_number(psu_number):
             return _render_form(form, organization, member, procurement, [PSU_NUMBER_REQUIRED_MESSAGE], **render_kwargs)
 
     _apply_header(form, procurement, user, items=items, is_draft=is_draft)
@@ -875,6 +903,11 @@ def delete(procurement_id):
 
     if not ma_permissions.can_edit_procurement(procurement, organization):
         flash(NO_EDIT_PERMISSION_MESSAGE, "error")
+        return redirect(url_for("procurement.products.index", organization_id=organization.id))
+
+    # ลบข้อมูลต้อง POST + CSRF (แอปไม่มี CSRFProtect ทั้งระบบ ตรวจเฉพาะ route ที่ validate ฟอร์ม)
+    if not forms.post_action.PostActionForm().validate_on_submit():
+        flash(INVALID_REQUEST_MESSAGE, "error")
         return redirect(url_for("procurement.products.index", organization_id=organization.id))
 
     if procurement.status != "draft":
