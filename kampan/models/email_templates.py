@@ -1,12 +1,16 @@
 import mongoengine as me
 import bson
 import datetime
+from typing import TYPE_CHECKING
 
 from jinja2 import Environment, PackageLoader, select_autoescape, Template
 
 import io
 import base64
 import markdown
+
+if TYPE_CHECKING:
+    from .organizations import Organization
 
 EMAIL_TYPE = [
     ("to endorser", "ส่งถึงผู้มีสิทธิ์อนุญาตในแผนก"),
