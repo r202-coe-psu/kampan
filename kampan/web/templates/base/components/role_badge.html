@@ -9,7 +9,7 @@
 
 {% macro RoleBadge(role_key, label, size='md') %}
 {# เขียนชื่อ class ขนาดเต็มให้ Tailwind หาเจอ: badge-sm badge-md #}
-<span class="badge {{ 'badge-sm' if size == 'sm' else 'badge-md' }} badge-outline role-badge role-{{ role_key | replace(' ', '-') }}">{{ label }}</span>
+<span class="badge {{ 'badge-sm' if size == 'sm' else 'badge-md' }} role-badge role-{{ role_key | replace(' ', '-') }}">{{ label }}</span>
 {%- endmacro %}
 
 {% macro RoleBadges(role_items, empty='-') %}

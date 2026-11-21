@@ -144,15 +144,11 @@ fieldset {
 }
 
 /* Organization role badges: one color per organization role.
-   Use with `badge badge-outline`; see templates/base/components/role_badge.html.
+   หน้าตาเดียวกับ .module-badge (พื้นจาง ตัวอักษรเข้ม ขอบบาง ตัวหนา) แต่ไล่สีจาก --role-color
+   ใช้คู่กับ `badge` ดู templates/base/components/role_badge.html
+   อยู่ใน layer utilities ด้วยเหตุผลเดียวกับ .module-badge (daisyUI ใส่ .badge ไว้ใน utilities)
    admin = primary and driver = success follow the vehicle system. */
 @layer components {
-  .role-badge {
-    --role-color: var(--color-neutral);
-    --badge-color: var(--role-color);
-    white-space: nowrap;
-  }
-
   /* Icon inside badge: ให้ขนาด icon สอดคล้องกับขนาดตัวอักษรของ badge และไม่ทะลุกรอบ */
   .badge .ph {
     font-size: 0.9em;
@@ -160,22 +156,15 @@ fieldset {
     display: inline-block;
     vertical-align: middle;
   }
+}
 
-  /* ตัวอักษรสีดำอ่านง่าย สีของ role อยู่ที่จุดหน้าข้อความ ขอบ และพื้นจาง ๆ */
-  .role-badge.badge-outline {
-    gap: 0.375rem;
-    color: var(--color-base-content);
-    background-color: color-mix(in oklab, var(--role-color) 12%, var(--color-base-100));
-    border-color: color-mix(in oklab, var(--role-color) 45%, transparent);
-  }
-
-  .role-badge::before {
-    content: "";
-    flex-shrink: 0;
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 9999px;
-    background-color: var(--role-color);
+@layer utilities {
+  .badge.role-badge {
+    --badge-bg: color-mix(in oklab, var(--role-color, var(--color-neutral)) 16%, var(--color-base-100));
+    --badge-fg: color-mix(in oklab, var(--role-color, var(--color-neutral)) 60%, black);
+    --badge-color: color-mix(in oklab, var(--badge-fg) 20%, transparent);
+    white-space: nowrap;
+    font-weight: 600;
   }
 
   .role-staff {
