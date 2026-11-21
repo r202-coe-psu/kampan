@@ -310,6 +310,30 @@ def test_saving_keeps_the_numbers_in_their_own_collection_and_reopens_the_form_w
     assert 'data-role="finance-saved-at"' in page
 
 
+def test_two_saves_racing_to_create_the_same_document_end_in_one_record(world, monkeypatch):
+    reservation = world.reservation()
+    client = world.client_for(world.head)
+    client.post(finance_url(world, reservation, "travel"), data={**finance_data(), "action": "save"})
+    finance = utils.car_reservation_finance
+    real_lookup = finance.saved_document
+    lookups = []
+
+    def lookup_misses_once(reservation, doc):
+        # คำขอที่สองค้นตอนที่คำขอแรกยังไม่บันทึก จึงไม่เจอ แล้วพยายามสร้างซ้ำ
+        lookups.append(doc)
+        return None if len(lookups) == 1 else real_lookup(reservation, doc)
+
+    monkeypatch.setattr(finance, "saved_document", lookup_misses_once)
+    response = client.post(
+        finance_url(world, reservation, "travel"),
+        data={**finance_data(), "memo_number": "ศธ 999", "action": "save"},
+    )
+
+    assert response.status_code == 302
+    (record,) = saved_records(world, reservation)
+    assert record.memo_number == "ศธ 999"
+
+
 def test_the_travel_and_allowance_documents_are_saved_separately_and_updated_in_place(world):
     reservation = world.reservation()
     client = world.client_for(world.head)

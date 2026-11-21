@@ -10,6 +10,8 @@ import io
 import pathlib
 from decimal import ROUND_HALF_EVEN, Decimal
 
+import mongoengine as me
+
 from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -175,12 +177,20 @@ def save_document(reservation, doc, form, user):
         created_by=user,
         created_date=now,
     )
+    try:
+        return _fill(record, form, user, now).save()
+    except me.NotUniqueError:
+        # อีก request (ดับเบิลคลิก หรือกดบันทึกกับดาวน์โหลดพร้อมกัน) สร้างเอกสารนี้ไปก่อน: เขียนลงฉบับนั้นแทน
+        return _fill(saved_document(reservation, doc), form, user, now).save()
+
+
+def _fill(record, form, user, now):
     for name in SAVED_FIELDS:
         value = form[name].data
         setattr(record, name, "" if value is None and name in ("memo_number", "allowance_type") else value)
     record.updated_by = user
     record.updated_date = now
-    return record.save()
+    return record
 
 
 def thai_date(date):
