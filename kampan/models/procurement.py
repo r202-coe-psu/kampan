@@ -557,14 +557,13 @@ class ProcurementItem(me.Document):
         return len(self._data.get("installments") or []) > 1
 
     def has_sn(self) -> bool:
-        if self.has_sub_item_sn is not None:
-            return bool(self.has_sub_item_sn)
-        return any(bool(sub.serial_number) for sub in self.sub_items or [])
+        """มีคอลัมน์ S/N ไหม: ติ๊กไว้ หรือมีแถวย่อยที่กรอก S/N จริง (ฟอร์มส่ง flag เป็น False เสมอเพราะ checkbox ถูกซ่อน
+        จึงห้ามให้ flag ปิดคอลัมน์ทั้งที่มีข้อมูลอยู่)"""
+        return bool(self.has_sub_item_sn) or any(bool(sub.serial_number) for sub in self.sub_items or [])
 
     def has_asset(self) -> bool:
-        if self.has_sub_item_asset is not None:
-            return bool(self.has_sub_item_asset)
-        return any(bool(sub.asset_code) for sub in self.sub_items or [])
+        """มีคอลัมน์รหัสครุภัณฑ์ไหม: ติ๊กไว้ หรือมีแถวย่อยที่กรอกรหัสครุภัณฑ์จริง"""
+        return bool(self.has_sub_item_asset) or any(bool(sub.asset_code) for sub in self.sub_items or [])
 
     def has_other_details(self) -> bool:
         return any(bool(sub.details and sub.details.strip()) for sub in self.sub_items or [])
