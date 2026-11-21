@@ -698,6 +698,12 @@ class CarForm(FlaskForm):
         choices=models.vehicles.VEHICLE_TYPES,
         validators=[validators.DataRequired()],
     )
+    brand = fields.StringField(
+        "ยี่ห้อ", validators=[validators.Optional(), validators.Length(max=128)]
+    )
+    car_model = fields.StringField(
+        "รุ่น", validators=[validators.Optional(), validators.Length(max=128)]
+    )
     seat_count = fields.IntegerField(
         "จำนวนที่นั่ง",
         validators=[validators.InputRequired(), validators.NumberRange(min=1)],

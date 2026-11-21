@@ -20,6 +20,7 @@
             {{ CarPhoto(car, organization, "size-20") }}
             <div class="min-w-0">
               <p class="font-semibold">{{ car.license_plate }}</p>
+              {% if car.get_brand_and_model() %}<p class="text-sm font-medium" data-role="car-brand-model">{{ car.get_brand_and_model() }}</p>{% endif %}
               <p class="text-sm">{{ car.get_vehicle_type_display() or '-' }}</p>
               <p class="text-sm text-base-content/60">{% if car.seat_count %}{{ car.seat_count }} ที่นั่ง{% else %}-{% endif %}</p>
             </div>

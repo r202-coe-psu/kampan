@@ -107,6 +107,8 @@ def create_or_edit(car_id):
         )
     car.license_plate = form.license_plate.data
     car.vehicle_type = form.vehicle_type.data
+    car.brand = (form.brand.data or "").strip()
+    car.car_model = (form.car_model.data or "").strip()
     car.seat_count = form.seat_count.data
     car.description = form.description.data or ""
     car.status = form.status.data

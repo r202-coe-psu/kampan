@@ -70,6 +70,22 @@ def test_org_admin_adds_a_car_and_it_appears_in_the_list(world):
     assert "12 ที่นั่ง" in html
 
 
+def test_brand_and_model_are_optional_saved_and_shown_in_the_list_and_directory(world):
+    world.admin_client.post(world.create_url, data=car_data(brand=" Toyota ", car_model="Commuter"))
+    world.admin_client.post(world.create_url, data=car_data(license_plate="ขค 5678"))
+
+    car = models.vehicles.Car.objects(license_plate="กข 1234").first()
+    plain = models.vehicles.Car.objects(license_plate="ขค 5678").first()
+    assert (car.brand, car.car_model) == ("Toyota", "Commuter")
+    assert (plain.brand, plain.car_model) == ("", "")
+    for url in (world.list_url, world.directory_url):
+        html = world.admin_client.get(url).get_data(as_text=True)
+        assert html.count('data-role="car-brand-model"') == 1
+        assert "Toyota Commuter" in html
+    form = world.admin_client.get(world.edit_url(car)).get_data(as_text=True)
+    assert 'value="Toyota"' in form and 'value="Commuter"' in form
+
+
 @pytest.mark.parametrize(
     "missing", [{"license_plate": ""}, {"seat_count": ""}, {"seat_count": "0"}]
 )
@@ -226,7 +242,7 @@ def test_active_car_row_offers_a_deactivate_button_and_inactive_does_not(
     html = world.admin_client.get(world.list_url).get_data(as_text=True)
 
     assert f"/car_reservation/cars/{active.id}/deactivate" in html
-    assert html.count("/deactivate?") == 2  # ตารางกับการ์ดมือถือของรถที่ active คันเดียว
+    assert html.count("/deactivate?") == 1  # การ์ดเดียวทุกขนาดจอ เฉพาะรถที่ active
 
 
 def test_every_member_sees_active_cars_and_drivers_in_the_read_only_directory(

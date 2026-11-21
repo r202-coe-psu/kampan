@@ -161,17 +161,18 @@ def test_inbox_shows_an_empty_state_with_a_zero_count_when_nothing_waits(world):
     assert "ไม่มีรายการรออนุมัติ" in words(find(doc, "div", role="status")[0])
 
 
-def test_car_management_list_has_a_count_and_the_same_cars_as_table_and_cards(world, create_car):
+def test_car_management_list_has_a_count_and_one_photo_card_per_car(world, create_car):
     create_car(world.org, "ขข 5678", vehicle_type="ตู้")
 
     doc = world.page(world.admin, "/cars/")
 
     assert words(find(doc, "h1")[0]) == "จัดการรถ"
     assert "ทั้งหมด 2 รายการ" in words(find(doc, "*", data_role="list-count")[0])
-    rows = find(doc, "tr", within="//table[" + has_class("table") + "]/tbody")
-    cards = find(doc, "*", data_role="car-card")
-    assert sorted(words(r).split()[0] for r in rows) == ["กก", "ขข"]
-    assert len(cards) == 2
+    # การ์ดชุดเดียวทุกขนาดจอ (ไม่มีตารางซ้ำ) ทะเบียนอยู่ในป้ายของแต่ละการ์ด
+    assert not find(doc, "table")
+    plates = find(doc, "*", data_role="license-plate")
+    assert len(find(doc, "*", data_role="car-card")) == 2
+    assert sorted(words(p).split()[0] for p in plates) == ["กก", "ขข"]
     assert find(doc, "a", "btn-primary", data_role="add-car")
 
 

@@ -1,6 +1,5 @@
 {% extends "/car_reservation/base/default-page.html" %}
 {% from '/base/components/empty_state.html' import EmptyState %}
-{% from '/car_reservation/components/car_photo.html' import CarPhoto %}
 {% from '/car_reservation/components/car_deactivate.html' import DeactivateButton %}
 {% from '/car_reservation/components/list_header.html' import ListHeader %}
 
@@ -20,66 +19,50 @@
   <div class="card-body gap-4">
     {{ ListHeader('รถของหน่วยงาน', total, icon='ph-car') }}
     {% if total %}
-    <div class="hidden overflow-x-auto md:block">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>รูป</th>
-            <th>ทะเบียน</th>
-            <th>ประเภท</th>
-            <th>ที่นั่ง</th>
-            <th>สถานะ</th>
-            <th>เลขไมล์สุดท้าย</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for car in cars %}
-          <tr class="hover:bg-base-200/50">
-            <td>{{ CarPhoto(car, organization) }}</td>
-            <td class="font-medium">{{ car.license_plate }}</td>
-            <td>{{ car.get_vehicle_type_display() or '-' }}</td>
-            <td>{% if car.seat_count %}{{ car.seat_count }} ที่นั่ง{% else %}-{% endif %}</td>
-            <td>
-              <span class="badge badge-soft badge-sm tone-deep-success {{ 'badge-success' if car.status == 'active' else 'badge-ghost' }}">{{ car.get_status_display() }}</span>
-            </td>
-            <td>{{ car.last_mileage | format_number if car.last_mileage else 0 }} กม.</td>
-            <td>
-              <div class="flex items-center justify-end gap-2">
-                <a class="btn btn-sm btn-primary"
-                   href="{{ url_for('car_reservation.cars.create_or_edit', car_id=car.id, organization_id=organization.id) }}">
-                  แก้ไข
-                </a>
-                {{ DeactivateButton(car, organization) }}
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    <div class="grid gap-3 md:hidden">
+    {# การ์ดรูปใหญ่ชุดเดียวทุกขนาดจอ: ทะเบียนเป็นจุดเด่นเพราะเป็นสิ่งที่ใช้ระบุรถ #}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" data-role="car-grid">
       {% for car in cars %}
-      <div class="card card-border bg-base-100" data-role="car-card">
-        <div class="card-body flex-row gap-3 p-4">
-          {{ CarPhoto(car, organization, "size-16") }}
-          <div class="flex min-w-0 flex-1 flex-col gap-1">
-            <div class="flex items-start justify-between gap-2">
-              <p class="font-semibold">{{ car.license_plate }}</p>
-              <span class="badge badge-soft badge-sm tone-deep-success {{ 'badge-success' if car.status == 'active' else 'badge-ghost' }}">{{ car.get_status_display() }}</span>
+      {% set active = car.status == 'active' %}
+      <article class="card card-border overflow-hidden bg-base-100" data-role="car-card">
+        <figure class="relative aspect-[4/3] bg-base-200">
+          {% if car.image %}
+          <img class="size-full object-cover {{ '' if active else 'opacity-60 grayscale' }}" loading="lazy"
+               src="{{ url_for('car_reservation.cars.image', car_id=car.id, organization_id=organization.id) }}"
+               alt="รูปรถทะเบียน {{ car.license_plate }}">
+          {% else %}
+          <i class="ph ph-car text-6xl! text-base-content/25" aria-hidden="true"></i>
+          {% endif %}
+          <span class="badge badge-sm absolute right-3 top-3 shadow-sm {{ 'badge-success' if active else 'badge-neutral' }}">
+            {{ car.get_status_display() }}
+          </span>
+        </figure>
+        <div class="card-body gap-3 p-4">
+          <p class="w-fit rounded-field border-2 border-base-content/80 bg-base-100 px-3 py-1 text-xl font-bold tracking-wide"
+             data-role="license-plate">{{ car.license_plate }}</p>
+          {% if car.get_brand_and_model() %}<p class="-mt-1 font-medium" data-role="car-brand-model">{{ car.get_brand_and_model() }}</p>{% endif %}
+          <dl class="grid grid-cols-3 gap-2 text-sm">
+            <div>
+              <dt class="text-base-content/60">ประเภท</dt>
+              <dd class="font-medium">{{ car.get_vehicle_type_display() or '-' }}</dd>
             </div>
-            <p class="text-sm">{{ car.get_vehicle_type_display() or '-' }}{% if car.seat_count %} · {{ car.seat_count }} ที่นั่ง{% endif %}</p>
-            <p class="text-sm text-base-content/60">ไมล์สุดท้าย {{ car.last_mileage | format_number if car.last_mileage else 0 }} กม.</p>
-            <div class="card-actions mt-2 items-center">
-              <a class="btn btn-sm btn-primary"
-                 href="{{ url_for('car_reservation.cars.create_or_edit', car_id=car.id, organization_id=organization.id) }}">
-                แก้ไข
-              </a>
-              {{ DeactivateButton(car, organization) }}
+            <div>
+              <dt class="text-base-content/60">ความจุ</dt>
+              <dd class="font-medium tabular-nums">{% if car.seat_count %}{{ car.seat_count }} ที่นั่ง{% else %}-{% endif %}</dd>
             </div>
+            <div>
+              <dt class="text-base-content/60">เลขไมล์</dt>
+              <dd class="font-medium tabular-nums">{{ car.last_mileage | format_number if car.last_mileage else 0 }} กม.</dd>
+            </div>
+          </dl>
+          <div class="card-actions mt-auto items-center justify-end border-t border-base-300 pt-3">
+            {{ DeactivateButton(car, organization) }}
+            <a class="btn btn-sm btn-primary"
+               href="{{ url_for('car_reservation.cars.create_or_edit', car_id=car.id, organization_id=organization.id) }}">
+              แก้ไข
+            </a>
           </div>
         </div>
-      </div>
+      </article>
       {% endfor %}
     </div>
     {% else %}
