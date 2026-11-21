@@ -157,7 +157,9 @@ def feedback(car_id):
         )
 
     now = datetime.datetime.now()
-    car_reservations = feedback_view.get_car_trips(car, organization)
+    car_reservations = feedback_view.get_public_car_trips(
+        car, organization, now, requested_trip_id=request.args.get("reservation_id")
+    )
     trip_choices = [
         (
             str(reservation.id),

@@ -4,6 +4,7 @@
 (route สาธารณะอยู่ที่ cars.feedback) ผลตอบรับผูกกับเที่ยวรถ (CarReservation) ที่ผู้ตอบเลือก
 """
 
+import datetime
 import io
 import json
 
@@ -284,6 +285,24 @@ def get_car_trips(car, organization):
             status__in=FEEDBACK_TRIP_STATUS,
         ).order_by("-departure_datetime")
     )
+
+
+# หน้าประเมินเป็น public (สแกน QR ในรถ): ให้เลือกได้เฉพาะเที่ยวรอบ ๆ ตอนนี้ ไม่เปิดประวัติการเดินทางทั้งหมดของรถ
+PUBLIC_TRIP_WINDOW_BEFORE = datetime.timedelta(days=3)
+PUBLIC_TRIP_WINDOW_AFTER = datetime.timedelta(days=1)
+
+
+def get_public_car_trips(car, organization, now, requested_trip_id=None):
+    """เที่ยวของรถที่ออกเดินทางในช่วง 3 วันก่อนถึง 1 วันหลังตอนนี้ บวกเที่ยวที่ลิงก์ในอีเมลระบุมา (ถ้าเป็นของรถคันนี้)"""
+    trips = get_car_trips(car, organization)
+    return [
+        trip
+        for trip in trips
+        if now - PUBLIC_TRIP_WINDOW_BEFORE
+        <= trip.departure_datetime
+        <= now + PUBLIC_TRIP_WINDOW_AFTER
+        or str(trip.id) == requested_trip_id
+    ]
 
 
 def get_requester_feedback_url(reservation, user):

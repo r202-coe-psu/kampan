@@ -1,5 +1,6 @@
 """Integration & security tests ของ route แบบประเมินความพึงพอใจการใช้รถยนต์ในระบบจองรถ (car_reservation)"""
 
+import datetime
 import json
 import re
 
@@ -860,7 +861,7 @@ def test_public_feedback_post_saves_response_with_organization(
             template = create_feedback_template(
                 data["org_a"], [data["car_a"]], name="แบบประเมินหลัก", questions=[score, text]
             )
-            trip = create_car_reservation(data["org_a"], data["car_a"])
+            trip = create_car_reservation(data["org_a"], data["car_a"], departure_datetime=datetime.datetime.now())
 
             response = client.post(
                 f"{CARS_BASE}/{data['car_a'].id}/feedback?template_id={template.id}",
@@ -882,6 +883,36 @@ def test_public_feedback_post_saves_response_with_organization(
             assert answers[text.question_id].answer_text == "ประทับใจมาก"
 
 
+def test_the_public_page_only_offers_trips_around_now_plus_the_one_linked_by_email(
+    app, two_orgs, create_car_reservation, make_question, create_feedback_template
+):
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_orgs()
+            create_feedback_template(
+                data["org_a"], [data["car_a"]], questions=[make_question("score", "คะแนน")]
+            )
+            now = datetime.datetime.now()
+            create_car_reservation(data["org_a"], data["car_a"], location="ใกล้ตอนนี้", departure_datetime=now)
+            create_car_reservation(
+                data["org_a"], data["car_a"], location="เดือนก่อน",
+                departure_datetime=now - datetime.timedelta(days=30),
+            )
+            linked = create_car_reservation(
+                data["org_a"], data["car_a"], location="จากอีเมล",
+                departure_datetime=now - datetime.timedelta(days=20),
+            )
+
+            plain = client.get(f"{CARS_BASE}/{data['car_a'].id}/feedback").get_data(as_text=True)
+            from_email = client.get(
+                f"{CARS_BASE}/{data['car_a'].id}/feedback?reservation_id={linked.id}"
+            ).get_data(as_text=True)
+
+            assert "ใกล้ตอนนี้" in plain
+            assert "เดือนก่อน" not in plain and "จากอีเมล" not in plain
+            assert "จากอีเมล" in from_email and "เดือนก่อน" not in from_email
+
+
 def test_public_feedback_post_rejects_trip_of_another_car(
     app, two_orgs, create_car, create_car_reservation, make_question, create_feedback_template
 ):
@@ -894,8 +925,8 @@ def test_public_feedback_post_rejects_trip_of_another_car(
             template = create_feedback_template(
                 data["org_a"], [data["car_a"]], name="แบบประเมินหลัก", questions=[score]
             )
-            create_car_reservation(data["org_a"], data["car_a"])
-            foreign_trip = create_car_reservation(data["org_a"], other_car)
+            create_car_reservation(data["org_a"], data["car_a"], departure_datetime=datetime.datetime.now())
+            foreign_trip = create_car_reservation(data["org_a"], other_car, departure_datetime=datetime.datetime.now())
 
             response = client.post(
                 f"{CARS_BASE}/{data['car_a'].id}/feedback?template_id={template.id}",
