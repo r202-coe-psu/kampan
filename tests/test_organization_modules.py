@@ -144,3 +144,34 @@ def test_shared_pages_stay_open_when_all_modules_are_disabled(open_page, path):
 
     assert response.status_code != 404
 
+
+def test_switching_into_an_organization_without_the_current_module_goes_to_the_system_picker(
+    app, create_org, create_user, assign_user_to_org, login_as
+):
+    from urllib.parse import parse_qs, urlparse
+
+    from lxml import html as lxml_html
+
+    here = create_org("Procurement Org")
+    here.enabled_modules = ["procurement"]
+    here.save()
+    there = create_org("Inventory Only Org")
+    there.enabled_modules = ["inventory"]
+    there.save()
+    member = create_user("Member", "Switch")
+    assign_user_to_org(member, here, roles=["admin"])
+    assign_user_to_org(member, there, roles=["admin"])
+
+    client = app.test_client()
+    login_as(client, member)
+    page = client.get(f"/procurement/products?organization_id={here.id}")
+    links = lxml_html.fromstring(page.data.decode()).xpath(
+        "//dialog[@id='organization_switcher_modal']//a/@href"
+    )
+    nexts = {
+        parse_qs(urlparse(link).query)["organization_id"][0]: parse_qs(urlparse(link).query).get("next")
+        for link in links
+    }
+
+    assert str(there.id) in nexts
+    assert nexts[str(there.id)] is None

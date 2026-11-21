@@ -6,7 +6,7 @@ import pathlib
 from flask import request, url_for
 
 from kampan.utils import template_filters
-from kampan.web import feature_flags
+from kampan.web import acl, feature_flags
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +64,9 @@ def switch_organization_next_url(organization):
         # โมดูลคลังพัสดุอยู่ที่ blueprint ระดับบนสุดหลายตัว จึงใช้หน้าแรกร่วมกัน
         endpoint = INVENTORY_HOME_ENDPOINT
 
-    # หน่วยงานปลายทางไม่ได้เปิดระบบจองรถ: ไม่พาไปหน้าที่เข้าไม่ได้ ให้ไปหน้าเลือกระบบแทน
-    if module_name == "car_reservation" and not organization.has_module("car_reservation"):
+    # หน่วยงานปลายทางไม่ได้เปิดโมดูลของหน้าปลายทาง: ไม่พาไปหน้าที่เข้าไม่ได้ ให้ไปหน้าเลือกระบบแทน
+    target_module = acl.module_of_blueprint(endpoint.rsplit(".", 1)[0])
+    if target_module and not organization.has_module(target_module):
         return None
 
     try:
