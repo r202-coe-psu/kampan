@@ -19,6 +19,7 @@ from kampan import models
 from kampan.web import forms
 
 from . import ma_permissions
+from .products import calculate_months_days
 
 module = Blueprint("payment", __name__, url_prefix="/payment")
 
@@ -62,6 +63,7 @@ def index(procurement_id):
     visible_chain_ids = set(
         ma_permissions.visible_procurements(organization).filter(id__in=[ma.id for ma in chain]).scalar("id")
     )
+    chain_periods = {ma.id: _contract_period(ma) for ma in chain if ma.id in visible_chain_ids}
     member = ma_permissions.get_member(organization)
     items = procurement.get_items()
     can_approve = ma_permissions.can_approve_renewal(organization)
@@ -82,6 +84,7 @@ def index(procurement_id):
         renewed_from_ma=chain[position - 1] if position > 0 else None,
         renewed_to_ma=chain[position + 1] if position + 1 < len(chain) else None,
         visible_chain_ids=visible_chain_ids,
+        chain_periods=chain_periods,
         my_division_id=member.division.id if member and member.division else None,
         reminder_logs=_reminder_logs_by_item(procurement, organization),
         manual_log_form=forms.procurement.ManualReminderLogForm(formdata=None),
@@ -125,6 +128,22 @@ def _get_installment_for_change(procurement_id, item_id, installment_id):
         abort(404)
     allowed = ma_permissions.can_edit_procurement(procurement, organization)
     return organization, procurement, item, installment, allowed
+
+
+def _duration_text(months: int, days: int) -> str:
+    years, months = divmod(months, 12)
+    parts = [f"{years} ปี" if years else "", f"{months} เดือน" if months else "", f"{days} วัน" if days else ""]
+    return " ".join(part for part in parts if part) or "0 วัน"
+
+
+def _contract_period(ma) -> dict:
+    """ช่วงสัญญาของ MA ในสายการต่ออายุ พร้อมระยะเวลา (นับรวมวันสิ้นสุด)"""
+    start, end = ma.get_period()
+    duration = None
+    if start and end and end >= start:
+        months, days = calculate_months_days(start, end + datetime.timedelta(days=1))
+        duration = _duration_text(months, days)
+    return {"start": start, "end": end, "duration": duration}
 
 
 def _payment_number_taken(organization, number: str, item, installment) -> bool:
@@ -185,6 +204,7 @@ def pay_installment(procurement_id, item_id, installment_id):
         flash(DUPLICATE_PAYMENT_NUMBER_MESSAGE.format(number=payment_number), "error")
         return redirect(redirect_url)
 
+    receipt_number = (form.receipt_number.data or "").strip() or None
     was_paid = installment.is_paid()
     user = current_user._get_current_object()
     paid_date = datetime.datetime.combine(form.paid_date.data, datetime.time.min)
@@ -194,6 +214,7 @@ def pay_installment(procurement_id, item_id, installment_id):
         paid_date=paid_date,
         by=user,
         payment_number=payment_number,
+        receipt_number=receipt_number,
         paid_amount=form.paid_amount.data,
     )
     updated = _update_installment(
@@ -204,6 +225,7 @@ def pay_installment(procurement_id, item_id, installment_id):
         paid_date=paid_date,
         paid_by=user,
         payment_number=payment_number,
+        receipt_number=receipt_number,
         paid_amount=form.paid_amount.data,
     )
     if not updated:
@@ -238,6 +260,7 @@ def unpay_installment(procurement_id, item_id, installment_id):
         paid_date=installment.paid_date,
         by=current_user._get_current_object(),
         payment_number=installment.payment_number,
+        receipt_number=installment.receipt_number,
         paid_amount=installment.paid_amount,
     )
     updated = _update_installment(
@@ -248,6 +271,7 @@ def unpay_installment(procurement_id, item_id, installment_id):
         paid_date=None,
         paid_by=None,
         payment_number=None,
+        receipt_number=None,
         paid_amount=None,
     )
     if not updated:

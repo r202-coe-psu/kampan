@@ -118,7 +118,7 @@ def test_renew_form_is_prefilled_from_old_ma_and_creates_nothing(world, client_f
     html = response.get_data(as_text=True)
     assert _input_value(html, "company") == "[TEST] บริษัทเดิม"
     assert _input_value(html, "total_amount") == "60000.00"
-    assert _input_value(html, "psu_disbursement_number") == ""
+    assert _input_value(html, "psu_disbursement_number") == "011/"
     assert _input_value(html, "items-0-name") == "[TEST] License A"
     assert _input_value(html, "items-0-amount") == "60000.00"
     assert _input_value(html, "items-0-sub_items-0-brand") == "ยี่ห้อ A"
@@ -505,3 +505,44 @@ def test_renew_specific_sub_item_by_id(world, client_for):
     assert _input_value(html, "total_amount") == "40000.00"
     assert 'name="items-1-name"' not in html
 
+
+
+def test_renewal_chain_is_a_vertical_timeline_with_contract_periods(world, client_for):
+    client = client_for(world.admin)
+    client.post(_renew_url(world), data=_renew_form(world))
+    new = models.Procurement.objects(renewed_from=world.old).get()
+
+    html = client.get(_page(world, "detail", new)).get_data(as_text=True)
+    timeline = html[html.index("data-renewal-timeline"):]
+
+    # เรียงจากเก่าไปใหม่ และ MA เดิมมีช่วงสัญญา 1 ม.ค. - 31 ธ.ค. 2025 = 1 ปี พร้อมระยะเวลา
+    assert timeline.index(str(world.old.id)) < timeline.index(str(new.id))
+    assert "ครั้งที่ 1" in timeline and "ครั้งที่ 2" in timeline
+    assert "data-renewal-timeline-period" in timeline
+    assert "ระยะเวลาสัญญา 1 ปี" in timeline
+    assert "รายการนี้" in timeline
+
+
+def test_duration_text_formats_years_months_days():
+    from kampan.web.views.procurement.payment import _duration_text
+
+    assert _duration_text(14, 3) == "1 ปี 2 เดือน 3 วัน"
+    assert _duration_text(12, 0) == "1 ปี"
+    assert _duration_text(0, 0) == "0 วัน"
+
+
+def test_renewal_timeline_does_not_reveal_ma_the_user_cannot_see(world, client_for):
+    client = client_for(world.admin)
+    client.post(_renew_url(world), data=_renew_form(world))
+    new = models.Procurement.objects(renewed_from=world.old).get()
+    # คนที่เห็นเฉพาะ MA ใหม่ (ผู้รับผิดชอบรายการใหม่) แต่ไม่เห็น MA เดิม
+    models.ProcurementItem.objects(procurement=world.old).update(set__responsible_by=[world.role_admin])
+    models.ProcurementItem.objects(procurement=new).update(set__responsible_by=[world.role_other_staff])
+
+    response = client_for(world.other_staff).get(_page(world, "detail", new))
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    timeline = html[html.index("data-renewal-timeline"):]
+    assert "รายการที่คุณไม่มีสิทธิ์ดู" in timeline
+    assert "PSU-OLD-1" not in timeline and "ตั้งแต่ 1 ม.ค. 2568" not in timeline

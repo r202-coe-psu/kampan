@@ -184,14 +184,15 @@
                   </td>
                   <td class="py-3 px-4 whitespace-nowrap">
                     <div class="flex items-center justify-center gap-2">
-                      <a href="{{ url_for('admin.upload_files.processing', document_id=doc.id, organization_id=organization.id) }}"
-                         class="btn btn-sm btn-square btn-outline btn-secondary {% if doc.status !='waiting' %}pointer-events-none opacity-40{% endif %}"
-                         title="บันทึกลงในระบบ"
-                         {% if doc.status !='waiting' %}
-                           aria-disabled="true" tabindex="-1"
-                         {% endif %}>
-                        <i class="ph ph-floppy-disk text-lg"></i>
-                      </a>
+                      <form method="post" action="{{ url_for('admin.upload_files.processing', document_id=doc.id, organization_id=organization.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit"
+                           class="btn btn-sm btn-square btn-outline btn-secondary {% if doc.status !='waiting' %}pointer-events-none opacity-40{% endif %}"
+                           title="บันทึกลงในระบบ"
+                           {% if doc.status !='waiting' %}disabled aria-disabled="true" tabindex="-1"{% endif %}>
+                          <i class="ph ph-floppy-disk text-lg"></i>
+                        </button>
+                      </form>
                       <a href="{{ url_for('admin.upload_files.upload_or_edit', document_id=doc.id, organization_id=organization.id) }}"
                          class="btn btn-sm btn-square btn-outline btn-warning"
                          title="แก้ไข">
@@ -222,10 +223,12 @@
                         </p>
                         <div class="flex gap-2 justify-end">
                           <button type="button" class="btn btn-ghost" onclick="closeModal('modal-{{ doc.id }}')">ยกเลิก</button>
-                          <a href="{{ url_for('admin.upload_files.delete', document_id=doc.id, organization_id=organization.id) }}"
-                             class="btn btn-error flex items-center gap-1">
-                            <i class="ph ph-trash"></i> ลบ
-                          </a>
+                          <form method="post" action="{{ url_for('admin.upload_files.delete', document_id=doc.id, organization_id=organization.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="btn btn-error flex items-center gap-1">
+                              <i class="ph ph-trash"></i> ลบ
+                            </button>
+                          </form>
                         </div>
                       </div>
                       <form method="dialog" class="modal-backdrop bg-black/40">

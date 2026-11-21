@@ -407,7 +407,7 @@ def test_processing_mas_document_refused_when_flag_off(world, client_for, set_fl
     )
     document.save()
 
-    response = client_for(world.users["admin"]).get(f"/admin/upload_files/{document.id}/process?{_q(world)}")
+    response = client_for(world.users["admin"]).post(f"/admin/upload_files/{document.id}/process?{_q(world)}")
 
     assert response.status_code == 302
     document.reload()

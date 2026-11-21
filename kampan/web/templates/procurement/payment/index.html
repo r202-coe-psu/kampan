@@ -250,18 +250,43 @@
     <section class="card bg-base-100 border border-base-200/80 shadow-sm rounded-2xl overflow-hidden">
       <div class="card-body p-5 md:p-6">
         <h3 class="font-bold text-lg flex items-center gap-2"><i class="ph ph-arrows-clockwise text-primary"></i>สายการต่ออายุ</h3>
-        <ul class="steps steps-vertical lg:steps-horizontal w-full">
+        {# timeline เรียงลงมา: MA แรกสุดอยู่บน ล่าสุดอยู่ล่าง · ลิงก์ไปเฉพาะ MA ที่ผู้ใช้มีสิทธิ์ดู #}
+        <ul class="timeline timeline-vertical timeline-compact timeline-snap-icon mt-3" data-renewal-timeline>
           {% set current_position = renewal_chain.index(procurement) %}
           {% for ma in renewal_chain %}
-            <li class="step {{ 'step-primary' if loop.index0 <= current_position else '' }}">
-              <div class="text-sm text-left lg:text-center">
-                {% if ma.id == procurement.id %}
-                  <span class="font-semibold">{{ ma.name }}</span>
-                  <span class="text-base-content/60">(เลขที่ ม.อ.เบิกจ่าย {{ ma.psu_disbursement_number or "-" }}) · รายการนี้</span>
-                {% else %}
-                  {{ ma_link(ma) }}
-                {% endif %}
+            {% set period = chain_periods.get(ma.id) %}
+            {% set is_current = ma.id == procurement.id %}
+            <li data-renewal-timeline-item="{{ ma.id }}">
+              {% if not loop.first %}<hr class="{{ 'bg-primary' if loop.index0 <= current_position else '' }}" />{% endif %}
+              <div class="timeline-middle">
+                <i class="ph {{ 'ph-circle-wavy-check' if loop.index0 < current_position else ('ph-map-pin-area' if is_current else 'ph-circle-dashed') }} text-xl {{ 'text-primary' if loop.index0 <= current_position else 'text-base-content/40' }}"></i>
               </div>
+              <div class="timeline-end mb-6 w-full">
+                <div class="rounded-xl border {{ 'border-primary bg-primary/5' if is_current else 'border-base-200' }} px-4 py-3 text-sm space-y-1">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="badge badge-sm badge-ghost">ครั้งที่ {{ loop.index }}</span>
+                    {% if is_current %}
+                      <span class="font-semibold">{{ ma.name }}</span>
+                      <span class="text-base-content/60">(เลขที่ ม.อ.เบิกจ่าย {{ ma.psu_disbursement_number or "-" }})</span>
+                      <span class="badge badge-sm badge-primary">รายการนี้</span>
+                    {% else %}
+                      {{ ma_link(ma) }}
+                    {% endif %}
+                  </div>
+                  {% if period %}
+                    <div class="text-base-content/80" data-renewal-timeline-period>
+                      <i class="ph ph-calendar-blank"></i>
+                      {% if period.start or period.end %}ตั้งแต่ {{ thai_date(period.start) }} ถึง {{ thai_date(period.end) }}{% else %}ยังไม่ระบุช่วงสัญญา{% endif %}
+                      {% if period.duration %}<span class="badge badge-sm badge-outline ml-1" data-renewal-timeline-duration>ระยะเวลาสัญญา {{ period.duration }}</span>{% endif %}
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 text-xs text-base-content/60">
+                      <span>การใช้งาน {{ usage_badge(ma, "badge-sm") }}</span>
+                      <span>การต่ออายุ {{ renewal_badge(ma, "badge-sm", false) }}</span>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+              {% if not loop.last %}<hr class="{{ 'bg-primary' if loop.index0 < current_position else '' }}" />{% endif %}
             </li>
           {% endfor %}
         </ul>
@@ -433,7 +458,8 @@
                   <th>สถานะ</th>
                   <th class="text-right">ยอดที่ต้องจ่าย (บาท)</th>
                   <th>วันที่จ่าย</th>
-                  <th>เลขที่เอกสาร</th>
+                  <th>เลขที่ ม.อ.เบิกจ่าย</th>
+                  <th>เลขที่ใบเสร็จ / ใบส่งของ</th>
                   <th class="text-right">ยอดที่จ่ายจริง (บาท)</th>
                   <th>ผู้บันทึก</th>
                   {% if can_edit %}<th class="text-right">จัดการ</th>{% endif %}
@@ -474,6 +500,7 @@
                       {% endif %}
                     </td>
                     <td class="font-mono text-xs">{{ installment.payment_number or "-" }}</td>
+                    <td class="font-mono text-xs">{{ installment.receipt_number or "-" }}</td>
                     <td class="text-right font-semibold whitespace-nowrap">
                       {% if installment.paid_amount is not none %}
                         <span class="text-success font-bold">{{ installment.paid_amount | format_number }}</span>
@@ -507,7 +534,7 @@
                   {% if installment.pay_log %}
                     <tr class="pay-log bg-base-200/20">
                       <td></td>
-                      <td colspan="{{ 7 if can_edit else 6 }}" class="py-2">
+                      <td colspan="{{ 8 if can_edit else 7 }}" class="py-2">
                         <details class="text-xs">
                           <summary class="cursor-pointer text-primary font-medium hover:underline flex items-center gap-1">
                             <i class="ph ph-clock-counter-clockwise"></i> ประวัติการกด ({{ installment.pay_log | length }})
@@ -520,6 +547,7 @@
                                 <span class="font-semibold {{ 'text-error' if entry.action == 'unpaid' else ('text-primary' if entry.action == 'edited' else 'text-success') }}">{{ entry.get_action_label() }}</span>
                                 {% if entry.paid_date %}<span class="text-base-content/60">(วันที่จ่าย {{ thai_date(entry.paid_date) }})</span>{% endif %}
                                 {% if entry.payment_number %}<span class="badge badge-xs badge-ghost font-mono">{{ entry.payment_number }}</span>{% endif %}
+                                {% if entry.receipt_number %}<span class="badge badge-xs badge-ghost font-mono" title="เลขที่ใบเสร็จรับเงิน / เลขที่ใบส่งของ">{{ entry.receipt_number }}</span>{% endif %}
                                 {% if entry.paid_amount is not none %}<span class="font-semibold text-success">{{ entry.paid_amount | format_number }} บาท</span>{% endif %}
                                 <span class="text-base-content/50">· โดย {{ by.get_name() if by else "-" }}</span>
                               </li>
@@ -692,8 +720,12 @@
                 </div>
               </fieldset>
               <fieldset class="fieldset">
-                <legend class="fieldset-legend">เลขที่ ม.อ.เบิกจ่าย / เลขที่เอกสาร <span class="text-error">*</span></legend>
+                <legend class="fieldset-legend">เลขที่ ม.อ.เบิกจ่าย <span class="text-error">*</span></legend>
                 <input type="text" name="payment_number" maxlength="128" required class="input w-full" value="{{ installment.payment_number or '' }}" />
+              </fieldset>
+              <fieldset class="fieldset">
+                <legend class="fieldset-legend">เลขที่ใบเสร็จรับเงิน / เลขที่ใบส่งของ <span class="text-base-content/50">ไม่บังคับ</span></legend>
+                <input type="text" name="receipt_number" maxlength="128" class="input w-full" value="{{ installment.receipt_number or '' }}" />
               </fieldset>
               <fieldset class="fieldset">
                 <legend class="fieldset-legend">ยอดที่จ่ายจริง (บาท) <span class="text-base-content/50">ไม่บังคับ</span></legend>
@@ -724,11 +756,12 @@
                 <div><strong>กำหนดชำระ:</strong> {{ thai_date(installment.due_date) }}</div>
                 {% if modal_due is not none %}<div><strong>ยอดที่ต้องจ่าย:</strong> {{ modal_due | format_amount }} บาท</div>{% endif %}
                 {% if installment.paid_date %}<div><strong>วันที่จ่ายเดิม:</strong> {{ thai_date(installment.paid_date) }}</div>{% endif %}
-                {% if installment.payment_number %}<div><strong>เลขที่เอกสาร:</strong> {{ installment.payment_number }}</div>{% endif %}
+                {% if installment.payment_number %}<div><strong>เลขที่ ม.อ.เบิกจ่าย:</strong> {{ installment.payment_number }}</div>{% endif %}
+                {% if installment.receipt_number %}<div><strong>เลขที่ใบเสร็จรับเงิน / ใบส่งของ:</strong> {{ installment.receipt_number }}</div>{% endif %}
                 {% if installment.paid_amount is not none %}<div><strong>ยอดที่จ่าย:</strong> {{ installment.paid_amount | format_amount }} บาท</div>{% endif %}
               </div>
               <p class="text-xs text-base-content/60 mb-4">
-                * วันที่จ่าย เลขที่เอกสาร และยอดที่จ่ายจะถูกล้าง แต่ประวัติการกดยังคงถูกบันทึกไว้ในประวัติ
+                * วันที่จ่าย เลขที่เบิกจ่าย เลขที่ใบเสร็จ/ใบส่งของ และยอดที่จ่ายจะถูกล้าง แต่ประวัติการกดยังคงถูกบันทึกไว้ในประวัติ
               </p>
               <form method="post" action="{{ url_for('procurement.payment.unpay_installment', **action_args) }}" class="modal-action">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>

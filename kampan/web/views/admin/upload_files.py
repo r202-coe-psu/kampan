@@ -1,5 +1,8 @@
 from flask import (
     Blueprint,
+    abort,
+    flash,
+    g,
     render_template,
     redirect,
     url_for,
@@ -9,6 +12,8 @@ from flask import (
 )
 from flask_login import login_required, current_user
 import datetime
+
+from bson import ObjectId
 
 from ... import acl, feature_flags, forms, models, redis_rq
 from .... import utils
@@ -28,6 +33,7 @@ from io import BytesIO
 
 module = Blueprint("upload_files", __name__, url_prefix="/upload_files")
 
+INVALID_REQUEST_MESSAGE = "คำขอไม่ถูกต้องหรือหมดอายุ กรุณาลองใหม่อีกครั้ง"
 MAS_UPLOAD_DISABLED_MESSAGE = "ปิดการนำเข้าไฟล์แหล่งเงิน (MAS) แล้ว"
 
 
@@ -217,22 +223,30 @@ def download_ma_template():
     )
 
 
-@module.route("/<document_id>/delete", methods=["GET", "POST"])
+def _get_document_or_404(document_id):
+    """เอกสารของหน่วยงานที่กำลังดูอยู่ (g.organization ผ่านการตรวจสมาชิกภาพแล้ว) ไม่พบ = 404"""
+    organization = g.organization
+    if not organization or not ObjectId.is_valid(str(document_id)):
+        abort(404)
+    document = models.Document.objects(id=document_id, organization=organization).first()
+    if not document:
+        abort(404)
+    return organization, document
+
+
+@module.route("/<document_id>/delete", methods=["POST"])
 @login_required
 @acl.organization_roles_required("admin")
 def delete(document_id):
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
-    document = models.Document.objects.get(id=document_id, organization=organization)
-    if document:
-        document.status = "disable"
-        document.save()
+    organization, document = _get_document_or_404(document_id)
+    index_url = url_for("admin.upload_files.index", organization_id=organization.id)
+    if not forms.post_action.PostActionForm().validate_on_submit():
+        flash(INVALID_REQUEST_MESSAGE, "error")
+        return redirect(index_url)
 
-    return redirect(
-        url_for("admin.upload_files.index", organization_id=organization.id)
-    )
+    document.status = "disable"
+    document.save()
+    return redirect(index_url)
 
 
 @module.route("/<document_id>/download/<filename>")
@@ -255,15 +269,14 @@ def download(document_id, filename):
     return response
 
 
-@module.route("/<document_id>/process", methods=["GET"])
+@module.route("/<document_id>/process", methods=["POST"])
 @login_required
 @acl.organization_roles_required("admin")
 def processing(document_id):
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
-    document = models.Document.objects.get(id=document_id, organization=organization)
+    organization, document = _get_document_or_404(document_id)
+    if not forms.post_action.PostActionForm().validate_on_submit():
+        flash(INVALID_REQUEST_MESSAGE, "error")
+        return redirect(url_for("admin.upload_files.index", organization_id=organization.id))
 
     category = document.category or "unknown"
 
