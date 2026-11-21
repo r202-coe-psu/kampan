@@ -299,8 +299,9 @@ fieldset {
 /* badge ของระบบรถ (body.vehicle-badges ตั้งใน base ของ car_reservation และ vehicle_lending)
    ใช้หน้าตาเดียวกับ .role-badge: พื้นสีอ่อน 16% ตัวอักษรเข้ม ขอบจาง ตัวหนา
    สีมาจาก --badge-color ที่ badge-success/warning/error/... ของ daisyUI ตั้งไว้ ไม่มีสี = เทา
-   ทับทุกแบบ (soft/outline/ghost/ทึบ) จึงอยู่นอก layer */
-.vehicle-badges .badge:not(.role-badge, .module-badge) {
+   ทับทุกแบบ (soft/outline/ghost/ทึบ) จึงอยู่นอก layer
+   ตัวไหนตั้งใจให้ทึบ (เช่นตัวนับยังไม่อ่าน) ใส่ class badge-solid เพื่อยกเว้น */
+.vehicle-badges .badge:not(.role-badge, .module-badge, .badge-solid) {
   --tone: var(--badge-color, var(--color-neutral));
   --tone-fg: color-mix(in oklab, var(--tone) 60%, black);
   background-color: color-mix(in oklab, var(--tone) 16%, var(--color-base-100));

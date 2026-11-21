@@ -619,3 +619,18 @@ def test_every_request_row_has_an_eye_button_that_opens_the_detail(world, user_a
     assert f"/requests/{reservation.id}" in view[0].get("href")
     assert view[0].get("aria-label") == "ดูรายละเอียด"
     assert view[0].xpath(".//i[" + has_class("ph-eye") + "]")
+
+
+def test_unread_counters_opt_out_of_the_soft_vehicle_badge_style():
+    import pathlib
+
+    templates = pathlib.Path(__file__).parent.parent / "kampan/web/templates/car_reservation"
+    for name, marker in [
+        ("base/sidebar.html", 'data-testid="inbox-count"'),
+        ("notifications/_badge.html", 'data-role="notification-count"'),
+        ("notifications/index.html", 'data-role="unread-tab-count"'),
+    ]:
+        line = next(l for l in (templates / name).read_text().splitlines() if marker in l)
+        assert "badge-solid" in line, name
+    css = (templates.parent.parent / "static/css/setup.css").read_text()
+    assert ".vehicle-badges .badge:not(.role-badge, .module-badge, .badge-solid)" in css

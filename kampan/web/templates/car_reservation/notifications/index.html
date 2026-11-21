@@ -18,7 +18,7 @@
   <a role="tab" class="tab gap-2 {{ 'tab-active' if tab == 'unread' }}" {% if tab == 'unread' %}aria-selected="true"{% endif %}
      href="{{ url_for('car_reservation.notifications.index', organization_id=organization.id, tab='unread') }}">
     ยังไม่อ่าน
-    {% if unread_count %}<span class="badge badge-error badge-sm" data-role="unread-tab-count">{{ unread_count }}</span>{% endif %}
+    {% if unread_count %}<span class="badge badge-solid badge-error badge-sm" data-role="unread-tab-count">{{ unread_count }}</span>{% endif %}
   </a>
 </div>
 
