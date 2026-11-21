@@ -120,6 +120,8 @@ def test_old_collection_is_merged_into_an_existing_new_one():
     assert sorted(docs) == [1, 2, 9]
     assert docs[2] == {"_id": 2, "kept": True}
     assert LEGACY_REQUESTS not in db.list_collection_names()
+    # ฉบับเก่าที่ _id ชนไม่ถูกทิ้ง: เก็บไว้ทั้ง collection
+    assert sorted(d["_id"] for d in db[LEGACY_REQUESTS + "_archive"].find()) == [1, 2]
 
 
 def test_running_twice_does_not_lose_renamed_documents():
@@ -182,7 +184,7 @@ def _roles_of(db, oid):
     return db.organization_user_roles.find_one({"user": _ref("users", oid)})["roles"]
 
 
-def test_position_holder_and_delegates_get_the_role_and_the_collection_is_dropped():
+def test_position_holder_and_delegates_get_the_role_and_the_collection_is_archived():
     db = _positions_db()
 
     migrate(db)
@@ -190,6 +192,20 @@ def test_position_holder_and_delegates_get_the_role_and_the_collection_is_droppe
     assert _roles_of(db, HOLDER) == ["staff", "dispatcher"]
     assert _roles_of(db, DELEGATE) == ["staff", "admin", "dispatcher"]
     assert "car_reservation_positions" not in db.list_collection_names()
+    # คนที่ถูกข้าม (คนขับรถ ไม่ใช่สมาชิก active) ยังตามกลับได้จาก archive
+    assert db.car_reservation_positions_archive.count_documents({}) == 2
+
+
+def test_dry_run_reports_the_role_grants_when_only_the_oldest_positions_name_exists():
+    db = _positions_db()
+    db.car_reservation_positions.rename(LEGACY_POSITIONS)
+    lines = []
+
+    migrate(db, dry_run=True, log=lines.append)
+
+    assert any("dispatcher: add role to user" in line for line in lines)
+    assert _roles_of(db, HOLDER) == ["staff"]
+    assert db[LEGACY_POSITIONS].count_documents({}) == 2
 
 
 def test_a_driver_is_never_given_an_approval_role():

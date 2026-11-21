@@ -7,10 +7,11 @@ Migration: ระบบจองรถออนไลน์เป็นโมด
   (org ที่เปิดไว้ตั้งแต่ก่อน rename)
 - เปลี่ยนชื่อ collection เดิมเป็น car_reservations / car_reservation_positions (แล้วแปลงเป็น role ตามข้อถัดไป)
   ถ้ามีทั้งชื่อเก่าและใหม่ จะรวมเอกสารเก่าเข้าชื่อใหม่ (เอกสาร _id ซ้ำใช้ของชื่อใหม่)
+  แล้วเก็บชื่อเก่าไว้เป็น *_archive
 - แปลงตำแหน่งผู้อนุมัติเดิม (collection car_reservation_positions) เป็น organization role
   ผู้ดำรงตำแหน่งและผู้รักษาการแต่ละคนได้ role ที่ key ตรงกับตำแหน่งใน OrganizationUserRole
   ที่ active ของ org นั้น (คนขับรถไม่ได้ role ผู้อนุมัติ และไม่มีสมาชิก active ก็ข้าม) org ที่ตั้ง
-  enabled_roles ไว้จะเพิ่ม role นั้นให้ด้วย แล้วลบ collection ตำแหน่งทิ้ง
+  enabled_roles ไว้จะเพิ่ม role นั้นให้ด้วย แล้วเก็บ collection ตำแหน่งไว้เป็น *_archive (ไม่ลบ)
 - ถ้าระบุ --organization ให้เพิ่ม "car_reservation" ใน enabled_modules ของ org นั้น
   (org ที่ enabled_modules ยังไม่เคยตั้ง = เปิดทุกโมดูลอยู่แล้ว ไม่ต้องแตะ)
 
@@ -33,6 +34,18 @@ COLLECTION_RENAMES = [
     (LEGACY_MODULE + "_requests", "car_reservations"),
     ("car_flow_positions", "car_reservation_positions"),
 ]
+
+
+def _archive(db, name, prefix, dry_run, log):
+    """เปลี่ยนชื่อเป็น <name>_archive (หรือ _archive_2, _3 ถ้ามีแล้ว) แทนการ drop เอกสารที่ถูกข้ามจึงยังกู้ได้"""
+    existing = db.list_collection_names()
+    archive, number = f"{name}_archive", 1
+    while archive in existing:
+        number += 1
+        archive = f"{name}_archive_{number}"
+    log(f"{prefix}archive collection {name} -> {archive}")
+    if not dry_run:
+        db[name].rename(archive)
 
 
 def _rename_module_key(db, prefix, dry_run, log):
@@ -58,19 +71,23 @@ def _rename_collection(db, old, new, prefix, dry_run, log):
     existing = {doc["_id"] for doc in db[new].find({}, {"_id": 1})}
     missing = [doc for doc in db[old].find() if doc["_id"] not in existing]
     log(f"{prefix}merge collection {old} into {new} ({len(missing)} document(s) moved)")
-    if not dry_run:
-        if missing:
-            db[new].insert_many(missing)
-        db[old].drop()
+    if not dry_run and missing:
+        db[new].insert_many(missing)
+    _archive(db, old, prefix, dry_run, log)
 
 
 POSITIONS = "car_reservation_positions"
 
 
 def _convert_positions(db, prefix, dry_run, log):
-    if POSITIONS not in db.list_collection_names():
-        return
-    for position in db[POSITIONS].find():
+    source = POSITIONS
+    if source not in db.list_collection_names():
+        # dry-run ไม่ได้ rename จริง: อ่านจากชื่อเดิมเพื่อรายงานให้ตรงกับที่การรันจริงจะทำ
+        legacy = "car_flow_positions"
+        if not (dry_run and legacy in db.list_collection_names()):
+            return
+        source = legacy
+    for position in db[source].find():
         role = position.get("position_key")
         organization_ref = position.get("organization")
         if not role or organization_ref is None:
@@ -104,9 +121,8 @@ def _convert_positions(db, prefix, dry_run, log):
                 db.organizations.update_one(
                     {"_id": organization["_id"]}, {"$addToSet": {"enabled_roles": role}}
                 )
-    log(f"{prefix}drop collection {POSITIONS}")
-    if not dry_run:
-        db[POSITIONS].drop()
+    if source == POSITIONS:
+        _archive(db, POSITIONS, prefix, dry_run, log)
 
 
 def migrate(db, organization_id=None, dry_run=False, log=print):
