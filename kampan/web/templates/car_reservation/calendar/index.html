@@ -60,6 +60,16 @@
   #calendar .fc-event[class*="event-"] .fc-event-main { color: inherit; }
   #calendar .fc-event:hover { filter: brightness(.95); }
 
+  /* มุมมองรายสัปดาห์: ตารางเวลาแบบ Google Calendar */
+  #calendar .fc-timegrid-slot { height: 1rem; }
+  #calendar .fc-timegrid-slot-minor { border-top-style: none; }
+  #calendar .fc-timegrid-slot-label-cushion { font-size: .75rem; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
+  #calendar .fc-timegrid-event { border-width: 0 0 0 3px; padding: 2px 4px; }
+  #calendar .fc-timegrid-event .fc-event-title { white-space: normal; font-weight: 500; }
+  #calendar .fc-day-today .fc-col-header-cell-cushion { color: var(--color-primary); font-weight: 700; }
+  #calendar .fc-timegrid-now-indicator-line { border-color: var(--color-error); }
+  #calendar .fc-timegrid-now-indicator-arrow { border-color: var(--color-error); border-top-color: transparent; border-bottom-color: transparent; }
+
   .fc-view-harness,
   .fc-view-harness-active {
     display: block !important;
@@ -86,9 +96,17 @@
     const modalUrl = "{{ url_for('car_reservation.calendar.event_modal', reservation_id='RESERVATION_ID', organization_id=organization.id) }}";
 
     const isMobile = window.matchMedia('(max-width: 640px)').matches;
+    const VIEW_KEY = 'car_reservation.calendar.view';
+    const VIEWS = ['dayGridMonth', 'timeGridWeek', 'listMonth'];
+    let savedView = null;
+    try { savedView = localStorage.getItem(VIEW_KEY); } catch (e) {}
     const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
       locale: 'th',
-      initialView: isMobile ? 'listMonth' : 'dayGridMonth',
+      initialView: VIEWS.includes(savedView) ? savedView : (isMobile ? 'listMonth' : 'dayGridMonth'),
+      // จำมุมมองที่ผู้ใช้เลือกล่าสุด (เดือน/สัปดาห์/รายการ)
+      datesSet: function (info) {
+        try { localStorage.setItem(VIEW_KEY, info.view.type); } catch (e) {}
+      },
       height: isMobile ? 'auto' : undefined,
       // FullCalendar ต่อ &start=&end= ของช่วงที่แสดงให้เองทุกครั้งที่เปลี่ยนเดือน
       events: eventsUrl,
@@ -101,8 +119,20 @@
       },
       moreLinkText: function (n) { return `+ อีก ${n} รายการ`; },
       noEventsText: 'ไม่มีการจองรถในเดือนนี้',
-      headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' },
+      headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listMonth' },
       dayMaxEvents: 3,
+      // ชื่อรายการมีเวลาออกเดินทางอยู่แล้ว
+      displayEventTime: false,
+      // มุมมองเดือนแสดงเป็นแถบสีเหมือนเดิม ไม่ใช่จุด+ข้อความ
+      eventDisplay: 'block',
+      allDaySlot: false,
+      nowIndicator: true,
+      scrollTime: '07:00:00',
+      slotLabelFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+      eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+      views: {
+        timeGridWeek: { dayHeaderFormat: { weekday: 'short', day: 'numeric' } },
+      },
       eventClick: async function (info) {
         try {
           const response = await fetch(modalUrl.replace('RESERVATION_ID', info.event.id));
