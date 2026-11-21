@@ -30,12 +30,14 @@ def event_title(reservation):
 
 
 def event_of(reservation):
-    last_day = reservation.return_datetime or reservation.departure_datetime
+    departure = reservation.departure_datetime
+    return_ = reservation.return_datetime or departure + datetime.timedelta(hours=1)
     return {
         "id": str(reservation.id),
         "title": event_title(reservation),
-        "start": reservation.departure_datetime.strftime("%Y-%m-%d"),
-        "end": (last_day + datetime.timedelta(days=1)).strftime("%Y-%m-%d"),
+        "start": departure.isoformat(timespec="seconds"),
+        "end": return_.isoformat(timespec="seconds"),
+        "allDay": False,
         "classNames": [f"event-{EVENT_TONES.get(reservation.status, 'neutral')}"],
     }
 

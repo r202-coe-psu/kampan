@@ -92,9 +92,10 @@ def test_event_shows_departure_time_destination_and_plate_over_the_whole_trip(wo
 
     assert event["id"] == str(reservation.id)
     assert event["title"] == "08:30 น. เชียงใหม่ (กก 1234)"
-    assert event["start"] == "2031-01-10"
-    # วันสุดท้ายนับรวม: FullCalendar คาดหวังวันสิ้นสุดแบบ exclusive
-    assert event["end"] == "2031-01-13"
+    # เวลาจริงของการเดินทาง เพื่อให้มุมมองรายสัปดาห์วางรายการตามช่วงเวลาได้
+    assert event["start"] == "2031-01-10T08:30:00"
+    assert event["end"] == "2031-01-12T17:00:00"
+    assert event["allDay"] is False
 
 
 def test_event_title_has_no_plate_until_a_car_is_assigned(world):
