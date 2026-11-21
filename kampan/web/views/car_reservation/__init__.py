@@ -67,6 +67,19 @@ def inject_can_view_stats():
 
 
 @module.context_processor
+def inject_can_view_timeline():
+    """เห็นเมนูตารางรถไหม: ผู้จัดรถและ admin ของ org ที่ดูอยู่"""
+    organization = getattr(g, "organization", None)
+    if organization is None or not current_user.is_authenticated:
+        return {"can_view_timeline": False}
+    return {
+        "can_view_timeline": utils.car_reservation_flow.can_view_timeline(
+            organization, current_user._get_current_object()
+        )
+    }
+
+
+@module.context_processor
 def inject_can_create_urgent():
     """เห็นเมนูขอใช้รถเร่งด่วนไหม: เฉพาะผู้จัดรถ (role dispatcher) ของ org ที่ดูอยู่"""
     organization = getattr(g, "organization", None)

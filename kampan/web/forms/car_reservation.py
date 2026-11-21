@@ -844,6 +844,34 @@ class DriverStatsFilterForm(FlaskForm):
     )
 
 
+class TimelineFilterForm(FlaskForm):
+    """ตัวกรองหน้าตารางรถ (GET จึงไม่มี CSRF) ค่าทั้งหมดอยู่ใน query string
+
+    สร้างจากค่าที่ผ่าน `car_timeline.parse_query` แล้ว (`data=`) ไม่ผูกกับ request.args ตรง ๆ
+    ค่าที่ผิดรูปแบบจึงไม่ทำให้ฟอร์มแสดงผลพัง; driver choices ตั้งจาก พขร. ของ org ใน view
+    วันเริ่มและจำนวนวัน (start, days) อยู่ในแถบนำทางของหน้า ไม่ใช่ฟอร์มนี้
+    """
+
+    class Meta:
+        csrf = False
+
+    organization_id = fields.HiddenField()
+    vehicle_type = SelectMultipleField(
+        "ประเภทรถ", choices=models.vehicles.VEHICLE_TYPES
+    )
+    q = fields.StringField("ทะเบียน", validators=[validators.Length(max=64)])
+    driver = SelectField("พนักงานขับรถ", choices=[])
+    status = SelectMultipleField(
+        "สถานะ", choices=models.car_reservations.RESERVATION_STATUS
+    )
+    free_from = fields.DateTimeLocalField(
+        "ว่างช่วง", format="%Y-%m-%dT%H:%M", validators=[validators.Optional()]
+    )
+    free_to = fields.DateTimeLocalField(
+        "ถึง", format="%Y-%m-%dT%H:%M", validators=[validators.Optional()]
+    )
+
+
 class DenyDecisionForm(FlaskForm):
     comment = fields.TextAreaField(
         "เหตุผลที่ไม่อนุมัติ",

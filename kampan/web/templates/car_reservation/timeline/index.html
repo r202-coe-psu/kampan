@@ -1,0 +1,105 @@
+{% extends '/car_reservation/base/default-page.html' %}
+
+{% block title %}ตารางรถ{% endblock %}
+{% block dashboard_title %}ตารางรถ{% endblock %}
+
+{% block page_subtitle %}ดูว่ารถแต่ละคันว่างหรือไม่ว่างช่วงไหน แท่งแต่ละแท่งคือหนึ่งงานของรถคันนั้น กดที่แท่งเพื่อดูรายละเอียด{% endblock %}
+
+{% block content %}
+{% set filters = timeline.filters %}
+{% include "/car_reservation/timeline/_styles.html" %}
+<style>
+  .tl-filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .75rem 1rem; }
+  .tl-checks { display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
+  .tl-checks label { display: inline-flex; align-items: center; gap: .4rem; font-size: .85rem; cursor: pointer; }
+  .tl-filters > summary { cursor: pointer; list-style: none; }
+  .tl-filters > summary::-webkit-details-marker { display: none; }
+  .tl-filters[open] > summary .tl-filters-caret { transform: rotate(180deg); }
+</style>
+
+<div class="flex flex-col gap-3">
+  <details id="timeline-filters" class="tl-filters card bg-base-100 border border-base-300 shadow-sm" data-role="timeline-filters"
+           {% if filtered %}open{% endif %}>
+    <summary class="flex items-center justify-between gap-2 p-4 font-medium">
+      <span class="flex items-center gap-2"><i class="ph ph-funnel"></i> ตัวกรอง
+        {% if filtered %}<span class="badge badge-sm badge-primary badge-soft">กำลังกรอง</span>{% endif %}
+      </span>
+      <i class="ph ph-caret-down tl-filters-caret" aria-hidden="true"></i>
+    </summary>
+    <form id="timeline-filter" method="get" class="flex flex-col gap-4 px-4 pb-4" data-role="timeline-filter"
+          action="{{ url_for('car_reservation.timeline.index') }}"
+          hx-get="{{ url_for('car_reservation.timeline.index') }}" hx-target="#timeline-grid" hx-push-url="true"
+          hx-trigger="submit, change delay:200ms">
+      {{ form.organization_id }}
+      <div class="tl-filter-grid">
+        <div>
+          <label class="label text-sm" for="{{ form.q.id }}">{{ form.q.label.text }}</label>
+          {{ form.q(class_="input input-sm w-full", placeholder="ค้นหาเลขทะเบียน", maxlength=64) }}
+        </div>
+        <div>
+          <label class="label text-sm" for="{{ form.driver.id }}">{{ form.driver.label.text }}</label>
+          {{ form.driver(class_="select select-sm w-full") }}
+        </div>
+        <div>
+          <label class="label text-sm" for="{{ form.free_from.id }}">ว่างช่วง</label>
+          <div class="flex flex-wrap items-center gap-2">
+            {{ form.free_from(class_="input input-sm", **{"aria-label": "ว่างตั้งแต่"}) }}
+            <span class="text-sm">ถึง</span>
+            {{ form.free_to(class_="input input-sm", **{"aria-label": "ว่างถึง"}) }}
+          </div>
+          <p class="mt-1 text-xs text-base-content/60">ซ่อนรถที่มีงานทับช่วงนี้ (นับสถานะเดียวกับที่ระบบบล็อกตอนจัดรถ รวมใบยืมรถระบบเดิม)</p>
+          {% if filters.free_error %}
+          <p class="mt-1 text-sm text-warning" data-role="free-error"><i class="ph ph-warning"></i> {{ filters.free_error }}</p>
+          {% endif %}
+        </div>
+      </div>
+      <div>
+        <p class="label text-sm">{{ form.vehicle_type.label.text }}</p>
+        <div class="tl-checks">
+          {% for value, label in form.vehicle_type.choices %}
+          <label><input type="checkbox" class="checkbox checkbox-xs" name="vehicle_type" value="{{ value }}"
+                        {% if value in (form.vehicle_type.data or []) %}checked{% endif %}> {{ label }}</label>
+          {% endfor %}
+        </div>
+      </div>
+      <div>
+        <p class="label text-sm">{{ form.status.label.text }}</p>
+        <div class="tl-checks">
+          {% for value, label in form.status.choices %}
+          <label><input type="checkbox" class="checkbox checkbox-xs" name="status" value="{{ value }}"
+                        {% if value in (form.status.data or []) %}checked{% endif %}> {{ label }}{% if value in hidden_by_default %} <span class="text-xs text-base-content/50">(ซ่อนไว้)</span>{% endif %}</label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="submit" class="btn btn-primary btn-sm"><i class="ph ph-funnel"></i> กรอง</button>
+        <a class="btn btn-ghost btn-sm" href="{{ reset_href }}" hx-get="{{ reset_href }}" hx-target="#timeline-grid"
+           hx-push-url="true" data-role="reset-filter"><i class="ph ph-x"></i> ล้างตัวกรอง</a>
+      </div>
+    </form>
+  </details>
+
+  <div class="card bg-base-100 border border-base-300 shadow-sm">
+    <div class="card-body gap-3 p-4">
+      {% include "/car_reservation/timeline/_nav.html" %}
+      <ul class="flex flex-wrap items-center gap-x-4 gap-y-1" aria-label="คำอธิบายสี" data-role="legend">
+        {% for key, label in [('active', 'อนุมัติแล้ว'), ('pending', 'รออนุมัติ'), ('cancel_requested', 'ขอยกเลิก'), ('completed', 'เสร็จสิ้น'), ('cancelled', 'ยกเลิก'), ('denied', 'ไม่อนุมัติ')] %}
+        <li class="tl-chip tl-st-{{ key }}">{{ label }}{% if key in hidden_by_default %} <span class="text-base-content/50">(ซ่อนไว้)</span>{% endif %}</li>
+        {% endfor %}
+      </ul>
+      <div id="timeline-grid" data-role="timeline-grid">
+        {% include "/car_reservation/timeline/_grid.html" %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include "/car_reservation/timeline/_scripts.html" %}
+<script>
+  // เปิดแผงตัวกรองไว้บนจอใหญ่ ส่วนบนมือถือพับไว้ (เปิดเองเมื่อกำลังกรองอยู่)
+  (function () {
+    var panel = document.getElementById('timeline-filters');
+    if (panel && window.matchMedia('(min-width: 40rem)').matches) panel.open = true;
+  })();
+</script>
+{% endblock %}

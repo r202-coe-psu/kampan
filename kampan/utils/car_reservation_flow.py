@@ -378,6 +378,15 @@ def submit_urgent(
     )
 
 
+# ผู้ดูตารางรถรวมของ org: ผู้จัดรถและ admin ของ org (admin ของระบบที่ไม่ได้ถือ role ในองค์กรไม่นับ)
+TIMELINE_ROLES = ("dispatcher", "admin")
+
+
+def can_view_timeline(organization, user):
+    """เปิดหน้าตารางรถได้เมื่อเป็นสมาชิก active ของ org และถือ role ผู้จัดรถหรือ admin ขององค์กร"""
+    return any(has_role(organization, user, role) for role in TIMELINE_ROLES)
+
+
 def can_create_insert(organization, user):
     """เฉพาะผู้ที่ถือ role ผู้จัดรถของ org เพิ่มงานแทรกได้"""
     return has_role(organization, user, "dispatcher")
@@ -850,13 +859,26 @@ def _save_if(app, **expected):
         raise ConcurrentChangeError(ALREADY_HANDLED)
 
 
-def _car_booked_by_diis(app, car):
+def diis_bookings_overlapping(organization, start, end, car=None):
+    """ใบยืมรถ DIIS (ระบบเดิม) ของ org ที่ยังจองรถอยู่และเวลาทับ [start, end) ระบุ car = เฉพาะรถคันนั้น
+
+    QuerySet ที่ทั้ง `_car_booked_by_diis` และหน้าตารางรถใช้ เพื่อให้สิ่งที่เห็นบนจอตรงกับที่ server บล็อก
+    """
+    match = {}
+    if car is not None:
+        match["car"] = car
     return models.vehicle_applications.CarApplication.objects(
-        organization=app.organization,
-        car=car,
+        organization=organization,
         status__in=DIIS_BOOKED_STATUSES,
-        departure_datetime__lt=app.return_datetime,
-        return_datetime__gt=app.departure_datetime,
+        departure_datetime__lt=end,
+        return_datetime__gt=start,
+        **match,
+    )
+
+
+def _car_booked_by_diis(app, car):
+    return diis_bookings_overlapping(
+        app.organization, app.departure_datetime, app.return_datetime, car=car
     ).first()
 
 
@@ -879,11 +901,26 @@ def _car_conflict_error(car, taken):
     )
 
 
-def _overlapping_bookings(app, car=None, driver=None, except_driver=None):
-    """คำขออื่นของ org ที่จองรถ/คนขับคนเดียวกัน (ผ่านขั้นจัดรถแล้วและยังไม่จบ) เวลาทับกัน
+# สถานะของคำขอที่ยังจองรถ/พขร. อยู่ (ผ่านขั้นจัดรถแล้วและยังไม่จบ) ใช้ตัดสินว่าเวลาชนกันไหม
+OCCUPYING_STATUSES = ["pending", "active", "cancel_requested"]
 
-    car/driver เป็นเงื่อนไขของชุดเดียวกัน (ชุดที่ใช้รถคันนั้นกับ พขร. คนนั้น)
+
+def overlapping_reservations(
+    organization,
+    start,
+    end,
+    *,
+    exclude_id=None,
+    car=None,
+    driver=None,
+    except_driver=None,
+):
+    """คำขอของ org ที่มีชุดรถ/พขร. และเวลา [departure, return) ทับ [start, end) (เฉพาะสถานะใน OCCUPYING_STATUSES)
+
+    car/driver เป็นเงื่อนไขของชุดเดียวกัน (ชุดที่ใช้รถคันนั้นกับ พขร. คนนั้น) ไม่ระบุ = ชุดใดก็ได้
+    exclude_id = ข้ามคำขอนี้ (ตัวคำขอที่กำลังจัดรถ)
     except_driver = ข้ามชุดที่ พขร. คนนี้ขับ (ใช้กับ car เพื่อไม่นับงานหลักของ พขร. ที่งานแทรกใช้รถร่วม)
+    คืน QuerySet
     """
     match = {}
     if car is not None:
@@ -892,13 +929,29 @@ def _overlapping_bookings(app, car=None, driver=None, except_driver=None):
         match["driver"] = driver
     if except_driver is not None:
         match["driver__ne"] = except_driver
+    query = {}
+    if exclude_id is not None:
+        query["id__ne"] = exclude_id
     return models.CarReservation.objects(
-        organization=app.organization,
-        status__in=["pending", "active", "cancel_requested"],
-        id__ne=app.id,
-        departure_datetime__lt=app.return_datetime,
-        return_datetime__gt=app.departure_datetime,
+        organization=organization,
+        status__in=OCCUPYING_STATUSES,
+        departure_datetime__lt=end,
+        return_datetime__gt=start,
         assignments__match=match,
+        **query,
+    )
+
+
+def _overlapping_bookings(app, car=None, driver=None, except_driver=None):
+    """คำขออื่นของ org ที่จองรถ/คนขับคนเดียวกันเวลาทับกับ app (ดู overlapping_reservations)"""
+    return overlapping_reservations(
+        app.organization,
+        app.departure_datetime,
+        app.return_datetime,
+        exclude_id=app.id,
+        car=car,
+        driver=driver,
+        except_driver=except_driver,
     )
 
 

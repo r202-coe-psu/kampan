@@ -1,0 +1,196 @@
+{# CSS ของตารางรถ (ใช้ร่วมกับตัวเลือกรถในฟอร์มจัดรถ: include ครั้งเดียวต่อหน้า)
+   ไม่พึ่ง utility class ใหม่ของ Tailwind ใช้ตัวแปรสีของ DaisyUI ล้วน ตำแหน่ง/ความกว้างแท่งมาจาก inline style #}
+<style>
+  .tl {
+    --tl-car-col: 11.5rem;
+    --tl-day-min: 3.5rem;
+    --tl-lane: 2.25rem;
+    --tl-min-bar: 1.25rem;
+    --tl-line: color-mix(in oklab, var(--color-base-content) 10%, transparent);
+    --tl-hatch: color-mix(in oklab, var(--color-base-content) 9%, transparent);
+  }
+  @media (max-width: 40rem) { .tl { --tl-car-col: 6.75rem; } .tl-photo { display: none; } }
+
+  .tl-scroll {
+    overflow: auto;
+    max-height: 75vh;
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-box);
+    background: var(--color-base-100);
+  }
+  .tl-inner { position: relative; min-width: calc(var(--tl-car-col) + var(--tl-days) * var(--tl-day-min)); }
+
+  /* ส่วนหัว: เดือน, วัน, (ชั่วโมง เฉพาะมุมมอง 1 วัน) ติดบนเมื่อเลื่อนลง และมุมซ้ายติดทั้งบนและซ้าย */
+  .tl-head {
+    display: grid;
+    grid-template-columns: var(--tl-car-col) 1fr;
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: var(--color-base-100);
+    border-bottom: 1px solid var(--color-base-300);
+  }
+  .tl-corner {
+    position: sticky;
+    left: 0;
+    z-index: 7;
+    display: flex;
+    align-items: flex-end;
+    padding: .5rem .75rem;
+    font-size: .75rem;
+    color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+    background: var(--color-base-100);
+    border-right: 1px solid var(--color-base-300);
+  }
+  .tl-head-days { display: grid; }
+  .tl-months, .tl-daycells, .tl-hours { display: grid; grid-template-columns: repeat(var(--tl-days), minmax(0, 1fr)); }
+  .tl-month {
+    padding: .2rem .5rem;
+    font-size: .7rem;
+    font-weight: 600;
+    color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+    border-left: 1px solid var(--tl-line);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .tl-daycell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: .25rem 0;
+    line-height: 1.15;
+    font-size: .7rem;
+    border-left: 1px solid var(--tl-line);
+    color: color-mix(in oklab, var(--color-base-content) 65%, transparent);
+  }
+  .tl-daycell b { font-size: .95rem; font-weight: 600; color: var(--color-base-content); }
+  .tl-daycell.is-weekend { background: repeating-linear-gradient(135deg, var(--tl-hatch) 0 4px, transparent 4px 8px); }
+  .tl-daycell.is-holiday { background: color-mix(in oklab, var(--color-error) 10%, var(--color-base-100)); color: var(--color-error); }
+  .tl-daycell.is-holiday b { color: var(--color-error); }
+  .tl-daycell.is-today { background: color-mix(in oklab, var(--color-primary) 14%, var(--color-base-100)); color: var(--color-primary); }
+  .tl-daycell.is-today b {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 1.6rem; height: 1.6rem; border-radius: 9999px;
+    background: var(--color-primary); color: var(--color-primary-content);
+  }
+  .tl-hours { border-top: 1px solid var(--tl-line); }
+  .tl-hour { padding: .1rem .25rem; font-size: .65rem; color: color-mix(in oklab, var(--color-base-content) 55%, transparent); border-left: 1px solid var(--tl-line); }
+
+  /* ตัวตาราง: ชั้นพื้นหลังชั้นเดียว (เส้นแบ่งวัน ลายเสาร์-อาทิตย์ วันหยุด เส้นเวลาปัจจุบัน) อยู่หลังทุกแถว */
+  .tl-body { position: relative; }
+  .tl-bg {
+    position: absolute;
+    top: 0; bottom: 0; right: 0;
+    left: var(--tl-car-col);
+    pointer-events: none;
+    z-index: 0;
+    background-image: linear-gradient(to right, var(--tl-line) 1px, transparent 1px);
+    background-size: calc(100% / var(--tl-days)) 100%;
+  }
+  .tl-band { position: absolute; top: 0; bottom: 0; }
+  .tl-band.is-weekend { background: repeating-linear-gradient(135deg, var(--tl-hatch) 0 4px, transparent 4px 8px); }
+  .tl-band.is-holiday { background: color-mix(in oklab, var(--color-error) 9%, transparent); }
+  .tl-band.is-today { background: color-mix(in oklab, var(--color-primary) 7%, transparent); }
+  .tl-now { position: absolute; top: 0; bottom: 0; border-left: 2px dashed var(--color-error); }
+
+  .tl-group-head {
+    position: relative;
+    z-index: 2;
+    background: var(--color-base-200);
+    border-bottom: 1px solid var(--color-base-300);
+  }
+  .tl-group-toggle {
+    position: sticky;
+    left: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .4rem .75rem;
+    font-size: .85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .tl-group-toggle i { transition: transform .15s; }
+  .tl-group-toggle[aria-expanded="false"] i { transform: rotate(-90deg); }
+
+  .tl-row {
+    display: grid;
+    grid-template-columns: var(--tl-car-col) 1fr;
+    min-height: calc(var(--tl-lanes) * var(--tl-lane) + 1rem);
+    border-bottom: 1px solid var(--tl-line);
+  }
+  .tl-row[hidden] { display: none; }
+  .tl-car {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-width: 0;
+    padding: .25rem .5rem .25rem .75rem;
+    background: var(--color-base-100);
+    border-right: 1px solid var(--color-base-300);
+  }
+  .tl-car-text { min-width: 0; line-height: 1.25; }
+  .tl-car-plate { font-weight: 600; font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tl-car-sub { font-size: .7rem; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); white-space: nowrap; }
+  .tl-track { position: relative; z-index: 1; overflow: hidden; }
+
+  /* แท่งงาน: container query ซ่อนข้อความตามความกว้างจริงของแท่ง */
+  .tl-bar {
+    --tone: var(--color-base-content);
+    position: absolute;
+    top: calc(.5rem + var(--lane, 0) * var(--tl-lane) + .175rem);
+    height: calc(var(--tl-lane) - .35rem);
+    min-width: var(--tl-min-bar);
+    container-type: inline-size;
+    display: block;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+    color: var(--color-base-content);
+    background: color-mix(in oklab, var(--tone) 20%, var(--color-base-100));
+    border: 1px solid color-mix(in oklab, var(--tone) 55%, transparent);
+    border-left: 3px solid var(--tone);
+    border-radius: var(--radius-field);
+    overflow: hidden;
+  }
+  .tl-bar:hover { background: color-mix(in oklab, var(--tone) 32%, var(--color-base-100)); }
+  .tl-bar:focus-visible { outline: 2px solid var(--tone); outline-offset: 1px; }
+  .tl-bar.is-clipped-left { border-left-width: 1px; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+  .tl-bar.is-clipped-right { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right-style: dashed; }
+  .tl-bar-content { display: flex; align-items: center; gap: .4rem; height: 100%; padding: 0 .4rem; white-space: nowrap; font-size: .72rem; line-height: 1.1; }
+  .tl-bar-main { font-weight: 600; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .tl-bar-sub { overflow: hidden; text-overflow: ellipsis; min-width: 0; opacity: .75; }
+  .tl-bar-badge { margin-left: auto; flex: none; padding: 0 .35rem; border-radius: 9999px; font-size: .62rem; background: color-mix(in oklab, var(--tone) 28%, transparent); }
+  @container (max-width: 12rem) { .tl-bar-badge { display: none; } }
+  @container (max-width: 7rem) { .tl-bar-sub { display: none; } }
+  @container (max-width: 3rem) { .tl-bar-content { display: none; } }
+
+  .tl-st-active { --tone: var(--color-success); }
+  .tl-st-pending { --tone: var(--color-warning); }
+  .tl-st-cancel_requested { --tone: color-mix(in oklab, var(--color-warning) 55%, var(--color-error)); }
+  .tl-st-completed { --tone: color-mix(in oklab, var(--color-base-content) 45%, var(--color-base-100)); }
+  .tl-st-cancelled, .tl-st-denied { --tone: var(--color-error); }
+  .tl-st-cancelled .tl-bar-main, .tl-st-denied .tl-bar-main { text-decoration: line-through; }
+  .tl-chip { display: inline-flex; align-items: center; gap: .35rem; font-size: .7rem; }
+  .tl-chip::before { content: ""; width: .6rem; height: .6rem; border-radius: 2px; background: var(--tone); }
+
+  /* popover ของแท่ง (Popover API: อยู่ชั้นบนสุด กลางจอ กด Esc หรือคลิกนอกกล่องเพื่อปิด) */
+  .tl-pop {
+    width: min(23rem, calc(100vw - 2rem));
+    padding: 1rem;
+    color: var(--color-base-content);
+    background: var(--color-base-100);
+    border: 1px solid var(--color-base-300);
+    border-top: 4px solid var(--tone, var(--color-base-content));
+    border-radius: var(--radius-box);
+    box-shadow: 0 10px 30px color-mix(in oklab, var(--color-base-content) 25%, transparent);
+  }
+  .tl-pop::backdrop { background: color-mix(in oklab, var(--color-base-content) 20%, transparent); }
+  .tl-pop-title { font-weight: 700; font-size: 1rem; overflow-wrap: anywhere; }
+  .tl-pop dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .35rem .75rem; margin: .75rem 0; font-size: .85rem; }
+  .tl-pop dt { color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
+  .tl-pop dd { overflow-wrap: anywhere; }
+</style>

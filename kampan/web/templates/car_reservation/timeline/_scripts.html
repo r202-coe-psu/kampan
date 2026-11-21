@@ -1,0 +1,23 @@
+{# พับ/ขยายกลุ่มประเภทรถของตารางรถ (vanilla JS) จำสถานะไว้ในหน้าเท่านั้น ไม่เก็บฝั่ง server
+   และใช้ซ้ำหลัง htmx สลับตาราง include หนึ่งครั้งต่อหน้า #}
+<script>
+  (function () {
+    var collapsed = new Set();
+    function apply() {
+      document.querySelectorAll('[data-tl-grid] .tl-row').forEach(function (row) {
+        row.hidden = collapsed.has(row.dataset.group);
+      });
+      document.querySelectorAll('[data-tl-toggle]').forEach(function (button) {
+        button.setAttribute('aria-expanded', String(!collapsed.has(button.dataset.tlToggle)));
+      });
+    }
+    document.addEventListener('click', function (event) {
+      var button = event.target.closest('[data-tl-toggle]');
+      if (!button) return;
+      var key = button.dataset.tlToggle;
+      if (collapsed.has(key)) collapsed.delete(key); else collapsed.add(key);
+      apply();
+    });
+    document.body.addEventListener('htmx:afterSwap', apply);
+  })();
+</script>

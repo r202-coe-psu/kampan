@@ -1,0 +1,132 @@
+{# ตารางรถ (resource timeline) ตัวเดียวที่ใช้ได้ทั้งหน้าตารางรถและตัวเลือกรถในฟอร์มจัดรถ
+
+   context: timeline (จาก utils.car_timeline.build_timeline) และ organization เท่านั้น ไม่พึ่งฟอร์ม/ลิงก์ของหน้า
+     id_prefix  คำนำหน้า id ของ popover (ค่าเริ่มต้น "tl") ใส่ต่างกันถ้าวางหลายตารางในหน้าเดียว
+     nav_oob    ตอบกลับ htmx: ส่งแถบนำทางตามไปแทนที่ด้วย hx-swap-oob (ดู _nav.html)
+   ต้อง include timeline/_styles.html หนึ่งครั้งในหน้า และมีสคริปต์พับกลุ่ม (ดู index.html) #}
+{% from "/car_reservation/components/car_photo.html" import CarPhoto %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+{% set id_prefix = id_prefix | default("tl") %}
+<div class="tl" data-role="timeline" data-tl-grid style="--tl-days: {{ timeline.day_count }}">
+  {% if timeline.groups %}
+  <div class="tl-scroll">
+    <div class="tl-inner">
+      <div class="tl-head">
+        <div class="tl-corner">รถ {{ timeline.car_count }} คัน</div>
+        <div class="tl-head-days">
+          <div class="tl-months">
+            {% for month in timeline.months %}
+            <div class="tl-month" style="grid-column: span {{ month.span }}">{{ month.label }}</div>
+            {% endfor %}
+          </div>
+          <div class="tl-daycells">
+            {% for day in timeline.columns %}
+            <div class="tl-daycell {{ 'is-weekend' if day.is_weekend }} {{ 'is-holiday' if day.is_holiday }} {{ 'is-today' if day.is_today }}"
+                 data-date="{{ day.date.isoformat() }}"
+                 {% if day.is_holiday %}title="{{ day.holiday_name or 'วันหยุด' }}"{% endif %}>
+              <span>{{ day.weekday_label }}</span>
+              <b>{{ day.day_number }}</b>
+            </div>
+            {% endfor %}
+          </div>
+          {% if timeline.hour_ticks %}
+          <div class="tl-hours" style="grid-template-columns: repeat({{ timeline.hour_ticks | length }}, minmax(0, 1fr))">
+            {% for label, _ in timeline.hour_ticks %}<div class="tl-hour">{{ label }}</div>{% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="tl-body">
+        <div class="tl-bg" aria-hidden="true">
+          {% for day in timeline.columns %}
+          {% if day.is_today or day.is_holiday or day.is_weekend %}
+          <div class="tl-band {{ 'is-weekend' if day.is_weekend }} {{ 'is-holiday' if day.is_holiday }} {{ 'is-today' if day.is_today }}"
+               style="left: {{ day.left_pct }}%; width: {{ day.width_pct }}%"></div>
+          {% endif %}
+          {% endfor %}
+          {% if timeline.now_pct is not none %}
+          <div class="tl-now" data-role="now-line" style="left: {{ timeline.now_pct }}%"></div>
+          {% endif %}
+        </div>
+
+        {% for group in timeline.groups %}
+        {% set group_key = group.key or '_none' %}
+        <div class="tl-group-head" data-role="group-head" data-group="{{ group_key }}">
+          <button type="button" class="tl-group-toggle" aria-expanded="true" data-tl-toggle="{{ group_key }}">
+            <i class="ph ph-caret-down" aria-hidden="true"></i>
+            {{ group.label }}
+            <span class="badge badge-sm badge-neutral badge-soft" data-role="group-count">{{ group.car_count }}</span>
+          </button>
+        </div>
+        {% for row in group.rows %}
+        {% set car = row.car %}
+        <div class="tl-row" data-role="car-row" data-group="{{ group_key }}" data-car-id="{{ car.id }}"
+             style="--tl-lanes: {{ row.lane_count }}">
+          <div class="tl-car">
+            <span class="tl-photo">{{ CarPhoto(car, organization, size="size-10") }}</span>
+            <div class="tl-car-text">
+              <div class="tl-car-plate" title="{{ car.license_plate }}">{{ car.license_plate }}</div>
+              <div class="tl-car-sub">
+                {% if car.seat_count %}<i class="ph ph-armchair" aria-hidden="true"></i> {{ car.seat_count }} ที่นั่ง{% else %}&nbsp;{% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="tl-track">
+            {% for bar in row.bars %}
+            {% set pop_id = id_prefix ~ '-pop-' ~ bar.reservation_id ~ '-' ~ bar.assignment_id %}
+            {% set tip %}{{ bar.label }} · {{ bar.driver_name or 'ยังไม่ระบุ พขร.' }} · {{ bar.status_label }} · {{ bar.departure | format_thai_datetime_short_month }} – {{ bar.return_ | format_thai_datetime_short_month }}{% endset %}
+            <button type="button"
+                    class="tl-bar tl-st-{{ bar.status }} {{ 'is-clipped-left' if bar.clipped_left }} {{ 'is-clipped-right' if bar.clipped_right }}"
+                    data-role="bar" data-status="{{ bar.status }}" data-reservation-id="{{ bar.reservation_id }}"
+                    style="left: min({{ bar.left_pct }}%, calc(100% - var(--tl-min-bar))); width: {{ bar.width_pct }}%; --lane: {{ bar.lane }}"
+                    popovertarget="{{ pop_id }}" title="{{ tip | trim }}">
+              <span class="tl-bar-content">
+                <span class="tl-bar-main">{{ bar.label }}</span>
+                {% if bar.driver_name %}<span class="tl-bar-sub">{{ bar.driver_name }}</span>{% endif %}
+                <span class="tl-bar-badge">{{ bar.status_label }}{% if bar.is_overtime %} · OT{% endif %}</span>
+              </span>
+            </button>
+            <div id="{{ pop_id }}" popover class="tl-pop tl-st-{{ bar.status }}" data-role="bar-popover">
+              <div class="flex items-start justify-between gap-2">
+                <p class="tl-pop-title">{{ bar.location or '-' }}</p>
+                <div class="flex shrink-0 flex-wrap justify-end gap-1">
+                  <span class="badge badge-sm" style="background: color-mix(in oklab, var(--tone) 25%, var(--color-base-100)); border-color: var(--tone)">{{ bar.status_label }}</span>
+                  {% if bar.is_overtime %}<span class="badge badge-sm badge-warning" data-role="overtime-badge">OT</span>{% endif %}
+                </div>
+              </div>
+              <dl>
+                <dt>ออก-กลับ</dt>
+                <dd>{{ bar.departure | format_thai_datetime_short_month }} – {{ bar.return_ | format_thai_datetime_short_month }}</dd>
+                <dt>ผู้ขอ</dt>
+                <dd>{{ bar.requester_name or '-' }}{% if bar.contact_name and bar.contact_name != bar.requester_name %} (ติดต่อ {{ bar.contact_name }}){% endif %}</dd>
+                <dt>รถ</dt>
+                <dd>{{ car.license_plate }}</dd>
+                <dt>พนักงานขับรถ</dt>
+                <dd>{{ (bar.driver_names | join(', ')) or '-' }}</dd>
+                <dt>ผู้โดยสาร</dt>
+                <dd>{{ bar.passenger_number }} คน</dd>
+              </dl>
+              <div class="flex items-center justify-between gap-2">
+                <a class="btn btn-primary btn-sm" data-role="open-request"
+                   href="{{ url_for('car_reservation.requests.detail', request_id=bar.reservation_id, organization_id=organization.id) }}">
+                  <i class="ph ph-arrow-square-out"></i> ดูรายละเอียดคำขอ
+                </a>
+                <button type="button" class="btn btn-ghost btn-sm" popovertarget="{{ pop_id }}" popovertargetaction="hide">ปิด</button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  {{ EmptyState('ph-car', 'ไม่พบรถ', filtered=true, filtered_title='ไม่พบรถที่ตรงกับตัวกรอง',
+               filtered_description='ลองเปลี่ยนเงื่อนไขการกรอง หรือล้างตัวกรอง',
+               clear_href=reset_href | default(none)) }}
+  {% endif %}
+</div>
+{% if nav_oob %}{% include "/car_reservation/timeline/_nav.html" %}{% endif %}

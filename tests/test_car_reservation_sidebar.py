@@ -14,6 +14,7 @@ HOME = "/car_reservation/requests/"
 MY_REQUESTS = "คำขอของฉัน"
 INSERT = "เพิ่มงานแทรก"
 CALENDAR = "ปฏิทินการจองรถ"
+TIMELINE = "ตารางรถ"
 INBOX = "รายการรออนุมัติ"
 TASKS = "รายการงาน"
 DIRECTORY = "ข้อมูลรถและพนักงานขับรถ"
@@ -28,9 +29,9 @@ NOTIFICATIONS = "การแจ้งเตือน"
 # ยื่นคำขอเป็นปุ่มในหน้าคำขอของฉัน ไม่มีเมนูแยก
 EVERYONE = {MY_REQUESTS, CALENDAR, DIRECTORY}
 # ขอใช้รถเร่งด่วนย้ายไปอยู่ใน modal เลือกประเภทคำขอแล้ว (test_car_reservation_new_request_picker.py)
-DISPATCH = EVERYONE | {INSERT, INBOX, STATS}
+DISPATCH = EVERYONE | {INSERT, INBOX, STATS, TIMELINE}
 EXECUTIVE = EVERYONE | {INBOX, STATS}
-ADMIN = EVERYONE | {STATS, MANAGE_CARS, FEEDBACK, SETTINGS}
+ADMIN = EVERYONE | {STATS, TIMELINE, MANAGE_CARS, FEEDBACK, SETTINGS}
 
 # (org roles, global roles, ลิงก์ที่ต้องเห็นพอดี) ตัวเลขเป็นค่าจากสิทธิ์ของแต่ละ route ไม่ได้คำนวณจากโค้ด sidebar
 ROLE_CASES = {
@@ -46,7 +47,8 @@ ROLE_CASES = {
     "driver_and_dispatcher": (["driver", "dispatcher"], [], DISPATCH | {TASKS}),
     "driver_and_head": (["driver", "head"], [], EVERYONE | {INBOX, TASKS}),
     "org_admin": (["admin"], [], ADMIN),
-    "system_admin": (["staff"], ["admin"], ADMIN),
+    # ตารางรถเปิดได้เฉพาะผู้ที่ถือ role ผู้จัดรถ/admin ในองค์กรนั้น admin ของระบบที่ไม่มี role ในองค์กรจึงไม่เห็นเมนูนี้
+    "system_admin": (["staff"], ["admin"], ADMIN - {TIMELINE}),
 }
 
 
