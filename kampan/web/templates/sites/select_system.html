@@ -82,7 +82,7 @@
 
         {% if 'car_reservation' in enabled_modules %}
         <!-- ระบบจองรถออนไลน์ -->
-        <a href="{{ url_for('car_reservation.requests.index', organization_id=organization.id) }}"
+        <a href="{{ url_for('car_reservation.calendar.index', organization_id=organization.id) }}"
            class="block min-h-[180px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
           <div class="p-6 text-center h-full flex flex-col justify-center bg-module-car">
             <div class="w-16 h-16 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">

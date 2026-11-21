@@ -11,7 +11,7 @@ MODULE_ENDPOINTS = {
     "procurement": "procurement.requisitions.renewal_requested",
     "inventory": "item_orders.index",
     "car": "vehicle_lending.car_applications.calendar",
-    "car_reservation": "car_reservation.requests.index",
+    "car_reservation": "car_reservation.calendar.index",
     "motorcycle": "vehicle_lending.motorcycle_applications.calendar",
 }
 

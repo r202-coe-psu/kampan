@@ -90,7 +90,7 @@ def test_switching_organization_from_car_reservation_stays_in_car_reservation(
         login_as(client, user)
         page = client.get(f"/car_reservation/requests/?organization_id={org.id}")
     nexts = [parse_qs(urlparse(h).query).get("next", [""])[0] for h in switcher_links(page.data.decode())]
-    assert nexts and all(n.startswith("/car_reservation/requests") for n in nexts)
+    assert nexts and all(n.startswith("/car_reservation/calendar") for n in nexts)
 
 
 def test_switching_to_an_organization_without_car_reservation_goes_to_the_system_picker(

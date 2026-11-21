@@ -20,13 +20,13 @@ def add_date_url(url):
 MODULE_HOME_ENDPOINTS = {
     "procurement": "procurement.requisitions.renewal_requested",
     "vehicle_lending": "vehicle_lending.car_applications.calendar",
-    "car_reservation": "car_reservation.requests.index",
+    "car_reservation": "car_reservation.calendar.index",
     "organizations": "organizations.overview.index",
 }
 # หน้าแรกของ procurement เมื่อปิดระบบขอซื้อขอจ้าง (เหลือแต่ระบบ MA)
 PROCUREMENT_MA_HOME_ENDPOINT = "procurement.products.index"
 INVENTORY_HOME_ENDPOINT = "item_orders.index"
-CAR_RESERVATION_HOME_ENDPOINT = "car_reservation.requests.index"
+CAR_RESERVATION_HOME_ENDPOINT = "car_reservation.calendar.index"
 MOTORCYCLE_HOME_ENDPOINT = "vehicle_lending.motorcycle_applications.calendar"
 # หน้าแรกของแต่ละโมดูลตามคีย์ใน Organization.MODULES เรียงตามลำดับที่แสดงในหน้าเลือกระบบ
 MODULE_KEY_HOME_ENDPOINTS = {
