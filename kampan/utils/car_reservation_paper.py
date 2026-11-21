@@ -158,9 +158,12 @@ def build_context(reservation):
     }
     if "physical_director" in reservation.route_snapshot:
         context["route_to_physical_director"] = "yes"  # วงกลม "เรียน O ผู้อำนวยการกองกายภาพ"
-    creator = reservation.creator
-    if creator and creator.signature:
-        context["requester_signature"] = creator.signature.read()
+    # คำขอเก่าก่อนเก็บ snapshot ไม่มีลายเซ็นของตอนยื่น: ใช้ลายเซ็นปัจจุบันแทน
+    requester_signature = reservation.requester_signature or flow.signature_snapshot(
+        reservation.creator
+    )
+    if requester_signature:
+        context["requester_signature"] = bytes(requester_signature)
     if reservation.return_datetime:
         context["ret_time"] = reservation.return_datetime.strftime("%H:%M")
         context.update(_date_parts("ret", reservation.return_datetime))
@@ -176,8 +179,9 @@ class Signer:
         self.position = approval.label or flow.step_label(approval.step_key)
         self.name = _user_name(approval.decided_by)
         self.decided_at = approval.decided_at
-        user = approval.decided_by
-        self.signature = user.signature.read() if user and user.signature else None
+        # การอนุมัติก่อนเก็บ snapshot ไม่มีลายเซ็นของตอนอนุมัติ: ใช้ลายเซ็นปัจจุบันแทน
+        signature = approval.signature or flow.signature_snapshot(approval.decided_by)
+        self.signature = bytes(signature) if signature else None
 
     def date_text(self, short=False, prefix=False):
         if not self.decided_at:

@@ -235,7 +235,17 @@ def _log(app, action, actor, step_key="", comment="", changes=()):
     )
 
 
+def signature_snapshot(user):
+    """bytes ของลายเซ็นปัจจุบันของ user (ไม่มีลายเซ็นคืน None)"""
+    if user is None or not user.signature:
+        return None
+    gridout = user.signature.get()
+    gridout.seek(0)
+    return gridout.read()
+
+
 def submit(app, actor):
+    app.requester_signature = signature_snapshot(app.creator)
     app.route_snapshot = route_for(app.request_type, app.province_scope)
     app.current_step = 0
     app.status = "pending"
@@ -727,6 +737,7 @@ def approve(
             decided_by=user,
             decided_at=datetime.datetime.now(),
             comment=comment,
+            signature=signature_snapshot(user),
         )
     )
     _log(

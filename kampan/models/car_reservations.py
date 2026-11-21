@@ -91,6 +91,8 @@ class StepApproval(me.EmbeddedDocument):
     decided_by = me.ReferenceField("User", dbref=True)
     decided_at = me.DateTimeField()
     comment = me.StringField(default="")
+    # ลายเซ็น (PNG) ณ ตอนอนุมัติ: เอกสารที่พิมพ์ซ้ำภายหลังใช้ลายเซ็นนี้ ไม่ใช่ลายเซ็นที่ผู้ใช้เปลี่ยนทีหลัง
+    signature = me.BinaryField()
 
 
 class FieldChange(me.EmbeddedDocument):
@@ -217,6 +219,7 @@ class CarReservation(me.Document):
     division = me.ReferenceField("Division", dbref=True)
 
     creator = me.ReferenceField("User", dbref=True)
+    requester_signature = me.BinaryField()  # ลายเซ็นผู้ขอ ณ ตอนยื่น (เหตุผลเดียวกับ StepApproval.signature)
     updater = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(

@@ -120,3 +120,24 @@ def test_reservation_detail_does_not_show_approver_signatures(world):
 
 def upload_signature_as(world, user):
     upload_signature(world.client_for(user), make_png_bytes())
+
+
+def test_printed_papers_keep_the_signatures_from_when_people_signed(world):
+    from kampan import models, utils
+
+    upload_signature(world.client_for(world.requester), make_png_bytes(color=(1, 1, 1)))
+    car_application = world.submit_domestic_request()
+    upload_signature(world.client_for(world.supervisor), make_png_bytes(color=(2, 2, 2)))
+    world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data=step_data(world, "supervisor")
+    )
+    signed_requester = models.User.objects.get(id=world.requester.id).signature.read()
+    signed_supervisor = models.User.objects.get(id=world.supervisor.id).signature.read()
+
+    upload_signature(world.client_for(world.requester), make_png_bytes(color=(9, 9, 9)))
+    upload_signature(world.client_for(world.supervisor), make_png_bytes(color=(8, 8, 8)))
+
+    car_application.reload()
+    paper = utils.car_reservation_paper
+    assert paper.build_context(car_application)["requester_signature"] == signed_requester
+    assert paper.approved_signers(car_application)["supervisor"].signature == signed_supervisor
