@@ -23,6 +23,13 @@
     {% endif %}
   </div>
 
+  {% if hidden_count %}
+  <div role="alert" class="alert alert-info alert-soft mt-4" data-role="hidden-templates">
+    <i class="ph ph-eye-slash"></i>
+    <span>มีรูปแบบอีเมลของระบบที่องค์กรปิดใช้อยู่ {{ hidden_count }} รายการ ไม่แสดงในรายการนี้ จะกลับมาแสดงเมื่อเปิดใช้ระบบนั้นอีกครั้ง</span>
+  </div>
+  {% endif %}
+
   {% if not email_systems %}
   {{ EmptyState('ph-envelope-simple-open', 'องค์กรนี้ยังไม่ได้เปิดใช้ระบบที่ส่งอีเมล',
                 description='เปิดใช้ระบบพัสดุ ระบบยืมรถ ระบบจองรถ หรือระบบ MA ในการตั้งค่าองค์กรก่อน จึงจะสร้างรูปแบบอีเมลได้') }}

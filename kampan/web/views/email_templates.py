@@ -72,6 +72,13 @@ def index():
         for value, info in models.email_templates.EMAIL_TYPE_INFO.items()
         if info["system"] in shown_systems
     ]
+    # template ของระบบที่ org ปิดไปแล้วไม่แสดง แต่บอกจำนวนไว้ admin จะได้ไม่คิดว่าข้อมูลหาย
+    enabled_types = [
+        value
+        for value, info in models.email_templates.EMAIL_TYPE_INFO.items()
+        if info["system"] in system_keys
+    ]
+    hidden_count = email_templates.filter(type__nin=enabled_types).count()
     email_templates = email_templates.filter(type__in=types)
 
     form = forms.email_templates.EmailTemplateFileForm()
@@ -83,6 +90,7 @@ def index():
         form=form,
         email_systems=email_systems,
         selected_system=selected_system,
+        hidden_count=hidden_count,
     )
 
 

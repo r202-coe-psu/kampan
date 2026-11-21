@@ -413,3 +413,21 @@ def test_org_without_email_systems_sees_empty_state(app, login_as, email_setup):
     assert "ยังไม่ได้เปิดใช้ระบบที่ส่งอีเมล" in html
     assert 'role="tablist"' not in html
     assert create.status_code == 302
+
+
+def test_index_tells_how_many_templates_belong_to_disabled_systems(app, login_as, email_setup):
+    s = email_setup
+    models.EmailTemplate(
+        name="แจ้งยืมรถ", subject="s", body="b",
+        type="car_application", organization=s.org,
+    ).save()
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        before = _get(app, client, "email_templates.index", organization_id=str(s.org.id)).get_data(as_text=True)
+        s.org.update(set__enabled_modules=["inventory"])
+        after = _get(app, client, "email_templates.index", organization_id=str(s.org.id)).get_data(as_text=True)
+
+    assert 'data-role="hidden-templates"' not in before
+    notice = after[after.index('data-role="hidden-templates"'):]
+    assert "1 รายการ" in notice[:notice.index("</div>")]
+    assert "แจ้งยืมรถ" not in after[after.index("<tbody>"):after.index("</tbody>")]
