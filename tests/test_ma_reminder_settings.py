@@ -90,8 +90,8 @@ def test_create_saves_checked_offsets_and_thai_dates_ignoring_custom_days(world,
                 # ช่องกำหนดเองถูกนำออกจากฟอร์ม: ค่าที่ส่งมาถูกเมิน ไม่ถูกเก็บ
                 "reminder_offsets_days-0": "45",
                 "reminder_offsets_days-3": "10",
-                "custom_reminder_dates-0": "28/05/2570",
-                "custom_reminder_dates-2": "1/4/2571",
+                "custom_reminder_dates-0": "2027-05-28",
+                "custom_reminder_dates-2": "2028-04-01",  # แถวที่ 1 ว่าง (ยังไม่เลือกวัน) ถูกข้าม
             },
         ),
     )
@@ -115,10 +115,9 @@ def test_unchecking_all_offsets_is_kept(world, client):
 @pytest.mark.parametrize(
     "dates, message",
     [
-        (["30/02/2570"], "ไม่มีวันที่นี้ในปฏิทิน (30/02/2570)"),
-        (["28/05/2027"], "กรุณากรอกปีเป็น พ.ศ. (28/05/2027)"),
-        (["2027-05-28"], "รูปแบบวันที่ต้องเป็น วว/ดด/ปปปป (พ.ศ.) (2027-05-28)"),
-        (["28/05/2570", "28/5/2570"], "วันที่เตือนซ้ำ"),
+        (["2027-02-30"], "รูปแบบวันที่ไม่ถูกต้อง"),
+        (["28/05/2570"], "รูปแบบวันที่ไม่ถูกต้อง"),
+        (["2027-05-28", "2027-05-28"], "วันที่เตือนซ้ำ (28/05/2570)"),
     ],
 )
 def test_invalid_custom_dates_rejected(world, client, dates, message):
@@ -140,7 +139,7 @@ def test_edit_form_shows_saved_settings_with_buddhist_year(world, client):
             expiry_reminder_offsets=["2m"],
             installment_mode="y",
             payment_reminder_offsets=["7d", "5d"],
-            **{"custom_reminder_dates-0": "28/05/2570"},
+            **{"custom_reminder_dates-0": "2027-05-28"},
         ),
     )
     procurement = models.Procurement.objects.get()
@@ -153,7 +152,8 @@ def test_edit_form_shows_saved_settings_with_buddhist_year(world, client):
     assert _checked_values(html, "items-0-expiry_reminder_offsets") == ["2m"]
     assert _checked_values(html, "items-0-payment_reminder_offsets") == ["7d", "5d"]
     assert "reminder_offsets_days" not in html
-    assert _input_values(html, "items-0-custom_reminder_dates") == ["28/05/2570"]
+    assert _input_values(html, "items-0-custom_reminder_dates") == ["2027-05-28"]
+    assert "28/05/2570" in html  # ปฏิทินแสดงปี พ.ศ.
 
 
 def test_detail_page_shows_reminder_settings(world, client):
@@ -163,7 +163,7 @@ def test_detail_page_shows_reminder_settings(world, client):
         _form(
             world,
             expiry_reminder_offsets=["2m"],
-            **{"custom_reminder_dates-0": "28/05/2570"},
+            **{"custom_reminder_dates-0": "2027-05-28"},
         ),
     )
     procurement = models.Procurement.objects.get()
@@ -328,3 +328,13 @@ def test_draft_with_prefix_only_stores_empty_psu_number(world, client):
 
     assert _create(client, world, data).status_code == 302
     assert models.Procurement.objects.get(parent_procurement=None).psu_disbursement_number == ""
+
+
+def test_custom_reminder_dates_use_a_calendar_picker_with_a_row_template(world, client):
+    page = client.get(f"/procurement/products/create?organization_id={world.org.id}").get_data(as_text=True)
+
+    template = page[page.index("list-row-template"):]
+    template = template[: template.index("</template>")]
+    assert "data-date-picker" in template and "data-buddhist" in template
+    assert 'name="items-0-custom_reminder_dates-__ROW__"' in template
+    assert 'placeholder="28/05/2570"' not in page  # ไม่ใช่ช่องพิมพ์ข้อความอีกแล้ว

@@ -14,7 +14,7 @@ from kampan.models.procurement import (
     MAX_SUB_ITEMS_PER_ITEM,
     check_item_sum,
 )
-from kampan.utils.date_utils import parse_thai_date
+from kampan.utils.date_utils import format_thai_date_input, parse_thai_date
 
 from .money_validators import MoneyPlaces
 
@@ -84,10 +84,6 @@ class OffsetCheckboxField(fields.SelectMultipleField):
             raise ValidationError("ช่วงเตือนไม่ถูกต้อง")
 
 
-
-
-def _filled(field_list) -> list[str]:
-    return [(entry.data or "").strip() for entry in field_list.entries if (entry.data or "").strip()]
 
 
 class InstallmentForm(Form):
@@ -161,7 +157,10 @@ class ProcurementItemForm(Form):
         "เตือนจ่ายงวดล่วงหน้า", choices=models.PAYMENT_REMINDER_OFFSET_CHOICES
     )
     # ช่องว่างไม่นับ (แถวที่ยังไม่กรอก) ช่องกำหนดจำนวนวันเอง (reminder_offsets_days) นำออกจากฟอร์มแล้ว (2026-11-16)
-    custom_reminder_dates = fields.FieldList(fields.StringField(), label="วันที่เตือนเจาะจง (พ.ศ.)")
+    # เลือกจากปฏิทิน (ปฏิทินแสดงปี พ.ศ. ส่งค่ากลับเป็น ISO ค.ศ.) แถวที่ยังไม่เลือกวันถูกข้าม
+    custom_reminder_dates = fields.FieldList(
+        DateInputField(validators=[validators.Optional()]), label="วันที่เตือนเจาะจง (พ.ศ.)"
+    )
     # เปิด = แบ่งจ่ายเป็นงวด (กรอกวันครบกำหนดเอง) ปิด = จ่ายครั้งเดียว งวดเดียวครบกำหนดในวันสิ้นสุด (ระบบตั้งให้)
     installment_mode = fields.BooleanField("แบ่งจ่ายเป็นงวด", default=True)
     # อ่านไม่เกิน MAX + 1 งวด (กัน request ที่ส่งงวดมาหลักหมื่น) แล้วให้ validate_installments ปฏิเสธ ไม่ตัดทิ้งเงียบ ๆ
@@ -198,21 +197,17 @@ class ProcurementItemForm(Form):
 
     def validate_custom_reminder_dates(self, field):
         dates = []
-        for text in _filled(field):
-            try:
-                value = parse_thai_date(text)
-            except ValueError as error:
-                raise ValidationError(f"{error} ({text})")
+        for value in self._custom_dates():
             if value in dates:
-                raise ValidationError(f"วันที่เตือนซ้ำ ({text})")
+                raise ValidationError(f"วันที่เตือนซ้ำ ({format_thai_date_input(value)})")
             dates.append(value)
+
+    def _custom_dates(self) -> list[datetime.date]:
+        return [entry.data for entry in self.custom_reminder_dates.entries if entry.data]
 
     def get_custom_reminder_dates(self) -> list[datetime.datetime]:
         """วันที่เตือนเจาะจงเป็น ค.ศ. เที่ยงคืน (เรียกหลัง validate ผ่านแล้ว)"""
-        return [
-            datetime.datetime.combine(parse_thai_date(text), datetime.time.min)
-            for text in _filled(self.custom_reminder_dates)
-        ]
+        return [datetime.datetime.combine(value, datetime.time.min) for value in self._custom_dates()]
 
 
 # ช่องเลขที่ ม.อ.เบิกจ่ายขึ้นต้นด้วย "011/" ไว้ให้ ถ้ายังมีแค่คำนำหน้า ถือว่ายังไม่ได้กรอก

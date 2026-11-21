@@ -23,7 +23,6 @@ from mongoengine.queryset.visitor import Q
 from kampan import models
 from kampan.models.procurement import _reference_id, payment_statuses, procurement_ids_of, renewal_status_statuses
 from kampan.utils import ma_assignments
-from kampan.utils.date_utils import format_thai_date_input
 from kampan.web import acl, forms
 from kampan.web.forms.procurement import PSU_NUMBER_REQUIRED_MESSAGE
 
@@ -254,7 +253,7 @@ def _reminder_settings_data(item, include_custom_dates: bool = True) -> dict:
         ],
     }
     if include_custom_dates:
-        data["custom_reminder_dates"] = [format_thai_date_input(value) for value in item.custom_reminder_dates or []]
+        data["custom_reminder_dates"] = [value.date() for value in item.custom_reminder_dates or [] if value]
     return data
 
 

@@ -551,7 +551,7 @@
           const html = field.querySelector('.list-row-template').innerHTML.replaceAll('__ROW__', String(nextListRowIndex++));
           const rows = field.querySelector('.list-rows');
           rows.insertAdjacentHTML('beforeend', html);
-          rows.lastElementChild.querySelector('input').focus();
+          initDatePickersIn(rows.lastElementChild);
           break;
         }
         case 'remove-list-row':
