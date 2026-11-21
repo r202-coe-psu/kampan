@@ -2,6 +2,7 @@
 และพนักงานขับรถได้ รถเป็นของ org ใครของมัน"""
 
 import io
+import re
 
 import pytest
 from PIL import Image
@@ -186,6 +187,16 @@ def test_deactivate_only_accepts_post(world, create_car):
     assert world.admin_client.get(world.deactivate_url(car)).status_code == 405
     car.reload()
     assert car.status == "active"
+
+
+def test_the_license_plate_never_lands_inside_the_deactivate_confirm_script(world, create_car):
+    create_car(world.org, "x');alert(1);//")
+
+    html = world.admin_client.get(world.list_url).get_data(as_text=True)
+
+    (onsubmit,) = re.findall(r'onsubmit="([^"]*)"', html)
+    assert "alert" not in onsubmit
+    assert "this.dataset.plate" in onsubmit
 
 
 def test_staff_cannot_open_list_create_edit_or_deactivate(world, create_car):
