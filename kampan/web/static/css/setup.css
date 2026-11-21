@@ -289,12 +289,30 @@ fieldset {
 }
 
 /* ขั้นอนุมัติของระบบจองรถ (car_reservation/components/approval_steps.html)
-   ผ่านแล้ว = เขียวเข้ม, ขั้นที่ค้างอยู่ = วงกลมเหลือง + นาฬิกาทราย + วงกระพริบสีเหลือง */
+   ผ่านแล้ว = เขียวเข้ม + ติ๊กถูก, ขั้นที่ค้างอยู่ = วงกลมเหลือง + นาฬิกาทราย + วงกระพริบสีเหลือง */
 .step-done::after,
 .step-done + .step-done::before,
 .step-done + .step-current::before {
   --step-bg: var(--color-green-700);
   --step-fg: var(--color-white);
+}
+/* stepper อนุมัติ: วงกลมใหญ่กว่า daisyUI (32px) เส้นเชื่อมบางกว่า (8px)
+   แนวตั้งเส้นใช้ width แนวนอนใช้ height และ md:steps-horizontal สลับกลับเป็นแนวนอน */
+.approval-steps .step::after {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+.approval-steps:not(.steps-vertical) .step::before {
+  height: 5px;
+}
+.approval-steps.steps-vertical .step::before {
+  width: 5px;
+}
+@media (min-width: 48rem) {
+  .approval-steps.md\:steps-horizontal .step::before {
+    width: 100%;
+    height: 5px;
+  }
 }
 .step-current::after {
   --step-bg: var(--color-amber-400);
