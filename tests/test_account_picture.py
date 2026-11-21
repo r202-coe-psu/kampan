@@ -91,17 +91,53 @@ def test_anonymous_upload_is_redirected_to_login_and_nothing_stored(app, create_
 
     with app.test_client() as client:
         response = upload(client, make_image_bytes("PNG"))
-        served = client.get(f"/accounts/{user.id}/picture")
 
+    user.reload()
     assert response.status_code in (302, 401)
-    assert served.status_code == 404
+    assert not user.picture
 
 
-def test_user_without_picture_has_no_picture_resource(app, create_user):
+def test_user_without_picture_has_no_picture_resource(app, create_user, login_as):
     user = create_user("No", "Picture")
 
     with app.test_client() as client:
+        login_as(client, user)
         served = client.get(f"/accounts/{user.id}/picture")
+
+    assert served.status_code == 404
+
+
+def test_pictures_are_only_served_to_logged_in_users(app, create_user, login_as):
+    user = create_user("Pic", "Private")
+    with app.test_client() as client:
+        login_as(client, user)
+        upload(client, make_image_bytes("PNG"))
+
+    with app.test_client() as client:
+        served = client.get(f"/accounts/{user.id}/picture")
+
+    assert served.status_code in (302, 401)
+
+
+def test_picture_mimetype_comes_from_the_bytes_not_the_uploaded_content_type(
+    app, create_user, login_as
+):
+    user = create_user("Pic", "Html")
+    with app.test_client() as client:
+        login_as(client, user)
+        upload(client, make_image_bytes("PNG"), content_type="text/html")
+        served = client.get(f"/accounts/{user.id}/picture")
+
+    assert served.status_code == 200
+    assert served.mimetype == "image/png"
+    assert served.headers["X-Content-Type-Options"] == "nosniff"
+
+
+def test_a_malformed_user_id_is_not_found(app, create_user, login_as):
+    user = create_user("Bad", "Id")
+    with app.test_client() as client:
+        login_as(client, user)
+        served = client.get("/accounts/not-an-object-id/picture")
 
     assert served.status_code == 404
 

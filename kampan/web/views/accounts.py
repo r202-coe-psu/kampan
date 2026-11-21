@@ -3,6 +3,7 @@ import io
 import markdown
 import mongoengine as me
 
+from bson import ObjectId
 from flask import (
     Blueprint,
     render_template,
@@ -11,12 +12,12 @@ from flask import (
     request,
     session,
     current_app,
-    send_file,
     abort,
     g,
 )
 from flask_login import login_user, logout_user, login_required, current_user
 
+from kampan import utils
 from .. import models
 from .. import oauth2
 from .. import acl
@@ -247,16 +248,22 @@ def upload_picture():
     return redirect_to_profile()
 
 
-@module.route("/accounts/<user_id>/picture")
-def user_picture(user_id):
-    user = models.User.objects(id=user_id).first()
-    if not user or not user.picture:
-        return abort(404)
+def get_user_or_404(user_id):
+    user = models.User.objects(id=user_id).first() if ObjectId.is_valid(user_id) else None
+    if not user:
+        abort(404)
+    return user
 
-    return send_file(
-        user.picture,
-        download_name=user.picture.filename,
-        mimetype=user.picture.content_type,
+
+@module.route("/accounts/<user_id>/picture")
+@login_required
+def user_picture(user_id):
+    user = get_user_or_404(user_id)
+    if not user.picture:
+        abort(404)
+
+    return utils.uploaded_files.send_uploaded_file(
+        user.picture, download_name=user.picture.filename or "picture"
     )
 
 
@@ -303,30 +310,29 @@ def remove_signature():
 @module.route("/accounts/<user_id>/signature")
 @login_required
 def user_signature(user_id):
-    user = models.User.objects(id=user_id).first()
-    if not user or not user.signature:
-        return abort(404)
+    # ลายเซ็นถูกพิมพ์ลงเอกสารทางการ ฝั่ง server อ่านจาก GridFS เอง หน้าเว็บจึงให้ดูได้แค่ลายเซ็นของตัวเอง
+    if user_id != str(current_user.id):
+        abort(404)
+    user = current_user._get_current_object()
+    if not user.signature:
+        abort(404)
 
-    return send_file(
-        user.signature,
-        download_name=user.signature.filename or "signature.png",
-        mimetype=user.signature.content_type or "image/png",
+    return utils.uploaded_files.send_uploaded_file(
+        user.signature, download_name=user.signature.filename or "signature.png"
     )
 
 
 @module.route("/accounts/<user_id>/picture/<filename>", methods=["GET", "POST"])
+@login_required
 def picture(user_id, filename):
-    user = models.User.objects.get(id=user_id)
+    user = get_user_or_404(user_id)
 
-    if not user or not user.picture or user.picture.filename != filename:
+    if not user.picture or user.picture.filename != filename:
         return abort(403)
 
-    response = send_file(
-        user.picture,
-        download_name=user.picture.filename,
-        mimetype=user.picture.content_type,
+    return utils.uploaded_files.send_uploaded_file(
+        user.picture, download_name=user.picture.filename
     )
-    return response
 
 
 @module.route("/user-roles")

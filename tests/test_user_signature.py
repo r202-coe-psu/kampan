@@ -37,6 +37,20 @@ def test_user_can_upload_signature_and_it_is_served_as_png(app, create_user, log
     assert served.data[:8] == b"\x89PNG\r\n\x1a\n"
 
 
+def test_users_cannot_fetch_someone_elses_signature(app, create_user, login_as):
+    owner = create_user("Sign", "Owner")
+    other = create_user("Sign", "Snoop")
+    with app.test_client() as client:
+        login_as(client, owner)
+        upload_signature(client, make_png_bytes())
+
+    with app.test_client() as client:
+        login_as(client, other)
+        served = client.get(f"/accounts/{owner.id}/signature")
+
+    assert served.status_code == 404
+
+
 def test_user_can_draw_signature_as_png_data_url(app, create_user, login_as):
     user = create_user("Sign", "Drawer")
     data_url = "data:image/png;base64," + base64.b64encode(make_png_bytes()).decode()

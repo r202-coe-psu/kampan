@@ -9,7 +9,6 @@ from flask import (
     redirect,
     render_template,
     request,
-    send_file,
     url_for,
 )
 from flask_login import current_user
@@ -79,10 +78,8 @@ def image(car_id):
     car = get_car_or_404(car_id)
     if not car.image:
         abort(404)
-    return send_file(
-        car.image,
-        download_name=car.image.filename,
-        mimetype=car.image.content_type,
+    return utils.uploaded_files.send_uploaded_file(
+        car.image, download_name=car.image.filename or "car"
     )
 
 

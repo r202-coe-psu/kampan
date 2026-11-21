@@ -519,10 +519,9 @@ def project_file(request_id):
     reservation = get_request_or_404(request_id)
     if not reservation.project_file:
         abort(404)
-    return send_file(
+    return utils.uploaded_files.send_uploaded_file(
         reservation.project_file,
-        download_name=reservation.project_file.filename,
-        mimetype=reservation.project_file.content_type,
+        download_name=reservation.project_file.filename or "project_file",
     )
 
 
@@ -541,10 +540,8 @@ def mileage_photo(request_id, side):
     }.get(side)
     if not photo:
         abort(404)
-    return send_file(
-        photo,
-        download_name=photo.filename,
-        mimetype=photo.content_type,
+    return utils.uploaded_files.send_uploaded_file(
+        photo, download_name=photo.filename or f"mileage_{side}"
     )
 
 

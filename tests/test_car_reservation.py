@@ -544,6 +544,26 @@ def test_project_file_is_downloadable_only_by_members_of_the_requests_org(
     assert refused.status_code == 404
 
 
+def test_a_project_file_that_is_not_really_a_pdf_downloads_as_an_attachment(world):
+    data = world.request_data("abroad")
+    data["project_file"] = (
+        io.BytesIO(b"<script>alert(document.cookie)</script>"),
+        "project.pdf",
+        "text/html",
+    )
+    assert post_new(world, data, request_type="abroad").status_code == 302
+    saved = models.CarReservation.objects(creator=world.requester).first()
+
+    response = world.client_for(world.requester).get(
+        f"{BASE}/{saved.id}/project_file?organization_id={world.org.id}"
+    )
+
+    assert response.status_code == 200
+    assert response.mimetype == "application/octet-stream"
+    assert response.headers["Content-Disposition"].startswith("attachment")
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+
+
 @pytest.mark.parametrize(
     "request_type, province_scope",
     [("domestic", "out_of_province"), ("abroad", "in_province")],
@@ -3728,3 +3748,4 @@ def test_cancel_reason_is_a_single_daisyui_textarea_not_a_box_inside_an_input(wo
     (reason,) = doc.xpath("//dialog[@id='cancel-modal']//textarea[@name='reason']")
     assert "textarea" in reason.get("class").split()
     assert not reason.xpath("ancestor::label[contains(concat(' ', @class, ' '), ' input ')]")
+
