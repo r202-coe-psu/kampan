@@ -296,6 +296,20 @@ fieldset {
   --step-bg: var(--color-green-700);
   --step-fg: var(--color-white);
 }
+/* badge ของระบบรถ (body.vehicle-badges ตั้งใน base ของ car_reservation และ vehicle_lending)
+   ใช้หน้าตาเดียวกับ .role-badge: พื้นสีอ่อน 16% ตัวอักษรเข้ม ขอบจาง ตัวหนา
+   สีมาจาก --badge-color ที่ badge-success/warning/error/... ของ daisyUI ตั้งไว้ ไม่มีสี = เทา
+   ทับทุกแบบ (soft/outline/ghost/ทึบ) จึงอยู่นอก layer */
+.vehicle-badges .badge:not(.role-badge, .module-badge) {
+  --tone: var(--badge-color, var(--color-neutral));
+  --tone-fg: color-mix(in oklab, var(--tone) 60%, black);
+  background-color: color-mix(in oklab, var(--tone) 16%, var(--color-base-100));
+  background-image: none;
+  color: var(--tone-fg);
+  border-color: color-mix(in oklab, var(--tone-fg) 20%, transparent);
+  font-weight: 600;
+}
+
 /* stepper อนุมัติ: วงกลมใหญ่กว่า daisyUI (32px) เส้นเชื่อมบางกว่า (8px)
    แนวตั้งเส้นใช้ width แนวนอนใช้ height และ md:steps-horizontal สลับกลับเป็นแนวนอน */
 .approval-steps .step::after {

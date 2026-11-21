@@ -22,7 +22,7 @@
   {% block additional_head %}{% endblock %}
 </head>
 
-<body class="bg-base-200 h-full">
+<body class="bg-base-200 h-full {% block body_class %}{% endblock %}">
   {% block body %}{% endblock %}
 </body>
 {% block additional_js %}{% endblock %}
