@@ -180,6 +180,7 @@
   /* popover ของแท่ง (Popover API: อยู่ชั้นบนสุด กลางจอ กด Esc หรือคลิกนอกกล่องเพื่อปิด) */
   .tl-pop {
     width: min(23rem, calc(100vw - 2rem));
+    margin: auto; /* Tailwind preflight ตั้ง margin:0 ทับ margin:auto ของ popover จึงชิดมุมซ้ายบน */
     padding: 1rem;
     color: var(--color-base-content);
     background: var(--color-base-100);

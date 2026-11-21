@@ -236,25 +236,26 @@
       <p class="text-sm text-base-content/70" data-role="vehicle-count-hint">
         ขอ {{ required_vehicle_count }} คัน{% if required_vehicle_count > 1 %}: ถ้าจัดได้น้อยกว่านี้ต้องใส่เหตุผล (เว้นรถและพนักงานขับรถของคันที่ไม่จัดให้ว่างทั้งคู่){% endif %}
       </p>
-      {# ตัวเลือกรถแบบตาราง (ช่วงเวลาของคำขอคงที่ จึงไม่โหลดใหม่) <select> รถของแต่ละคันยังอยู่เป็นช่องที่ฟอร์มส่งจริง #}
-      {% if car_picker is defined %}
-      {{ CarPicker(organization, car_picker.timeline, car_picker.picker_error, kind=requested_vehicle_kind,
-                   exclude_id=reservation.id | string, requested=required_vehicle_count) }}
-      {% endif %}
       {% for slot in form.assignments %}
       {% set first = loop.first %}
       <div class="flex flex-col gap-2 rounded-box border border-base-300 p-3" data-role="assignment-slot">
         <p class="font-semibold">รถคันที่ {{ loop.index }}{% if first %} <span class="text-error">*</span>{% endif %}</p>
+        {# ลำดับตาม #74: เลือก พขร. ก่อน แล้วเลือกรถ ตามด้วย OT #}
         <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
+          {{ renderer.render_select_field(slot.form.driver, required=first, optionals={'required': first}) }}
           <div class="relative">
             {{ renderer.render_select_field(slot.form.car, required=first, optionals={'required': first}) }}
             {% if car_picker is defined %}{{ PickerSlot(slot.form.car, loop.index) }}{% endif %}
           </div>
-          {{ renderer.render_select_field(slot.form.driver, required=first, optionals={'required': first}) }}
         </div>
         {{ renderer.render_checkbox(slot.form.is_overtime) }}
       </div>
       {% endfor %}
+      {# ตัวเลือกรถแบบตาราง อยู่ท้ายช่องของแต่ละคัน (ช่วงเวลาของคำขอคงที่ จึงไม่โหลดใหม่) <select> รถของแต่ละคันยังอยู่เป็นช่องที่ฟอร์มส่งจริง #}
+      {% if car_picker is defined %}
+      {{ CarPicker(organization, car_picker.timeline, car_picker.picker_error, kind=requested_vehicle_kind,
+                   exclude_id=reservation.id | string, requested=required_vehicle_count) }}
+      {% endif %}
       <div class="grid grid-cols-1 gap-x-4 gap-y-2">
         {% if required_vehicle_count > 1 %}
         {{ renderer.render_field(form.reduce_reason) }}

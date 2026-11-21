@@ -607,6 +607,21 @@ def test_the_approve_modal_has_the_picker_slot_buttons_and_the_fallback_selects(
     assert group_keys(approve_page(picker_world, reservation))[0] == "ตู้"
 
 
+def test_the_approve_modal_asks_for_the_driver_before_the_car_and_the_picker_comes_last(
+    picker_world,
+):
+    # #74: เลือก พขร. ก่อน แล้วเลือกรถ (ตัวเลือกรถแบบตารางอยู่ท้ายช่องของแต่ละคัน)
+    reservation = request_at_dispatcher_for(picker_world, 2)
+    page = approve_page(picker_world, reservation)
+
+    driver_0 = page.index('name="assignments-0-driver"')
+    car_0 = page.index('name="assignments-0-car"')
+    driver_1 = page.index('name="assignments-1-driver"')
+    car_1 = page.index('name="assignments-1-car"')
+    picker = page.index('id="car-picker"')
+    assert driver_0 < car_0 < driver_1 < car_1 < picker
+
+
 def test_the_approve_modal_marks_cars_held_by_other_requests_and_not_the_request_itself(
     picker_world,
 ):
@@ -661,6 +676,28 @@ def test_posting_an_occupied_car_directly_is_still_refused_with_the_conflict_lin
     assert detail_url(picker_world, blocking).replace("&", "&amp;") in html
     reservation.reload()
     assert reservation.assignments == []
+
+
+def test_a_clash_message_is_an_error_toast_not_a_neutral_info_toast(picker_world):
+    # flash category "danger" ไม่มีใน toast จึงเคยแสดงเป็น info สีเทา (พบตอน QA)
+    reservation = request_at_dispatcher_for(picker_world, 1)
+    assigned_request(
+        picker_world,
+        reservation.departure_datetime + HOUR,
+        reservation.departure_datetime + 3 * HOUR,
+        car=picker_world.car2,
+        driver=picker_world.driver2,
+    )
+
+    response = picker_world.dispatcher_client.post(
+        approve_url(picker_world, reservation),
+        data=dispatch_data(picker_world.car2, picker_world.driver),
+        follow_redirects=True,
+    )
+
+    html = response.get_data(as_text=True)
+    assert "มีงานช่วงเวลานี้แล้ว" in toast_text(html, "error")
+    assert "มีงานช่วงเวลานี้แล้ว" not in toast_text(html, "info")
 
 
 def test_posting_the_same_car_twice_is_still_refused_by_the_flow(picker_world):

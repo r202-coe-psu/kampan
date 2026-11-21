@@ -179,7 +179,7 @@ def close(task_id, assignment_id):
         except flow.MileageError as error:
             form.mileage_in.errors = [*form.mileage_in.errors, str(error)]
         except flow.FlowError as error:
-            flash(str(error), "danger")
+            flash(str(error), "error")
         else:
             if completed:
                 # ชุดสุดท้ายที่ปิดเป็นคนปิดคำขอ: แจ้งผู้ขอ (และขอให้ประเมิน) ครั้งเดียว

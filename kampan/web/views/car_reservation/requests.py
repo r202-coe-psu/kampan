@@ -42,7 +42,7 @@ def flash_flow_error(error):
     Markup ไม่ถูก Jinja escape ซ้ำ จึงต้อง escape ค่าที่ผู้ใช้กรอก (ชื่อผู้ขอ ทะเบียน) เอง
     """
     if not isinstance(error, flow.CarConflictError):
-        flash(str(error), "danger")
+        flash(str(error), "error")
         return
     link = url_for(
         "car_reservation.requests.detail",
@@ -59,7 +59,7 @@ def flash_flow_error(error):
             window=error.window,
             link=link,
         ),
-        "danger",
+        "error",
     )
 
 
@@ -278,7 +278,7 @@ def create():
         form, organization, request_type
     )
     if submitted and not flow.has_division_head(organization, division):
-        flash("ฝ่ายของคุณยังไม่มีหัวหน้าฝ่าย กรุณาติดต่อผู้ดูแลระบบ", "danger")
+        flash("ฝ่ายของคุณยังไม่มีหัวหน้าฝ่าย กรุณาติดต่อผู้ดูแลระบบ", "error")
     elif submitted:
         reservation = models.CarReservation(
             organization=organization,
@@ -855,7 +855,7 @@ def approve(request_id):
             # ชุดที่เลือกรถหรือ พขร. อย่างเดียว: ผู้ที่ไม่ใช่ผู้จัดรถไม่ควรรู้ว่าฟอร์มนี้ตรวจอะไร
             if not flow.can_act(reservation, user):
                 abort(403)
-            flash(flow.CAR_AND_DRIVER_REQUIRED, "danger")
+            flash(flow.CAR_AND_DRIVER_REQUIRED, "error")
             return redirect(
                 url_for(
                     "car_reservation.requests.detail",
@@ -920,7 +920,7 @@ def deny(request_id):
     if not flow.can_act(reservation, current_user._get_current_object()):
         abort(403)
     if not form.validate_on_submit():
-        flash("กรุณาระบุเหตุผลที่ไม่อนุมัติ", "danger")
+        flash("กรุณาระบุเหตุผลที่ไม่อนุมัติ", "error")
         return redirect_to_detail
 
     try:
@@ -1053,7 +1053,7 @@ def close_confirmation(request_id, assignment_id):
             note=form.note.data or "",
         )
     except flow.FlowError as error:
-        flash(str(error), "danger")
+        flash(str(error), "error")
         return redirect_to_detail
     if not correct:
         utils.car_reservation_email.notify(reservation, "close_disputed")
