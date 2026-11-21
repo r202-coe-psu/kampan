@@ -23,7 +23,7 @@
       {% if not task.started_at %}
       <form method="post" class="w-full sm:w-auto"
             action="{{ url_for('car_reservation.tasks.start', task_id=task.id, organization_id=organization.id) }}">
-        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-primary btn-lg w-full sm:w-auto">
           เริ่มงาน
         </button>

@@ -16,6 +16,7 @@ from flask import (
     g,
 )
 from flask_login import login_user, logout_user, login_required, current_user
+from flask_wtf import FlaskForm
 
 from kampan import utils
 from .. import models
@@ -299,6 +300,8 @@ def upload_signature():
 @module.route("/accounts/signature/remove", methods=["POST"])
 @login_required
 def remove_signature():
+    if not FlaskForm().validate_on_submit():
+        abort(400)
     user = current_user._get_current_object()
     if user.signature:
         user.signature.delete()

@@ -663,6 +663,8 @@ def deny(request_id):
 def overtime(request_id):
     reservation = get_request_or_404(request_id)
     form = forms.car_reservation.OvertimeForm()
+    if not form.validate_on_submit():
+        abort(400)
     try:
         flow.set_overtime(
             reservation,
@@ -686,6 +688,8 @@ def overtime(request_id):
 def cancel(request_id):
     reservation = get_request_or_404(request_id)
     form = forms.car_reservation.CancelRequestForm()
+    if not form.validate_on_submit():
+        abort(400)
     try:
         flow.cancel(
             reservation,
@@ -709,6 +713,8 @@ def cancel(request_id):
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def confirm_cancel(request_id):
     reservation = get_request_or_404(request_id)
+    if not forms.car_reservation.CancelRequestForm().validate_on_submit():
+        abort(400)
     try:
         flow.confirm_cancel(reservation, current_user._get_current_object())
     except flow.FlowError:

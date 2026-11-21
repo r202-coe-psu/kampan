@@ -14,6 +14,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user
+from flask_wtf import FlaskForm
 
 from kampan import models, utils
 from kampan.web import forms
@@ -108,6 +109,8 @@ def get_task_or_404(task_id):
 @driver_required
 def start(task_id):
     task = get_task_or_404(task_id)
+    if not FlaskForm().validate_on_submit():
+        abort(400)
     user = current_user._get_current_object()
     if not flow.can_start(task, user):
         abort(403)

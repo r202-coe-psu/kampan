@@ -4,7 +4,7 @@
 <form method="post" class="inline"
       action="{{ url_for('car_reservation.cars.deactivate', car_id=car.id, organization_id=organization.id) }}"
       onsubmit="return confirm('ปิดใช้งานรถ {{ car.license_plate }} ใช่หรือไม่');">
-  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <button type="submit" class="btn btn-sm btn-error btn-outline">
     ปิดใช้งาน
   </button>

@@ -3749,3 +3749,52 @@ def test_cancel_reason_is_a_single_daisyui_textarea_not_a_box_inside_an_input(wo
     assert "textarea" in reason.get("class").split()
     assert not reason.xpath("ancestor::label[contains(concat(' ', @class, ' '), ' input ')]")
 
+
+@pytest.fixture
+def csrf_enabled(app):
+    """conftest ปิด CSRF ทั้ง session: เปิดเฉพาะใน test นี้แล้วปิดคืน"""
+
+    def enable():
+        app.config["WTF_CSRF_ENABLED"] = True
+
+    yield enable
+    app.config["WTF_CSRF_ENABLED"] = False
+
+
+def test_state_changing_posts_refuse_a_request_without_a_csrf_token(
+    world, create_user, assign_user_to_org, csrf_enabled
+):
+    reservation = world.submit_request()
+    admin = create_user("Org", "Admin")
+    assign_user_to_org(admin, world.org, roles=["admin"])
+    csrf_enabled()
+
+    posts = [
+        (world.requester, cancel_url(world, reservation)),
+        (world.dispatcher, confirm_cancel_url(world, reservation)),
+        (world.dispatcher, overtime_url(world, reservation)),
+        (admin, f"/car_reservation/cars/{world.car.id}/deactivate?organization_id={world.org.id}"),
+        (world.requester, f"/car_reservation/notifications/read-all?organization_id={world.org.id}"),
+        (world.requester, "/accounts/signature/remove"),
+    ]
+    for user, url in posts:
+        assert world.client_for(user).post(url).status_code == 400, url
+
+    reservation.reload()
+    world.car.reload()
+    assert reservation.status == "pending"
+    assert world.car.status == "active"
+
+
+def test_cancel_with_the_token_from_the_detail_page_goes_through(world, csrf_enabled):
+    reservation = world.submit_request()
+    csrf_enabled()
+    client = world.client_for(world.requester)
+    page = client.get(detail_url(world, reservation)).get_data(as_text=True)
+    token = re.search(r'name="csrf_token" type="hidden" value="([^"]+)"', page).group(1)
+
+    response = client.post(cancel_url(world, reservation), data={"csrf_token": token})
+
+    assert response.status_code == 302
+    reservation.reload()
+    assert reservation.status != "pending"

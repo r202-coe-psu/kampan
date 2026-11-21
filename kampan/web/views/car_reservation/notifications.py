@@ -5,6 +5,7 @@ import itertools
 
 from flask import Blueprint, abort, g, redirect, render_template, request, url_for
 from flask_login import current_user
+from flask_wtf import FlaskForm
 
 from kampan import utils
 from kampan.web import acl
@@ -76,6 +77,8 @@ def badge():
 @module.route("/read-all", methods=["POST"])
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def read_all():
+    if not FlaskForm().validate_on_submit():
+        abort(400)
     utils.notifications.mark_all_read(current_user._get_current_object(), g.organization)
     return redirect(
         url_for(

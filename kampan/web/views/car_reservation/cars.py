@@ -12,6 +12,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user
+from flask_wtf import FlaskForm
 
 from kampan import models, utils
 from kampan.web import acl, forms
@@ -62,6 +63,8 @@ def directory():
 @acl.organization_roles_required("admin")
 def deactivate(car_id):
     car = get_car_or_404(car_id)
+    if not FlaskForm().validate_on_submit():
+        abort(400)
     car.status = "disactive"
     car.updater = current_user._get_current_object()
     car.updated_date = datetime.datetime.now()

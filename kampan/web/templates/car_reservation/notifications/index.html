@@ -5,6 +5,7 @@
 {% block page_actions %}
 {% if unread_count %}
 <form method="post" action="{{ url_for('car_reservation.notifications.read_all', organization_id=organization.id, tab=tab) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <button type="submit" class="btn btn-ghost btn-sm"><i class="ph ph-checks"></i> ทำเครื่องหมายว่าอ่านทั้งหมด</button>
 </form>
 {% endif %}
