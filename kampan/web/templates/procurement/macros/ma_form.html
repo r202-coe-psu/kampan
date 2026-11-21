@@ -114,8 +114,9 @@
 {# แถววันที่เตือนเจาะจง: ปฏิทินเลือกวัน (แสดงปี พ.ศ. ส่งค่าเป็น ISO) · field_like = dict ที่ date_field อ่านได้ (id, name, data, errors) #}
 {% macro date_list_row(field_id, name, value=None, errors=[]) %}
   {% set field_like = {"id": field_id, "name": name, "data": value, "errors": errors, "flags": {"required": False}, "label": {"text": "วันที่เตือน"}} %}
-  <div class="list-row flex items-center gap-1">
-    <div class="w-44">
+  <div class="list-row flex items-center gap-2 w-full rounded-lg border border-base-300 bg-base-100 px-3 py-2">
+    <i class="ph ph-calendar-blank text-lg text-primary shrink-0"></i>
+    <div class="flex-1 min-w-0">
       {{ date_field(field_like, compact=True, hide_label=True, aria_label="วันที่เตือน", placeholder_text="เลือกวันที่", fixed_popover=True, show_errors=False, auto_init=False, buddhist=True) }}
     </div>
     <button type="button" class="btn btn-ghost btn-sm btn-square text-error" data-action="remove-list-row" title="ลบ">
@@ -128,7 +129,7 @@
   <fieldset class="fieldset w-full list-field">
     <legend class="fieldset-legend">{{ field.label.text }}</legend>
     <p class="text-sm text-base-content/70">{{ hint }}</p>
-    <div class="list-rows flex flex-wrap gap-2">
+    <div class="list-rows flex flex-col gap-2 w-full">
       {% for entry in field %}
         {{ date_list_row(entry.id, entry.name, entry.data, entry.errors) }}
       {% endfor %}

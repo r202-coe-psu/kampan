@@ -1774,3 +1774,30 @@ def test_ma_item_limit_is_enforced(world, client_for):
     assert response.status_code == 200
     assert models.procurement.MAX_ITEMS_MESSAGE in response.get_data(as_text=True)
     assert models.Procurement.objects.count() == 0
+
+
+def test_installment_error_is_readable_not_raw_dict(world, client_for):
+    data = ma_form([_item(amount="100.00", installment_mode="y", installments=[{"due_date": ""}])])
+
+    response = _create(client_for(world.admin), world, data)
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "รายการที่ 1" in html and "กรุณาระบุวันครบกำหนด" in html
+    assert "{'installments'" not in html and "&#39;installments&#39;" not in html
+
+
+def test_list_shows_project_name_before_sub_item_name(world, client_for):
+    client = client_for(world.admin)
+    data = ma_form(
+        [_item(name="[TEST] ชื่อรายการย่อย", amount="100.00"), _item(name="[TEST] รายการอื่น", amount="100.00")],
+        total_amount="200.00",
+        name="[TEST] ชื่อโครงการ",
+    )
+    assert _create(client, world, data).status_code == 302
+
+    html = client.get(f"/procurement/products?organization_id={world.org.id}").get_data(as_text=True)
+
+    rows = [row for row in html.split('<tr class="border-l-4')[1:] if "[TEST] ชื่อรายการย่อย" in row]
+    assert len(rows) == 1
+    assert rows[0].index("[TEST] ชื่อโครงการ") < rows[0].index("[TEST] ชื่อรายการย่อย")

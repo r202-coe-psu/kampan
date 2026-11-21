@@ -49,8 +49,10 @@
             <span class="font-semibold text-base text-base-content leading-snug block mt-0.5">{{ item.name }}</span>
           {% endif %}
         {% else %}
-          <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
-             class="font-semibold text-base text-base-content leading-snug link link-hover block mt-0.5">{{ item.name }}</a>
+          {# สัญญาย่อย: คอลัมน์ "ชื่อโครงการ" แสดงชื่อโครงการของสัญญาหลัก ชื่อรายการย่อยอยู่คอลัมน์ถัดไป #}
+          {% set project = item.parent_procurement or item %}
+          <a href="{{ url_for('procurement.payment.index', procurement_id=project.id, organization_id=organization.id) }}"
+             class="font-semibold text-base text-base-content leading-snug link link-hover block mt-0.5">{{ project.name }}</a>
         {% endif %}
         <div class="flex flex-wrap gap-1 mt-1">
           {% for label in item.get_category_labels() %}
@@ -61,9 +63,9 @@
       <td class="font-medium [overflow-wrap:anywhere]">
         <div class="space-y-1">
           {% if item.parent_procurement %}
-            <a href="{{ url_for('procurement.payment.index', procurement_id=item.parent_procurement.id, organization_id=organization.id) }}"
+            <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
                class="font-semibold text-base text-base-content hover:text-primary link link-hover block leading-snug">
-              {{ item.parent_procurement.name }}
+              {{ item.name }}
             </a>
           {% elif sub_items_list and not is_draft %}
             {% for sub in sub_items_list[:2] %}

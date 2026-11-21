@@ -214,6 +214,34 @@ class ProcurementItemForm(Form):
 PSU_NUMBER_PREFIX = "011/"
 
 
+def _field_error_lines(field, prefix: str) -> list[str]:
+    """ข้อความผิดพลาดของ field หนึ่งตัว (รวม FieldList / FormField ซ้อนกัน) เป็นบรรทัดอ่านง่าย"""
+    lines = []
+    entries = getattr(field, "entries", None)
+    if entries is not None:
+        for index, entry in enumerate(entries, start=1):
+            lines += _field_error_lines(entry, f"{prefix} {field.label.text} ที่ {index}".strip())
+        lines += [f"{prefix}: {e}" for e in field.errors if isinstance(e, str)]
+        return lines
+    if hasattr(field, "form"):
+        for sub in field.form:
+            lines += _field_error_lines(sub, prefix)
+        return lines
+    label = field.label.text if getattr(field, "label", None) else ""
+    return [f"{prefix} {label}: {e}".strip() if label else f"{prefix}: {e}" for e in field.errors if isinstance(e, str)]
+
+
+def describe_item_errors(form) -> list[str]:
+    """สรุปข้อผิดพลาดในรายการย่อยให้ผู้ใช้อ่านรู้เรื่อง เช่น รายการที่ 1 งวดที่ 2 วันครบกำหนด: กรุณาระบุวันครบกำหนด"""
+    items = getattr(form, "items", None)
+    if items is None:
+        return []
+    lines = [e for e in items.errors if isinstance(e, str)]
+    for number, entry in enumerate(items.entries, start=1):
+        lines += _field_error_lines(entry, f"รายการที่ {number}")
+    return lines
+
+
 def clean_psu_number(value: str | None) -> str:
     text = (value or "").strip()
     return "" if text == PSU_NUMBER_PREFIX.strip() else text

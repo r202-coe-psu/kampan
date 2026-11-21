@@ -466,6 +466,7 @@ def _render_form(
         item_prototype=item_prototype,
         installment_prototype=installment_prototype,
         form_errors=[error for error in form_errors if error],
+        item_errors=forms.procurement.describe_item_errors(form),
         renew_from=renew_from,
         target_item=target_item,
         mode=mode,
