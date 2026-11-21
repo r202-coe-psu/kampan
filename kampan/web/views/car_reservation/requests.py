@@ -15,6 +15,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user
+from markupsafe import Markup, escape
 
 from kampan import models, utils
 from kampan.web import acl, forms
@@ -32,6 +33,33 @@ def car_choice_label(car):
     if car.seat_count:
         details.append(f"{car.seat_count} ที่นั่ง")
     return f"{car.license_plate} ({', '.join(details)})"
+
+
+def flash_flow_error(error):
+    """flash ข้อความของ FlowError: รถชนกับคำขออื่นให้ลิงก์ไปหน้ารายละเอียดของคำขอนั้น
+
+    Markup ไม่ถูก Jinja escape ซ้ำ จึงต้อง escape ค่าที่ผู้ใช้กรอก (ชื่อผู้ขอ ทะเบียน) เอง
+    """
+    if not isinstance(error, flow.CarConflictError):
+        flash(str(error), "danger")
+        return
+    link = url_for(
+        "car_reservation.requests.detail",
+        request_id=error.conflict.id,
+        organization_id=g.organization.id,
+    )
+    flash(
+        Markup(
+            "รถ {plate} มีงานช่วงเวลานี้แล้ว "
+            '(ผู้ขอ {name} เวลา {window}) <a href="{link}" class="link font-bold">ดูคำขอที่ชน</a>'
+        ).format(
+            plate=error.car.license_plate,
+            name=error.requester_name,
+            window=error.window,
+            link=link,
+        ),
+        "danger",
+    )
 
 
 def get_request_or_404(request_id):
@@ -348,7 +376,7 @@ def create_urgent():
                 is_overtime=form.is_overtime.data,
             )
         except flow.FlowError as error:
-            flash(str(error), "danger")
+            flash_flow_error(error)
         else:
             utils.car_reservation_email.notify(reservation, "approved")
             flash("สร้างคำขอเร่งด่วนเรียบร้อยแล้ว รอผู้อำนวยการกองกายภาพอนุมัติ", "success")
@@ -419,7 +447,7 @@ def create_insert():
                 is_overtime=form.is_overtime.data,
             )
         except flow.FlowError as error:
-            flash(str(error), "danger")
+            flash_flow_error(error)
         else:
             flash("เพิ่มงานแทรกเรียบร้อยแล้ว", "success")
             return redirect(
@@ -694,7 +722,7 @@ def approve(request_id):
             reservation, current_user._get_current_object()
         ):
             abort(403)
-        flash(str(error), "danger")
+        flash_flow_error(error)
         return redirect(
             url_for(
                 "car_reservation.requests.detail",

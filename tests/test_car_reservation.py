@@ -1588,6 +1588,119 @@ def test_a_car_lent_through_diis_for_the_same_time_cannot_be_dispatched(world):
     assert car_application.car is None
 
 
+def test_a_diis_clash_gives_a_plain_message_without_a_link(world):
+    models.vehicle_applications.CarApplication(
+        organization=world.org,
+        car=world.car,
+        location="สนามบินหาดใหญ่",
+        status="active",
+        using_type="general",
+        request_reason="ไปราชการ",
+        departure_datetime=DAY + datetime.timedelta(hours=2),
+        return_datetime=DAY + datetime.timedelta(hours=6),
+    ).save()
+    car_application = at_dispatcher_with_times(world, DAY, DAY + datetime.timedelta(hours=9))
+
+    client = world.client_for(world.dispatcher)
+    client.post(approve_url(world, car_application), data=dispatch_data(world.car, world.driver))
+    html = client.get(detail_url(world, car_application)).get_data(as_text=True)
+
+    assert "รถ กก 1234 มีงานช่วงเวลานี้แล้ว (ถูกยืมผ่านระบบยืมรถเดิม)" in html
+    assert "ดูคำขอที่ชน" not in html
+    car_application.reload()
+    with pytest.raises(flow.FlowError) as raised:
+        flow.approve(car_application, world.dispatcher, car=world.car, driver=world.driver)
+    assert not isinstance(raised.value, flow.CarConflictError)
+
+
+def test_a_free_car_is_dispatched_when_another_job_ends_before_this_one_starts(world):
+    assigned_request(
+        world,
+        DAY - datetime.timedelta(hours=5),
+        DAY,  # กลับเวลาเดียวกับที่งานนี้ออก: ไม่ทับ
+        car=world.car,
+        driver=world.add_driver("Other", "Driver"),
+    )
+    car_application = at_dispatcher_with_times(world, DAY, DAY + datetime.timedelta(hours=9))
+
+    response = world.client_for(world.dispatcher).post(
+        approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.current_step == 2
+    assert car_application.car == world.car
+
+
+def test_a_car_clash_names_the_other_requester_and_links_to_the_other_request(world):
+    other_driver = world.add_driver("Other", "Driver")
+    blocking = assigned_request(
+        world,
+        DAY + datetime.timedelta(hours=2),
+        DAY + datetime.timedelta(hours=6),
+        car=world.car,
+        driver=other_driver,
+    )
+    car_application = at_dispatcher_with_times(world, DAY, DAY + datetime.timedelta(hours=9))
+
+    client = world.client_for(world.dispatcher)
+    response = client.post(
+        approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.current_step == 1
+    html = client.get(detail_url(world, car_application)).get_data(as_text=True)
+    assert "รถ กก 1234 มีงานช่วงเวลานี้แล้ว" in html
+    assert world.requester.get_name() in html
+    assert f"{(DAY + datetime.timedelta(hours=2)):%d/%m/%Y %H:%M}" in html
+    # ลิงก์เป็น HTML จริง ไม่ถูก escape เป็นข้อความ
+    assert f'href="{detail_url(world, blocking)}"'.replace("&", "&amp;") in html
+    assert "&lt;a " not in html
+
+
+def test_the_clash_message_escapes_what_users_typed(world):
+    world.requester.first_name = "<b>Evil</b>"
+    world.requester.save()
+    assigned_request(
+        world,
+        DAY + datetime.timedelta(hours=2),
+        DAY + datetime.timedelta(hours=6),
+        car=world.car,
+        driver=world.add_driver("Other", "Driver"),
+    )
+    car_application = at_dispatcher_with_times(world, DAY, DAY + datetime.timedelta(hours=9))
+
+    client = world.client_for(world.dispatcher)
+    client.post(
+        approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
+    )
+    html = client.get(detail_url(world, car_application)).get_data(as_text=True)
+
+    assert "<b>Evil</b>" not in html
+    assert "&lt;b&gt;Evil&lt;/b&gt;" in html
+
+
+def test_the_clash_error_carries_the_conflicting_request(world):
+    blocking = assigned_request(
+        world,
+        DAY + datetime.timedelta(hours=2),
+        DAY + datetime.timedelta(hours=6),
+        car=world.car,
+        driver=world.add_driver("Other", "Driver"),
+    )
+    car_application = at_dispatcher_with_times(world, DAY, DAY + datetime.timedelta(hours=9))
+    car_application.reload()
+
+    with pytest.raises(flow.CarConflictError) as raised:
+        flow.approve(car_application, world.dispatcher, car=world.car, driver=world.driver)
+
+    assert raised.value.conflict == blocking
+    assert raised.value.car == world.car
+
+
 def test_two_dispatchers_booking_the_same_car_at_once_leave_it_booked_once(world):
     first = at_dispatcher_with_times(world, DAY, DAY + datetime.timedelta(hours=4))
     second = at_dispatcher_with_times(
@@ -3376,6 +3489,75 @@ def test_insert_job_for_a_car_that_is_already_booked_is_refused(insert_world):
     assert response.status_code == 200
     assert "ขข 5678" in response.get_data(as_text=True)
     assert insert_jobs(insert_world).count() == 0
+
+
+def test_insert_job_may_reuse_the_car_of_the_same_drivers_main_job(insert_world):
+    # main_job: world.car + world.driver 08:00-17:00 ทับกับงานแทรก 10:00-11:30
+    response = post_insert(insert_world, car=str(insert_world.car.id))
+
+    assert response.status_code == 302, response.get_data(as_text=True)
+    [job] = insert_jobs(insert_world)
+    assert job.car == insert_world.car
+    assert job.driver == insert_world.driver
+
+
+def test_insert_job_is_refused_when_a_different_driver_holds_the_car(insert_world):
+    other = insert_world.add_driver("Other", "Driver")
+    blocking = assigned_request(
+        insert_world,
+        DAY + datetime.timedelta(hours=1),
+        DAY + datetime.timedelta(hours=4),
+        car=insert_world.second_car,
+        driver=other,
+    )
+
+    response = post_insert(insert_world)
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert insert_jobs(insert_world).count() == 0
+    assert "รถ ขข 5678 มีงานช่วงเวลานี้แล้ว" in html
+    assert insert_world.requester.get_name() in html
+    assert f'href="{detail_url(insert_world, blocking)}"'.replace("&", "&amp;") in html
+
+
+def test_insert_job_reusing_the_main_job_car_is_still_refused_if_another_driver_holds_it(
+    insert_world,
+):
+    # รถของงานหลักถูกงานของ พขร. อีกคนจองทับช่วงงานแทรกด้วย: ยกเว้นเฉพาะงานของ พขร. คนเดียวกัน
+    assigned_request(
+        insert_world,
+        DAY + datetime.timedelta(hours=2),
+        DAY + datetime.timedelta(hours=4),
+        car=insert_world.car,
+        driver=insert_world.add_driver("Other", "Driver"),
+    )
+
+    response = post_insert(insert_world, car=str(insert_world.car.id))
+
+    assert response.status_code == 200
+    assert insert_jobs(insert_world).count() == 0
+
+
+def test_insert_job_is_refused_when_the_car_is_lent_through_diis(insert_world):
+    models.vehicle_applications.CarApplication(
+        organization=insert_world.org,
+        car=insert_world.second_car,
+        location="สนามบินหาดใหญ่",
+        status="active",
+        using_type="general",
+        request_reason="ไปราชการ",
+        departure_datetime=DAY + datetime.timedelta(hours=1),
+        return_datetime=DAY + datetime.timedelta(hours=4),
+    ).save()
+
+    response = post_insert(insert_world)
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert insert_jobs(insert_world).count() == 0
+    assert "รถ ขข 5678 มีงานช่วงเวลานี้แล้ว (ถูกยืมผ่านระบบยืมรถเดิม)" in html
+    assert "ดูคำขอที่ชน" not in html
 
 
 @pytest.mark.parametrize("who", ["requester", "supervisor", "stranger"])

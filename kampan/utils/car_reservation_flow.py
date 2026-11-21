@@ -111,6 +111,32 @@ class ConcurrentChangeError(FlowError):
     """มีคนอื่นเปลี่ยนคำขอนี้ไปก่อนระหว่างที่เรากำลังบันทึก"""
 
 
+class CarConflictError(FlowError):
+    """รถคันนี้มีคำขอ (CarReservation) อื่นในช่วงเวลาที่ทับกัน: เก็บคำขอที่ชนไว้ให้ view ทำลิงก์ไปหน้ารายละเอียด"""
+
+    def __init__(self, car, conflict):
+        self.car = car
+        self.conflict = conflict
+        super().__init__(
+            f"รถ {car.license_plate} มีงานช่วงเวลานี้แล้ว "
+            f"(ผู้ขอ {self.requester_name} เวลา {self.window})"
+        )
+
+    @property
+    def requester_name(self):
+        creator = self.conflict.creator
+        return creator.get_name() if creator else self.conflict.contact_name or "-"
+
+    @property
+    def window(self):
+        departure = self.conflict.departure_datetime
+        return_ = self.conflict.return_datetime
+        return (
+            f"{departure.strftime('%d/%m/%Y %H:%M')} - "
+            f"{return_.strftime('%d/%m/%Y %H:%M')} น."
+        )
+
+
 MILEAGE_IN_BELOW_OUT = "เลข กม. กลับต้องไม่น้อยกว่าเลข กม. ออก"
 
 
@@ -294,8 +320,10 @@ def submit_insert(app, dispatcher, car, driver, is_overtime=False):
         raise FlowError(CAR_OR_DRIVER_NOT_ASSIGNABLE)
     if not _has_active_job_that_day(app, driver):
         raise FlowError(INSERT_DRIVER_HAS_NO_JOB)
-    if _overlapping_bookings(app, car=car).first():
-        raise FlowError(f"รถ {car.license_plate} มีงานช่วงเวลานี้แล้ว")
+    # งานแทรกใช้รถคันเดียวกับงานหลักของ พขร. คนเดิมได้ งานของคนอื่น/รถยืม DIIS ยังบล็อก
+    taken = _car_is_taken(app, car, except_driver=driver)
+    if taken:
+        raise _car_conflict_error(car, taken)
     app.is_insert = True
     app.request_type = INSERT_REQUEST_TYPE
     app.province_scope = INSERT_PROVINCE_SCOPE
@@ -677,8 +705,27 @@ def _car_booked_by_diis(app, car):
     ).first()
 
 
-def _car_is_taken(app, car):
-    return _overlapping_bookings(app, car=car).first() or _car_booked_by_diis(app, car)
+def _car_is_taken(app, car, except_driver=None):
+    """คำขอที่จองรถคันนี้ทับเวลา (CarReservation) หรือใบยืมรถ DIIS ที่ทับเวลา ไม่มีเป็น None
+
+    except_driver = ไม่นับคำขอที่ใช้รถคันนี้กับ พขร. คนนี้ (งานหลักของ พขร. ที่งานแทรกใช้รถร่วม)
+    ตอนนี้คำขอมี car/driver ช่องเดียว ถ้าย้ายไป assignments ให้แก้ query ที่นี่ที่เดียว
+    """
+    resource = {"car": car}
+    if except_driver is not None:
+        resource["driver__ne"] = except_driver
+    return _overlapping_bookings(app, **resource).first() or _car_booked_by_diis(
+        app, car
+    )
+
+
+def _car_conflict_error(car, taken):
+    """taken จาก _car_is_taken: คำขอในระบบนี้ได้ CarConflictError (ลิงก์ได้) ใบยืม DIIS ไม่มีหน้ารายละเอียดในโมดูลนี้ จึงเป็นข้อความธรรมดา"""
+    if isinstance(taken, models.CarReservation):
+        return CarConflictError(car, taken)
+    return FlowError(
+        f"รถ {car.license_plate} มีงานช่วงเวลานี้แล้ว (ถูกยืมผ่านระบบยืมรถเดิม)"
+    )
 
 
 def _overlapping_bookings(app, **resource):
@@ -717,8 +764,9 @@ def approve(
             assignable_drivers(app.organization)
         ):
             raise FlowError(CAR_OR_DRIVER_NOT_ASSIGNABLE)
-        if _car_is_taken(app, car):
-            raise FlowError(f"รถ {car.license_plate} มีงานช่วงเวลานี้แล้ว")
+        taken = _car_is_taken(app, car)
+        if taken:
+            raise _car_conflict_error(car, taken)
         before = _assignment_snapshot(app)
         app.car = car
         app.driver = driver
@@ -747,10 +795,11 @@ def approve(
     if app.current_step >= len(app.route_snapshot):
         app.status = "active"
     _save_if(app, status="pending", current_step=step)
-    if key == "dispatcher" and _car_is_taken(app, car):
+    taken = _car_is_taken(app, car) if key == "dispatcher" else None
+    if taken:
         # ผู้จัดรถอีกคนจัดรถคันเดียวกันช่วงเวลาเดียวกันในจังหวะเดียวกัน: ถอยของเรากลับ ไม่ให้รถถูกจองซ้อน
         _undo_dispatch(app, step, previous_assignment)
-        raise FlowError(f"รถ {car.license_plate} มีงานช่วงเวลานี้แล้ว")
+        raise _car_conflict_error(car, taken)
 
 
 def _undo_dispatch(app, step, previous_assignment):
