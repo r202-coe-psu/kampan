@@ -830,6 +830,8 @@ def test_public_feedback_without_a_template_reports_it(app, create_org, create_c
     with app.test_client() as client:
         with app.app_context():
             org = create_org("Org A")
+            org.enabled_modules = ["car_reservation"]
+            org.save()
             car = create_car(org, "กก 1111")
 
             response = client.get(f"{CARS_BASE}/{car.id}/feedback")

@@ -54,6 +54,22 @@ def test_organization_that_never_set_modules_is_left_alone():
     assert "enabled_modules" not in db.organizations.find_one({"_id": OTHER})
 
 
+def test_targeted_organization_that_never_set_modules_keeps_the_defaults_and_gets_car_reservation():
+    db = _db()
+
+    migrate(db, organization_id=str(OTHER))
+
+    modules = db.organizations.find_one({"_id": OTHER})["enabled_modules"]
+    assert modules == ["inventory", "procurement", "car", "motorcycle", "car_reservation"]
+
+
+def test_the_scripts_default_modules_match_the_model():
+    from kampan import models
+    from scripts.migrate_car_reservation_module import DEFAULT_MODULES
+
+    assert DEFAULT_MODULES == models.organizations.DEFAULT_MODULE_KEYS
+
+
 def test_dry_run_changes_nothing():
     db = _db()
     db[LEGACY_REQUESTS].insert_one({"_id": 1})

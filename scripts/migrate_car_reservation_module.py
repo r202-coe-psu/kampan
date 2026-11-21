@@ -13,7 +13,8 @@ Migration: ระบบจองรถออนไลน์เป็นโมด
   ที่ active ของ org นั้น (คนขับรถไม่ได้ role ผู้อนุมัติ และไม่มีสมาชิก active ก็ข้าม) org ที่ตั้ง
   enabled_roles ไว้จะเพิ่ม role นั้นให้ด้วย แล้วเก็บ collection ตำแหน่งไว้เป็น *_archive (ไม่ลบ)
 - ถ้าระบุ --organization ให้เพิ่ม "car_reservation" ใน enabled_modules ของ org นั้น
-  (org ที่ enabled_modules ยังไม่เคยตั้ง = เปิดทุกโมดูลอยู่แล้ว ไม่ต้องแตะ)
+  car_reservation เป็นโมดูลที่ต้องเปิดเอง: org ที่ enabled_modules ยังไม่เคยตั้ง (= ใช้ทุกโมดูลเดิม)
+  จะถูกตั้งเป็นโมดูลเดิมทั้งหมดบวก car_reservation ไม่ให้ปิดโมดูลที่ใช้อยู่
 
 รันซ้ำได้ และมี --dry-run
 
@@ -26,6 +27,8 @@ import argparse
 from bson import ObjectId
 
 MODULE = "car_reservation"
+# โมดูลที่ org ซึ่งไม่เคยตั้ง enabled_modules ใช้อยู่ (ตรงกับ Organization.DEFAULT_MODULE_KEYS)
+DEFAULT_MODULES = ["inventory", "procurement", "car", "motorcycle"]
 
 # ชื่อเดิมก่อน rename ประกอบจากสองท่อนเพื่อไม่ให้คำเดิมค้างอยู่ใน source
 LEGACY_MODULE = "sn" + "or_car"
@@ -149,7 +152,12 @@ def migrate(db, organization_id=None, dry_run=False, log=print):
 
     modules = organization.get("enabled_modules")
     if modules is None:
-        log(f"{prefix}{organization['name']}: modules never set, {MODULE} already on")
+        log(f"{prefix}{organization['name']}: modules never set, set default modules + {MODULE}")
+        if not dry_run:
+            db.organizations.update_one(
+                {"_id": organization["_id"]},
+                {"$set": {"enabled_modules": [*DEFAULT_MODULES, MODULE]}},
+            )
     elif MODULE in modules or LEGACY_MODULE in modules:
         log(f"{prefix}{organization['name']}: {MODULE} already enabled")
     else:

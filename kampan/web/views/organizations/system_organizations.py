@@ -66,8 +66,8 @@ def create_or_edit(organization_id):
         and request.method == "GET"
         and target_organization.enabled_modules is None
     ):
-        # ยังไม่เคยตั้งค่า = เปิดทุกโมดูล แสดงให้เห็นตามจริง ไม่ให้บันทึกแล้วปิดหมดโดยไม่รู้ตัว
-        form.enabled_modules.data = [key for key, _ in models.organizations.MODULES]
+        # ยังไม่เคยตั้งค่า = เปิดทุกโมดูลเดิม (ไม่รวมโมดูลที่ต้องเปิดเอง) แสดงให้เห็นตามจริง ไม่ให้บันทึกแล้วปิดหมดโดยไม่รู้ตัว
+        form.enabled_modules.data = list(models.organizations.DEFAULT_MODULE_KEYS)
     if (
         organization_id
         and request.method == "GET"

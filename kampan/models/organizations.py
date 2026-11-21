@@ -60,6 +60,10 @@ MODULES = [
     ("motorcycle", "ระบบขอใช้รถจักรยานยนต์"),
 ]
 
+# โมดูลใหม่ที่ต้องเปิดเอง: org ที่ยังไม่เคยตั้ง enabled_modules (= ใช้ทุกโมดูลเดิม) จะไม่เห็นโมดูลเหล่านี้
+OPT_IN_MODULES = {"car_reservation"}
+DEFAULT_MODULE_KEYS = [key for key, _ in MODULES if key not in OPT_IN_MODULES]
+
 class OrganizationUserRole(me.Document):
     meta = {"collection": "organization_user_roles"}
 
@@ -156,7 +160,9 @@ class Organization(me.Document):
         return markdown.markdown(self.description)
 
     def has_module(self, key):
-        return self.enabled_modules is None or key in self.enabled_modules
+        if self.enabled_modules is None:
+            return key not in OPT_IN_MODULES
+        return key in self.enabled_modules
 
     def available_roles(self):
         """[(key, label), ...] ของ role ที่ org นี้เลือกใช้ได้ เรียงตาม ORGANIZATION_ROLES"""

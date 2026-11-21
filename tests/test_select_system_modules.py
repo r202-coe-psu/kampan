@@ -79,7 +79,7 @@ def test_select_system_still_shows_a_sole_enabled_module(app, open_select_system
     assert 'data-role="edit-profile"' in html
 
 
-def test_select_system_shows_all_modules_when_organization_never_set_modules(
+def test_select_system_shows_the_default_modules_when_organization_never_set_modules(
     app, open_select_system
 ):
     org, response = open_select_system()
@@ -87,7 +87,8 @@ def test_select_system_shows_all_modules_when_organization_never_set_modules(
 
     assert response.status_code == 200
     for key in MODULE_ENDPOINTS:
-        assert f'href="{_module_url(app, key, org)}"' in html
+        shown = f'href="{_module_url(app, key, org)}"' in html
+        assert shown == (key not in models.organizations.OPT_IN_MODULES), key
     assert EMPTY_MESSAGE not in html
 
 

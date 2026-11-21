@@ -106,7 +106,7 @@ def test_edit_page_shows_module_checkboxes(app, login_as, setup):
     assert 'name="enabled_modules"' in html
 
 
-def test_edit_page_of_unconfigured_organization_shows_all_modules_ticked(
+def test_edit_page_of_unconfigured_organization_ticks_the_default_modules(
     app, login_as, setup
 ):
     with app.test_client() as client:
@@ -115,7 +115,8 @@ def test_edit_page_of_unconfigured_organization_shows_all_modules_ticked(
 
     module_inputs = re.findall(r"<input[^>]*name=\"enabled_modules\"[^>]*>", html)
     assert len(module_inputs) == 5
-    assert all("checked" in tag for tag in module_inputs)
+    ticked = {re.search(r'value="([^"]+)"', tag).group(1) for tag in module_inputs if "checked" in tag}
+    assert ticked == set(models.organizations.DEFAULT_MODULE_KEYS)
 
 
 def test_new_organization_page_starts_with_no_module_ticked(app, login_as, setup):

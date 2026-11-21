@@ -7,6 +7,8 @@ import pytest
 @pytest.fixture
 def setup(create_org, create_user, assign_user_to_org, create_car):
     org = create_org("Car Flash Org")
+    org.enabled_modules = ["car", "car_reservation"]
+    org.save()
     admin = create_user("Admin", "Car")
     assign_user_to_org(admin, org, roles=["admin"])
     car = create_car(org, license_plate="ขข 2222")

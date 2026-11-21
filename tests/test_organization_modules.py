@@ -57,6 +57,10 @@ MODULE_PAGES = {
     ],
 }
 GATED_PAGES = [path for pages in MODULE_PAGES.values() for path in pages]
+OPT_IN_PAGES = [
+    path for key in models.organizations.OPT_IN_MODULES for path in MODULE_PAGES[key]
+]
+DEFAULT_PAGES = [path for path in GATED_PAGES if path not in OPT_IN_PAGES]
 
 # หน้าที่ใช้ร่วมกันทุกโมดูล ต้องเปิดได้แม้องค์กรปิดโมดูลทั้งหมด
 SHARED_PAGES = [
@@ -116,7 +120,7 @@ def test_organization_with_all_modules_disabled_gets_404_on_module_pages(
     assert response.status_code == 404
 
 
-@pytest.mark.parametrize("path", GATED_PAGES)
+@pytest.mark.parametrize("path", DEFAULT_PAGES)
 def test_organization_that_never_set_modules_does_not_get_404_on_module_pages(
     open_page, path
 ):
@@ -125,8 +129,18 @@ def test_organization_that_never_set_modules_does_not_get_404_on_module_pages(
     assert response.status_code != 404
 
 
+@pytest.mark.parametrize("path", OPT_IN_PAGES)
+def test_organization_that_never_set_modules_does_not_get_the_opt_in_modules(
+    open_page, path
+):
+    response = open_page(path)
+
+    assert response.status_code == 404
+
+
 @pytest.mark.parametrize("path", SHARED_PAGES)
 def test_shared_pages_stay_open_when_all_modules_are_disabled(open_page, path):
     response = open_page(path, enabled_modules=[])
 
     assert response.status_code != 404
+
