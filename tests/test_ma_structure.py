@@ -1802,3 +1802,28 @@ def test_list_shows_project_name_before_sub_item_name(world, client_for):
     rows = [row for row in html.split('<tr class="border-l-4')[1:] if "[TEST] ชื่อรายการย่อย" in row]
     assert len(rows) == 1
     assert rows[0].index("[TEST] ชื่อโครงการ") < rows[0].index("[TEST] ชื่อรายการย่อย")
+
+
+def test_detail_shows_sn_and_asset_columns_when_filled_even_if_flags_are_off(world, client_for):
+    """ฟอร์มส่ง has_sub_item_sn / has_sub_item_asset เป็น False (checkbox ถูกซ่อน) แต่กรอก S/N และรหัสครุภัณฑ์ไว้ ต้องแสดง"""
+    rows = [{"brand": "Adobe", "model_name": "Adobe", "serial_number": "SN-ADOBE-1", "asset_code": "AC-ADOBE-1", "details": "Adobe"}]
+    data = ma_form([_item(amount="100000.00", sub_items=rows)])
+    assert _create(client_for(world.admin), world, data).status_code == 302
+    procurement = models.Procurement.objects.get()
+    assert models.ProcurementItem.objects.get().has_sub_item_sn is False
+
+    html = client_for(world.admin).get(f"/procurement/payment/{procurement.id}?{_q(world.org)}").get_data(as_text=True)
+    table = html.split('class="table table-sm sub-items-table"', 1)[1].split("</table>", 1)[0]
+
+    assert "<th>S/N</th>" in table and "SN-ADOBE-1" in table
+    assert "<th>รหัสครุภัณฑ์</th>" in table and "AC-ADOBE-1" in table
+
+
+def test_create_page_has_visible_sn_and_asset_toggles(world, client_for):
+    html = client_for(world.admin).get(f"/procurement/products/create?{_q(world.org)}").get_data(as_text=True)
+
+    for toggle in ("sub-item-toggle-sn", "sub-item-toggle-asset"):
+        position = html.index(toggle)
+        # ไม่อยู่ในบล็อกที่ซ่อน (aria-hidden) ของฟิลด์ที่นำออกจากหน้าจอ
+        assert 'aria-hidden="true"' not in html[html.rfind("<div", 0, position) : position]
+    assert 'data-sub-item-col="sn"' in html and 'data-sub-item-col="asset"' in html

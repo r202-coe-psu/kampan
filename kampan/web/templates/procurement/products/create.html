@@ -409,8 +409,10 @@
       const html = card.querySelector('.sub-item-template').innerHTML.replaceAll('__K__', String(nextSubItemIndex++));
       rows.insertAdjacentHTML('beforeend', html);
       renumberSubItems(card);
+      syncSubItemToggles(card);
       showError(error, '');
-      rows.lastElementChild.querySelector('input').focus();
+      const firstField = Array.from(rows.lastElementChild.querySelectorAll('input')).find(function (input) { return !input.disabled; });
+      if (firstField) firstField.focus();
     }
 
     // เปิด/ปิด "แบ่งจ่ายเป็นงวด": ปิดแล้วซ่อนตารางงวดและ disable ช่องงวด (ไม่ส่งไปกับฟอร์ม)
@@ -435,6 +437,20 @@
       renumber();
     }
 
+    // เปิด/ปิดช่อง S/N และรหัสครุภัณฑ์ของแถวย่อย: ปิดแล้วซ่อนช่องและ disable (ไม่ส่งไปกับฟอร์ม)
+    function syncSubItemToggles(card) {
+      const section = card.querySelector('.asset-code-section');
+      if (!section || section.classList.contains('hidden')) return;
+      [['sn', '.sub-item-toggle-sn'], ['asset', '.sub-item-toggle-asset']].forEach(function (pair) {
+        const toggle = card.querySelector(pair[1]);
+        const show = toggle ? toggle.checked : false;
+        card.querySelectorAll('[data-sub-item-col="' + pair[0] + '"]').forEach(function (col) {
+          col.classList.toggle('hidden', !show);
+          col.querySelectorAll('input').forEach(function (input) { input.disabled = !show; });
+        });
+      });
+    }
+
     // แสดงหัวข้อ "รหัสครุภัณฑ์" เมื่อเลือกประเภท ครุภัณฑ์ (product) หรือ เช่า (rental)
     function syncAssetCodeSection(card) {
       const catInput = card.querySelector('input[name$="-category"]');
@@ -446,6 +462,7 @@
       section.querySelectorAll('input').forEach(function (input) {
         input.disabled = !isAssetType;
       });
+      syncSubItemToggles(card);
     }
 
     function syncSelectedMembers(picker) {
@@ -617,6 +634,9 @@
       const card = event.target.closest('.ma-item');
       if (event.target.classList.contains('installment-toggle') && card) {
         syncInstallmentMode(card);
+      }
+      if (card && (event.target.classList.contains('sub-item-toggle-sn') || event.target.classList.contains('sub-item-toggle-asset'))) {
+        syncSubItemToggles(card);
       }
 
       if (event.target.name && event.target.name.endsWith('-category') && card) {
