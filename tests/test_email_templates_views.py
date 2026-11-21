@@ -399,3 +399,17 @@ def test_create_defaults_to_first_type_of_an_enabled_system(app, login_as, email
     assert '<option value="car_reservation_submitted" selected>' in html
     assert 'data-email-type="car_reservation_submitted" class="mt-4 "' in html
 
+
+def test_org_without_email_systems_sees_empty_state(app, login_as, email_setup):
+    s = email_setup
+    s.org.update(set__enabled_modules=["motorcycle"])
+    s.org.reload()
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        index = _get(app, client, "email_templates.index", organization_id=str(s.org.id))
+        create = _get(app, client, "email_templates.create_or_edit", organization_id=str(s.org.id))
+
+    html = index.get_data(as_text=True)
+    assert "ยังไม่ได้เปิดใช้ระบบที่ส่งอีเมล" in html
+    assert 'role="tablist"' not in html
+    assert create.status_code == 302

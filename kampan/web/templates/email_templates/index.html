@@ -15,11 +15,18 @@
       <h2 class="text-xl font-bold">รายการรูปแบบอีเมล</h2>
       <p class="text-base-content/60">{{ email_templates.count() }} รูปแบบ</p>
     </div>
+    {% if email_systems %}
     <a class="btn btn-primary" href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id) }}">
       <i class="ph ph-plus"></i>
       เพิ่มรูปแบบอีเมล
     </a>
+    {% endif %}
   </div>
+
+  {% if not email_systems %}
+  {{ EmptyState('ph-envelope-simple-open', 'องค์กรนี้ยังไม่ได้เปิดใช้ระบบที่ส่งอีเมล',
+                description='เปิดใช้ระบบพัสดุ ระบบยืมรถ ระบบจองรถ หรือระบบ MA ในการตั้งค่าองค์กรก่อน จึงจะสร้างรูปแบบอีเมลได้') }}
+  {% else %}
 
   {# filter ตามระบบ: ไม่ได้เก็บใน DB แต่กรองจากประเภทอีเมลของระบบนั้น #}
   <div role="tablist" class="tabs tabs-box mt-4 w-fit">
@@ -107,6 +114,7 @@
                 description='สร้างรูปแบบอีเมลสำหรับแจ้งเตือนผู้อนุมัติ เจ้าหน้าที่พัสดุ และผู้ขอเบิก',
                 action_label='เพิ่มรูปแบบอีเมล',
                 action_href=url_for('email_templates.create_or_edit', organization_id=organization.id)) }}
+  {% endif %}
   {% endif %}
 </div>
 {% endblock %}
