@@ -332,7 +332,7 @@ def test_detail_stepper_has_one_step_per_route_step_with_its_state_and_is_respon
         ("ผู้จัดรถ", "current"),
         ("หัวหน้าหน่วยยานพาหนะ", "waiting"),
     ]
-    # ผ่านแล้ว = เขียวเข้ม, ขั้นที่ค้างอยู่ = เขียว + วงกระพริบ, ยังไม่ถึง = ไม่มีสี
+    # ผ่านแล้ว = เขียวเข้ม, ขั้นที่ค้างอยู่ = เหลือง + นาฬิกาทราย + วงกระพริบ, ยังไม่ถึง = ไม่มีสี
     assert [
         [c for c in li.get("class").split() if c in ("step-done", "step-current", "step-primary")]
         for li in steps

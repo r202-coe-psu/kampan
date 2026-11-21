@@ -282,15 +282,21 @@ fieldset {
 }
 
 /* ขั้นอนุมัติของระบบจองรถ (car_reservation/components/approval_steps.html)
-   ผ่านแล้ว = เขียวเข้ม, ขั้นที่ค้างอยู่ = เขียวเข้มเหมือนกัน + วงกระพริบสีเขียว */
+   ผ่านแล้ว = เขียวเข้ม, ขั้นที่ค้างอยู่ = วงกลมเหลือง + นาฬิกาทราย + วงกระพริบสีเหลือง */
 .step-done::after,
-.step-current::after,
 .step-done + .step-done::before,
 .step-done + .step-current::before {
   --step-bg: var(--color-green-700);
   --step-fg: var(--color-white);
 }
 .step-current::after {
+  --step-bg: var(--color-amber-400);
+  --step-fg: var(--color-amber-950);
+  content: "";
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23451a03' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 22h14M5 2h14'/%3E%3Cpath d='M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22'/%3E%3Cpath d='M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 55%;
   /* daisyUI ใช้ radius แบบ infinity ทำให้วงกระพริบ (box-shadow) เป็นเหลี่ยม: ใช้ 50% แทน */
   border-radius: 50%;
   animation: step-current-pulse 1.6s ease-out infinite;
@@ -300,7 +306,7 @@ fieldset {
   padding-block: 12px;
 }
 @keyframes step-current-pulse {
-  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-green-600) 70%, transparent); }
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-amber-400) 70%, transparent); }
   70% { box-shadow: 0 0 0 10px transparent; }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
