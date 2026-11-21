@@ -26,6 +26,8 @@
     {% endcall %}
 
     <li class="menu-title">การจอง</li>
+    {{ MenuItem(['car_reservation.calendar.index'], 'ph-calendar-dots', 'ปฏิทินการจองรถ',
+                url_for('car_reservation.calendar.index', organization_id=organization.id)) }}
     {% if can_request %}
     {{ MenuItem(['car_reservation.requests.index'], 'ph-list-bullets', 'คำขอของฉัน',
                 url_for('car_reservation.requests.index', organization_id=organization.id)) }}
@@ -34,8 +36,6 @@
     {{ MenuItem(['car_reservation.requests.create_insert'], 'ph-plus-circle', 'เพิ่มงานแทรก',
                 url_for('car_reservation.requests.create_insert', organization_id=organization.id)) }}
     {% endif %}
-    {{ MenuItem(['car_reservation.calendar.index'], 'ph-calendar-dots', 'ปฏิทินการจองรถ',
-                url_for('car_reservation.calendar.index', organization_id=organization.id)) }}
 
     {% if is_approver or inbox_count %}
     <li class="menu-title">การอนุมัติ</li>
