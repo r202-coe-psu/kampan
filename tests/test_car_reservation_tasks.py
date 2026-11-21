@@ -242,6 +242,18 @@ def test_return_mileage_below_departure_mileage_is_refused(world):
     assert world.car.last_mileage == 10000
 
 
+def test_an_absurd_return_mileage_is_refused_and_never_reaches_the_car(world):
+    reservation = world.reservation()
+
+    response = close(world, reservation, mileage_out="10000", mileage_in=str(10**15))
+
+    reservation.reload()
+    world.car.reload()
+    assert response.status_code == 200
+    assert reservation.status == "active"
+    assert world.car.last_mileage < 10**15
+
+
 def test_return_mileage_is_required(world):
     reservation = world.reservation()
 

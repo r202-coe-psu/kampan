@@ -160,6 +160,9 @@ def inbox():
     )
 
 
+DEPARTURE_IN_THE_PAST = "วันออกเดินทางต้องไม่ย้อนหลัง"
+
+
 def validate_submission(form, organization, request_type, urgent_by_dispatcher=False):
     """ตรวจฟอร์มคำขอตามกฎร่วม (ล่วงหน้าเกินกำหนด วันกลับ รถวันหยุด ขอกะทันหัน) ทั้งตอนยื่นและตอนแก้ไข
 
@@ -168,6 +171,13 @@ def validate_submission(form, organization, request_type, urgent_by_dispatcher=F
     คืน (ผ่านหรือไม่, จำนวนวันทำการขั้นต่ำที่ต้องยืนยันเร่งด่วน (None ถ้าไม่ต้อง), เป็นคำขอเร่งด่วนหรือไม่)
     """
     submitted = form.validate_on_submit()
+    if (
+        submitted
+        and not urgent_by_dispatcher
+        and form.departure_date.data < datetime.date.today()
+    ):
+        form.departure_date.errors.append(DEPARTURE_IN_THE_PAST)
+        submitted = False
     if submitted and flow.is_too_far_ahead(form.departure_date.data):
         form.departure_date.errors.append(flow.TOO_FAR_AHEAD)
         submitted = False

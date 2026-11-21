@@ -13,6 +13,14 @@ from kampan.web.forms import accounts
 
 PICKUP_TIME_FORMAT = "%H:%M"
 
+# เพดานของช่องตัวเลข: กันค่าที่ล้น int64 ของ Mongo (500) และเลขไมล์ผิดที่จะล็อกอยู่ใน Car.last_mileage ถาวร
+MAX_PASSENGERS = 999
+MAX_VEHICLES = 99
+MAX_SEATS = 100
+MAX_MILEAGE = 9_999_999
+MAX_FUEL_LITERS = 99_999
+MAX_TRIP_COST = 9_999_999
+
 
 class CommonReservationForm(FlaskForm):
     """ฟิลด์ที่ใช้ร่วมกันทุกประเภทใบขอ: ผู้ขอ วันเวลาไป-กลับ และที่ให้รถไปจอดรับ"""
@@ -196,7 +204,7 @@ class DomesticReservationForm(CommonReservationForm):
     )
     passenger_number = fields.IntegerField(
         "จำนวนผู้โดยสาร",
-        validators=[validators.InputRequired(), validators.NumberRange(min=0)],
+        validators=[validators.InputRequired(), validators.NumberRange(min=0, max=MAX_PASSENGERS)],
         widget=widgets.NumberInput(),
     )
 
@@ -207,7 +215,7 @@ class DomesticReservationForm(CommonReservationForm):
     )
     vehicle_count = fields.IntegerField(
         "จำนวนรถ (คัน)",
-        validators=[validators.InputRequired(), validators.NumberRange(min=1)],
+        validators=[validators.InputRequired(), validators.NumberRange(min=1, max=MAX_VEHICLES)],
         widget=widgets.NumberInput(),
     )
     district = fields.StringField(
@@ -535,12 +543,12 @@ class AbroadReservationForm(CommonReservationForm):
     )
     vehicle_count = fields.IntegerField(
         "จำนวนรถ (คัน)",
-        validators=[validators.InputRequired(), validators.NumberRange(min=1)],
+        validators=[validators.InputRequired(), validators.NumberRange(min=1, max=MAX_VEHICLES)],
         widget=widgets.NumberInput(),
     )
     passenger_number = fields.IntegerField(
         "จำนวนผู้โดยสาร",
-        validators=[validators.InputRequired(), validators.NumberRange(min=0)],
+        validators=[validators.InputRequired(), validators.NumberRange(min=0, max=MAX_PASSENGERS)],
         widget=widgets.NumberInput(),
     )
     city_state = fields.StringField(
@@ -708,7 +716,7 @@ class CarForm(FlaskForm):
     )
     seat_count = fields.IntegerField(
         "จำนวนที่นั่ง",
-        validators=[validators.InputRequired(), validators.NumberRange(min=1)],
+        validators=[validators.InputRequired(), validators.NumberRange(min=1, max=MAX_SEATS)],
         widget=widgets.NumberInput(),
     )
     description = fields.TextAreaField(
@@ -826,18 +834,18 @@ class TripCloseForm(FlaskForm):
 
     mileage_out = fields.IntegerField(
         "เลข กม. ออก",
-        validators=[validators.InputRequired(), validators.NumberRange(min=0)],
+        validators=[validators.InputRequired(), validators.NumberRange(min=0, max=MAX_MILEAGE)],
         widget=widgets.NumberInput(),
     )
     mileage_in = fields.IntegerField(
         "เลข กม. กลับ",
-        validators=[validators.InputRequired(), validators.NumberRange(min=0)],
+        validators=[validators.InputRequired(), validators.NumberRange(min=0, max=MAX_MILEAGE)],
         widget=widgets.NumberInput(),
     )
     fuel_liters = fields.DecimalField(
         "น้ำมัน (ลิตร)",
         places=2,
-        validators=[validators.Optional(), validators.NumberRange(min=0)],
+        validators=[validators.Optional(), validators.NumberRange(min=0, max=MAX_FUEL_LITERS)],
         widget=widgets.NumberInput(step="0.01"),
     )
     expense_case = fields.SelectField(
@@ -848,7 +856,7 @@ class TripCloseForm(FlaskForm):
     cost_baht = fields.DecimalField(
         "เป็นเงิน (บาท)",
         places=2,
-        validators=[validators.Optional(), validators.NumberRange(min=0)],
+        validators=[validators.Optional(), validators.NumberRange(min=0, max=MAX_TRIP_COST)],
         widget=widgets.NumberInput(step="0.01"),
     )
     mileage_photo_in = FileField(

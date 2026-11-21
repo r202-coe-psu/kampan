@@ -1086,6 +1086,26 @@ def post_new(world, data, request_type="domestic", user=None):
     )
 
 
+def test_a_departure_date_in_the_past_is_refused_even_when_marked_urgent(world):
+    data = world.request_data()
+    yesterday = datetime.date.today() - datetime.timedelta(days=1)
+    data.update(departure_date=yesterday.isoformat(), return_date=yesterday.isoformat())
+    data["confirm_urgent"] = "y"
+
+    response = post_new(world, data)
+
+    assert response.status_code == 200
+    assert "วันออกเดินทางต้องไม่ย้อนหลัง" in response.get_data(as_text=True)
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
+
+
+def test_an_absurd_passenger_count_is_a_form_error_not_a_crash(world):
+    response = post_new(world, {**world.request_data(), "passenger_number": str(10**20)})
+
+    assert response.status_code == 200
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
+
+
 def test_request_departing_more_than_30_days_ahead_is_refused(world):
     response = post_new(world, world.request_data(days_ahead=40))
 
