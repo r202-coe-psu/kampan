@@ -714,6 +714,14 @@ def save_ma_db(document, ma, user_id):
                 errors.append(msg)
                 continue
 
+            members = _find_ma_members(organization, row.get("responsible_by"))
+            if not members:
+                # MA ที่ไม่มีผู้รับผิดชอบไม่มีใครขอต่ออายุได้และไม่มีผู้รับอีเมลเตือน
+                msg = f"แถวที่ {row_num}: {models.procurement.RESPONSIBLE_REQUIRED_MESSAGE} (ไม่พบชื่อในหน่วยงานนี้)"
+                print(msg)
+                errors.append(msg)
+                continue
+
             procurement = models.Procurement(
                 organization=organization,
                 psu_disbursement_number=_excel_text(row.get("psu_disbursement_number")) or None,
@@ -733,7 +741,7 @@ def save_ma_db(document, ma, user_id):
                 sub_items=_ma_row_sub_items(row),
                 has_sub_item_sn=bool(_excel_text(row.get("product_number"))),
                 has_sub_item_asset=bool(_excel_text(row.get("asset_code"))),
-                responsible_by=_find_ma_members(organization, row.get("responsible_by")),
+                responsible_by=members,
                 reminder_kind="ma",
                 # จำนวนงวด > 1 = แบ่งจ่ายเป็นงวด (วันครบกำหนดห่างเท่า ๆ กัน) ไม่เช่นนั้นจ่ายครั้งเดียวในวันสิ้นสุด
                 installment_mode=period > 1,

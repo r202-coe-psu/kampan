@@ -57,6 +57,16 @@
     {% if renew_from %}<input type="hidden" name="expected_request" value="{{ renew_from.renewal_request or '' }}">{% endif %}
     {{ form.hidden_tag() }}
 
+    {% if item_errors %}
+      <div role="alert" class="alert alert-error">
+        <i class="ph ph-warning-circle text-xl"></i>
+        <div>
+          <p class="font-semibold">กรุณาตรวจสอบข้อมูลต่อไปนี้</p>
+          {% for error in item_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
     {% if form_errors %}
       <div role="alert" class="alert alert-error">
         <i class="ph ph-warning-circle text-xl"></i>
@@ -152,6 +162,31 @@
 {% endblock %}
 
 {% block additional_js %}
+<script>
+  {# กดย้อนกลับหลังบันทึกสำเร็จ ต้องไม่กลับมาที่ฟอร์มเดิม (ฟอร์มที่ส่งแล้ว) ให้พาไปหน้ารายการแทน #}
+  (function () {
+    const key = 'ma-form-submitted:' + location.pathname;
+    const listUrl = {{ url_for('procurement.products.index', organization_id=organization.id) | tojson }};
+    function read() { try { return sessionStorage.getItem(key); } catch (e) { return null; } }
+    function write(value) {
+      try { value ? sessionStorage.setItem(key, value) : sessionStorage.removeItem(key); } catch (e) { /* ใช้ไม่ได้ก็ข้าม */ }
+    }
+    function isBackNavigation(event) {
+      const nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+      return event.persisted || (nav && nav.type === 'back_forward');
+    }
+    window.addEventListener('pageshow', function (event) {
+      if (read() && isBackNavigation(event)) {
+        write(null);
+        location.replace(listUrl);
+        return;
+      }
+      write(null);
+    });
+    const submitted = document.getElementById('ma_form');
+    if (submitted) submitted.addEventListener('submit', function () { write('1'); });
+  })();
+</script>
 <script>
   (function () {
     const form = document.getElementById('ma_form');
@@ -374,8 +409,10 @@
       const html = card.querySelector('.sub-item-template').innerHTML.replaceAll('__K__', String(nextSubItemIndex++));
       rows.insertAdjacentHTML('beforeend', html);
       renumberSubItems(card);
+      syncSubItemToggles(card);
       showError(error, '');
-      rows.lastElementChild.querySelector('input').focus();
+      const firstField = Array.from(rows.lastElementChild.querySelectorAll('input')).find(function (input) { return !input.disabled; });
+      if (firstField) firstField.focus();
     }
 
     // เปิด/ปิด "แบ่งจ่ายเป็นงวด": ปิดแล้วซ่อนตารางงวดและ disable ช่องงวด (ไม่ส่งไปกับฟอร์ม)
@@ -400,6 +437,20 @@
       renumber();
     }
 
+    // เปิด/ปิดช่อง S/N และรหัสครุภัณฑ์ของแถวย่อย: ปิดแล้วซ่อนช่องและ disable (ไม่ส่งไปกับฟอร์ม)
+    function syncSubItemToggles(card) {
+      const section = card.querySelector('.asset-code-section');
+      if (!section || section.classList.contains('hidden')) return;
+      [['sn', '.sub-item-toggle-sn'], ['asset', '.sub-item-toggle-asset']].forEach(function (pair) {
+        const toggle = card.querySelector(pair[1]);
+        const show = toggle ? toggle.checked : false;
+        card.querySelectorAll('[data-sub-item-col="' + pair[0] + '"]').forEach(function (col) {
+          col.classList.toggle('hidden', !show);
+          col.querySelectorAll('input').forEach(function (input) { input.disabled = !show; });
+        });
+      });
+    }
+
     // แสดงหัวข้อ "รหัสครุภัณฑ์" เมื่อเลือกประเภท ครุภัณฑ์ (product) หรือ เช่า (rental)
     function syncAssetCodeSection(card) {
       const catInput = card.querySelector('input[name$="-category"]');
@@ -411,6 +462,7 @@
       section.querySelectorAll('input').forEach(function (input) {
         input.disabled = !isAssetType;
       });
+      syncSubItemToggles(card);
     }
 
     function syncSelectedMembers(picker) {
@@ -542,7 +594,7 @@
           const html = field.querySelector('.list-row-template').innerHTML.replaceAll('__ROW__', String(nextListRowIndex++));
           const rows = field.querySelector('.list-rows');
           rows.insertAdjacentHTML('beforeend', html);
-          rows.lastElementChild.querySelector('input').focus();
+          initDatePickersIn(rows.lastElementChild);
           break;
         }
         case 'remove-list-row':
@@ -583,8 +635,18 @@
       if (event.target.classList.contains('installment-toggle') && card) {
         syncInstallmentMode(card);
       }
+      if (card && (event.target.classList.contains('sub-item-toggle-sn') || event.target.classList.contains('sub-item-toggle-asset'))) {
+        syncSubItemToggles(card);
+      }
 
       if (event.target.name && event.target.name.endsWith('-category') && card) {
+        // รายการใหม่: เลือก MA / จ้างเหมา / เช่า เปิดแบ่งจ่ายเป็นงวดไว้ให้ ประเภทอื่นปิด (ปรับเองได้หลังเลือก)
+        const itemId = card.querySelector('input[name$="-item_id"]');
+        const toggle = card.querySelector('.installment-toggle');
+        if (toggle && !(itemId && itemId.value)) {
+          toggle.checked = ['ma', 'service', 'rental'].includes(event.target.value);
+          syncInstallmentMode(card);
+        }
         syncAssetCodeSection(card);
         updateItemSummary(card);
       }
