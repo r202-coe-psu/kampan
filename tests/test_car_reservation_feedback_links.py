@@ -199,7 +199,7 @@ def test_driver_closing_the_trip_emails_the_requester_the_survey_link_job(world,
     assert response.status_code == 302
     jobs = email_jobs(mock_redis_queue, "completed")
     assert len(jobs) == 1
-    request_id, event, recipients, host_url = jobs[0]
+    request_id, event, recipients, host_url, _ = jobs[0]
     assert request_id == str(reservation.id)
     assert recipients == [world.requester.email]
     assert host_url.startswith("http")

@@ -34,7 +34,7 @@ def mock_redis_queue():
 
 
 def email_jobs(mock_q, event=None):
-    """job แจ้งเตือนอีเมลของ car_reservation ที่ถูกส่งเข้าคิว: [(request_id, event, recipients, host_url)]"""
+    """job แจ้งเตือนอีเมลของ car_reservation ที่ถูกส่งเข้าคิว: [(request_id, event, recipients, host_url, variables)]"""
     jobs = [
         call.kwargs["args"]
         for call in mock_q.enqueue.call_args_list
@@ -2132,7 +2132,7 @@ def test_submitting_notifies_the_division_head_but_not_the_requester(
 
     jobs = email_jobs(mock_redis_queue)
     assert len(jobs) == 1
-    request_id, event, recipients, host_url = jobs[0]
+    request_id, event, recipients, host_url, _ = jobs[0]
     assert (request_id, event) == (str(car_application.id), "submitted")
     assert recipients == [world.supervisor.email]
     assert host_url.startswith("http")
@@ -2152,7 +2152,7 @@ def test_supervisor_approval_notifies_every_member_with_the_dispatcher_role(
 
     jobs = email_jobs(mock_redis_queue)
     assert len(jobs) == 1
-    request_id, event, recipients, _ = jobs[0]
+    request_id, event, recipients, _, _ = jobs[0]
     assert (request_id, event) == (str(car_application.id), "approved")
     assert sorted(recipients) == sorted([world.dispatcher.email, delegate.email])
 
@@ -2176,7 +2176,7 @@ def test_final_approval_tells_the_requester_and_the_driver_the_request_is_active
     assert car_application.status == "active"
     jobs = email_jobs(mock_redis_queue)
     assert len(jobs) == 1
-    request_id, event, recipients, _ = jobs[0]
+    request_id, event, recipients, _, _ = jobs[0]
     assert (request_id, event) == (str(car_application.id), "active")
     assert sorted(recipients) == sorted([world.requester.email, world.driver.email])
 
@@ -2232,6 +2232,31 @@ def test_email_job_sends_subject_and_body_with_trip_details_and_link(
     assert email["html"] is True
 
 
+def test_the_email_job_carries_the_step_as_it_was_when_the_event_happened(
+    world, mock_redis_queue
+):
+    car_application = world.submit_domestic_request()
+    world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data=step_data(world, "supervisor")
+    )
+
+    (job,) = email_jobs(mock_redis_queue, "approved")
+    assert job[4]["step_label"] == flow.step_label("dispatcher")
+
+
+def test_a_queue_outage_does_not_turn_a_saved_approval_into_an_error(world, mock_redis_queue):
+    car_application = world.submit_domestic_request()
+    mock_redis_queue.enqueue.side_effect = ConnectionError("redis down")
+
+    response = world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data=step_data(world, "supervisor")
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.current_step == 1
+
+
 def test_active_email_names_requester_trip_times_car_and_driver_to_every_recipient(
     app, world, sent_emails
 ):
@@ -2273,7 +2298,7 @@ def test_denying_notifies_only_the_requester(world, mock_redis_queue):
 
     jobs = email_jobs(mock_redis_queue)
     assert len(jobs) == 1
-    request_id, event, recipients, _ = jobs[0]
+    request_id, event, recipients, _, _ = jobs[0]
     assert (request_id, event) == (str(car_application.id), "denied")
     assert recipients == [world.requester.email]
 
@@ -2358,7 +2383,7 @@ def test_cancelling_after_assignment_notifies_the_dispatcher_to_acknowledge(
 
     jobs = email_jobs(mock_redis_queue)
     assert len(jobs) == 1
-    request_id, event, recipients, _ = jobs[0]
+    request_id, event, recipients, _, _ = jobs[0]
     assert (request_id, event) == (str(car_application.id), "cancel_requested")
     assert recipients == [world.dispatcher.email]
 
@@ -2385,7 +2410,7 @@ def test_direct_cancel_notifies_the_requester_and_confirmed_cancel_adds_the_driv
 
     jobs = email_jobs(mock_redis_queue)
     assert len(jobs) == 1
-    request_id, event, recipients, _ = jobs[0]
+    request_id, event, recipients, _, _ = jobs[0]
     assert (request_id, event) == (str(after_car.id), "cancelled")
     assert sorted(recipients) == sorted([world.requester.email, world.driver.email])
 

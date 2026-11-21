@@ -109,17 +109,25 @@ def notify(reservation, event, actor=None):
     recipients = recipients_for(reservation, event)
     if not recipients:
         return None
-    return redis_rq.redis_queue.queue.enqueue(
-        send_car_reservation_email,
-        args=(
-            str(reservation.id),
-            event,
-            recipients,
-            email_utils.get_host_url(current_app.config),
-        ),
-        timeout=600,
-        job_timeout=600,
-    )
+    host_url = email_utils.get_host_url(current_app.config)
+    try:
+        # ส่งค่าตัวแปร ณ ตอนเกิดเหตุการณ์ไปด้วย อีเมลจึงไม่เล่าสถานะที่เปลี่ยนไปแล้วตอน worker ทำงาน
+        return redis_rq.redis_queue.queue.enqueue(
+            send_car_reservation_email,
+            args=(
+                str(reservation.id),
+                event,
+                recipients,
+                host_url,
+                template_variables(reservation, host_url),
+            ),
+            timeout=600,
+            job_timeout=600,
+        )
+    except Exception:
+        # การกระทำบันทึกไปแล้ว: คิวอีเมลล่มต้องไม่กลายเป็น 500 ที่ทำให้ผู้ใช้กดซ้ำ
+        logger.exception("cannot enqueue car reservation email %s for %s", event, reservation.id)
+        return None
 
 
 # หัวข้อแจ้งเตือนในระบบของแต่ละเหตุการณ์
@@ -255,7 +263,7 @@ def _render_file(event, variables):
     return module.subject, str(module).strip()
 
 
-def send_car_reservation_email(request_id, event, recipients, host_url):
+def send_car_reservation_email(request_id, event, recipients, host_url, variables=None):
     if event not in EVENTS:
         raise ValueError(f"unknown car reservation email event: {event}")
     reservation = models.CarReservation.objects(id=request_id).first()
@@ -263,7 +271,7 @@ def send_car_reservation_email(request_id, event, recipients, host_url):
         logger.warning("car reservation %s not found for email", request_id)
         return False
 
-    variables = template_variables(reservation, host_url)
+    variables = variables or template_variables(reservation, host_url)
     subject, body = _render_custom(reservation, event, variables) or _render_file(
         event, variables
     )
