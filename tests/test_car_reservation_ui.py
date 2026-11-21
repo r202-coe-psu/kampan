@@ -138,6 +138,36 @@ def test_my_requests_shows_an_empty_state_with_a_zero_count_when_there_are_none(
     assert not find(doc, "table", "table")
 
 
+def card_titles(doc):
+    return sorted(words(c).split()[0] for c in find(doc, "*", data_role="request-card"))
+
+
+def test_my_requests_filters_by_text_type_status_and_departure_range(world):
+    world.reservation(request_reason="ประชุมวิชาการ", location="กรุงเทพฯ")
+    world.reservation(
+        request_reason="รับวิทยากร", request_type="airport", location="สนามบิน",
+        departure_datetime=datetime.datetime(2031, 2, 5, 9, 0),
+    )
+    world.reservation(
+        request_reason="ไปงานบวช", request_type="welfare", status="active", location="สงขลา",
+        departure_datetime=datetime.datetime(2031, 3, 1, 7, 0),
+    )
+
+    assert find(world.page(world.staff, "/requests/"), "form", data_role="request-filters")
+    assert card_titles(world.page(world.staff, "/requests/", q="วิ")) == ["ประชุมวิชาการ", "รับวิทยากร"]
+    assert card_titles(world.page(world.staff, "/requests/", q="สงขลา")) == ["ไปงานบวช"]
+    assert card_titles(world.page(world.staff, "/requests/", request_type="airport")) == ["รับวิทยากร"]
+    assert card_titles(world.page(world.staff, "/requests/", status="active")) == ["ไปงานบวช"]
+    assert card_titles(
+        world.page(world.staff, "/requests/", date_from="2031-02-01", date_to="2031-02-28")
+    ) == ["รับวิทยากร"]
+    assert card_titles(world.page(world.staff, "/requests/", date_to="2031-01-10")) == ["ประชุมวิชาการ"]
+    assert len(card_titles(world.page(world.staff, "/requests/", status="bogus", date_from="x"))) == 3
+
+    empty = world.page(world.staff, "/requests/", q="ไม่มีแน่นอน")
+    assert "ไม่พบคำขอที่ตรงกับตัวกรอง" in words(find(empty, "div", role="status")[0])
+
+
 def test_inbox_lists_waiting_requests_as_table_rows_and_cards_with_a_count(world):
     world.reservation(request_reason="รอผู้จัดรถ")
     world.reservation(request_reason="เรื่องด่วน", is_urgent=True)
