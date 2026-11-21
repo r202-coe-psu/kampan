@@ -1783,7 +1783,8 @@ def test_installment_error_is_readable_not_raw_dict(world, client_for):
     html = response.get_data(as_text=True)
 
     assert response.status_code == 200
-    assert "รายการที่ 1" in html and "กรุณาระบุวันครบกำหนด" in html
+    assert "รายการที่ 1 งวดที่ 1" in re.sub(r"\s+", " ", html) and "กรุณาระบุวันครบกำหนด" in html
+    assert "Installments" not in html
     assert "{'installments'" not in html and "&#39;installments&#39;" not in html
 
 

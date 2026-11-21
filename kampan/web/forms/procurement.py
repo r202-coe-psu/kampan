@@ -214,13 +214,22 @@ class ProcurementItemForm(Form):
 PSU_NUMBER_PREFIX = "011/"
 
 
+# ชื่อแถวของ FieldList ที่แสดงในข้อความ error (label ของ field เป็นภาษาอังกฤษ / ไม่ได้ตั้งไว้)
+_ROW_LABELS = {
+    "installments": "งวดที่",
+    "sub_items": "แถวย่อยที่",
+    "custom_reminder_dates": "วันที่เตือนเจาะจงลำดับที่",
+}
+
+
 def _field_error_lines(field, prefix: str) -> list[str]:
     """ข้อความผิดพลาดของ field หนึ่งตัว (รวม FieldList / FormField ซ้อนกัน) เป็นบรรทัดอ่านง่าย"""
     lines = []
     entries = getattr(field, "entries", None)
     if entries is not None:
         for index, entry in enumerate(entries, start=1):
-            lines += _field_error_lines(entry, f"{prefix} {field.label.text} ที่ {index}".strip())
+            row_label = _ROW_LABELS.get(field.short_name, field.label.text)
+            lines += _field_error_lines(entry, f"{prefix} {row_label} {index}".strip())
         lines += [f"{prefix}: {e}" for e in field.errors if isinstance(e, str)]
         return lines
     if hasattr(field, "form"):

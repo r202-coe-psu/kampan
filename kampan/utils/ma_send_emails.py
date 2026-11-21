@@ -37,6 +37,7 @@ OFFSET_LABELS = {
     "3d": "3 วัน",
 }
 
+
 def _as_date(value):
     return value.date() if isinstance(value, datetime.datetime) else value
 
@@ -132,7 +133,7 @@ def _detail_procurement(procurement, item):
     return procurement
 
 
-def _common_context(log, item, procurement, detail_procurement) -> dict:
+def _common_context(log, item, procurement) -> dict:
     organization = log.organization
     return {
         "organization_name": organization.name if organization else "",
@@ -158,7 +159,7 @@ def build_email_context(log, settings) -> dict:
     """ตัวแปรที่ใช้ใน template อีเมล MA (ต้องตรงกับ EMAIL_TEMPLATE_VARIABLES ของชนิด ma_*)"""
     item = log.item
     procurement = log.procurement
-    context = _common_context(log, item, procurement, procurement)
+    context = _common_context(log, item, procurement)
     if log.kind == "assigned":
         context["assigner_name"] = log.created_by.get_resources_fullname_th() if log.created_by else "เจ้าหน้าที่"
         context["detail_url"] = _detail_url(log, settings, _detail_procurement(procurement, item), item)
