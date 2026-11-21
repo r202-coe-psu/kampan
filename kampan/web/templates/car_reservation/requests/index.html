@@ -2,6 +2,7 @@
 {% from '/base/components/empty_state.html' import EmptyState %}
 {% from '/car_reservation/components/list_header.html' import ListHeader %}
 {% import '/car_reservation/components/status_badge.html' as status_badge %}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}คำขอของฉัน{% endblock %}
 
@@ -49,13 +50,19 @@
         </fieldset>
         <fieldset class="fieldset sm:col-span-2">
           <legend class="fieldset-legend">วันออกเดินทาง</legend>
-          <div class="flex items-center gap-2">
-            <input type="date" name="date_from" class="input min-w-0 flex-1" aria-label="ตั้งแต่วันที่"
-                   value="{{ filters.date_from.isoformat() if filters.date_from else '' }}" />
+          {# date picker ตัวเดียวกับฟอร์มยื่นคำขอ (renderer.date_field) ส่งค่าเป็น ISO ผ่าน hidden input #}
+          {% set date_from_field = {'id': 'date_from', 'name': 'date_from', 'data': filters.date_from, 'label': {'text': 'ตั้งแต่วันที่'}, 'errors': []} %}
+          {% set date_to_field = {'id': 'date_to', 'name': 'date_to', 'data': filters.date_to, 'label': {'text': 'ถึงวันที่'}, 'errors': []} %}
+          <div class="flex items-center gap-2" data-filter-dates>
+            <div class="min-w-0 flex-1">
+              {{ renderer.date_field(date_from_field, hide_label=True, clearable=True, aria_label='ตั้งแต่วันที่', placeholder_text='ตั้งแต่วันที่', auto_init=False) }}
+            </div>
             <span class="text-base-content/60">–</span>
-            <input type="date" name="date_to" class="input min-w-0 flex-1" aria-label="ถึงวันที่"
-                   value="{{ filters.date_to.isoformat() if filters.date_to else '' }}" />
+            <div class="min-w-0 flex-1">
+              {{ renderer.date_field(date_to_field, hide_label=True, clearable=True, aria_label='ถึงวันที่', placeholder_text='ถึงวันที่', auto_init=False) }}
+            </div>
           </div>
+          <script>initDatePickersIn(document.querySelector('[data-filter-dates]'));</script>
         </fieldset>
         <div class="flex flex-wrap justify-end gap-2 sm:col-span-2 sm:pb-1">
           {% if filters.active %}

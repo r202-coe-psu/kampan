@@ -1,3 +1,3 @@
 {% if unread_count %}
-<span class="badge badge-error badge-sm" data-role="notification-count" aria-label="ยังไม่อ่าน {{ unread_count }} รายการ">{{ unread_count if unread_count < 100 else "99+" }}</span>
+<span class="badge badge-solid badge-error badge-sm" data-role="notification-count" aria-label="ยังไม่อ่าน {{ unread_count }} รายการ">{{ unread_count if unread_count < 100 else "99+" }}</span>
 {% endif %}

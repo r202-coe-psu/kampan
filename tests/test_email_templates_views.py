@@ -245,6 +245,8 @@ CAR_RESERVATION_TYPES = [
 
 def test_create_form_lists_car_reservation_types_in_their_own_group(app, login_as, email_setup):
     s = email_setup
+    s.org.update(set__enabled_modules=["inventory", "car", "car_reservation"])
+    s.org.reload()
     with app.test_client() as client:
         login_as(client, s.admin)
         html = _get(app, client, "email_templates.create_or_edit", organization_id=str(s.org.id)).get_data(as_text=True)
@@ -257,6 +259,8 @@ def test_create_form_lists_car_reservation_types_in_their_own_group(app, login_a
 
 def test_index_filters_templates_by_car_reservation_system(app, login_as, email_setup):
     s = email_setup
+    s.org.update(set__enabled_modules=["inventory", "car", "car_reservation"])
+    s.org.reload()
     models.EmailTemplate(
         name="ใบจองรถรอพิจารณา", subject="s", body="b",
         type="car_reservation_submitted", organization=s.org,
@@ -329,3 +333,115 @@ def test_car_reservation_variables_carry_trip_details_as_text():
 def test_car_reservation_feedback_url_is_empty_until_a_car_is_assigned():
     sent = car_reservation_email.template_variables(_reservation(), "http://x")
     assert sent["feedback_url"] == ""
+
+
+def test_org_sees_only_email_systems_of_its_enabled_modules():
+    from kampan.models.email_templates import get_email_systems, get_email_types_by_system
+
+    org = models.Organization(enabled_modules=["car_reservation"])
+    assert get_email_systems(org) == [("car_reservation", "ระบบจองรถ")]
+    assert [system for system, _, _ in get_email_types_by_system(org)] == ["car_reservation"]
+
+    legacy = models.Organization(enabled_modules=None)
+    assert "car_reservation" not in dict(get_email_systems(legacy))
+    assert {"inventory", "vehicle_lending", "procurement"} <= set(dict(get_email_systems(legacy)))
+
+
+def test_every_email_system_maps_to_an_org_module():
+    from kampan.models.email_templates import EMAIL_SYSTEM_ORG_MODULE
+
+    assert {system for system, _ in EMAIL_SYSTEMS} <= set(EMAIL_SYSTEM_ORG_MODULE)
+
+
+def test_editing_template_of_disabled_system_keeps_its_type(app, login_as, email_setup):
+    s = email_setup
+    template = models.EmailTemplate(
+        name="แจ้งยืมรถ", subject="s", body="b",
+        type="car_application", organization=s.org,
+    ).save()
+    s.org.update(set__enabled_modules=["inventory"])
+    s.org.reload()
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        html = _get(
+            app, client, "email_templates.create_or_edit",
+            organization_id=str(s.org.id), email_template_id=str(template.id),
+        ).get_data(as_text=True)
+
+    assert '<option value="car_application" selected>' in html
+    assert '<optgroup label="ระบบยืมรถ">' in html
+    assert '<optgroup label="ระบบจองรถ">' not in html
+
+
+def test_create_rejects_type_of_disabled_system(app, login_as, email_setup):
+    s = email_setup
+    s.org.update(set__enabled_modules=["inventory"])
+    s.org.reload()
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        with app.test_request_context():
+            url = url_for("email_templates.create_or_edit", organization_id=str(s.org.id))
+        client.post(url, data={
+            "name": "แอบสร้าง", "type": "car_application", "subject": "s", "body": "b",
+        })
+
+    assert models.EmailTemplate.objects(name="แอบสร้าง").count() == 0
+
+
+def test_create_defaults_to_first_type_of_an_enabled_system(app, login_as, email_setup):
+    s = email_setup
+    s.org.update(set__enabled_modules=["car_reservation"])
+    s.org.reload()
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        html = _get(app, client, "email_templates.create_or_edit", organization_id=str(s.org.id)).get_data(as_text=True)
+
+    assert '<option value="car_reservation_submitted" selected>' in html
+    assert 'data-email-type="car_reservation_submitted" class="mt-4 "' in html
+
+
+def test_org_without_email_systems_sees_empty_state(app, login_as, email_setup):
+    s = email_setup
+    s.org.update(set__enabled_modules=["motorcycle"])
+    s.org.reload()
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        index = _get(app, client, "email_templates.index", organization_id=str(s.org.id))
+        create = _get(app, client, "email_templates.create_or_edit", organization_id=str(s.org.id))
+
+    html = index.get_data(as_text=True)
+    assert "ยังไม่ได้เปิดใช้ระบบที่ส่งอีเมล" in html
+    assert 'role="tablist"' not in html
+    assert create.status_code == 302
+
+
+def test_index_tells_how_many_templates_belong_to_disabled_systems(app, login_as, email_setup):
+    s = email_setup
+    models.EmailTemplate(
+        name="แจ้งยืมรถ", subject="s", body="b",
+        type="car_application", organization=s.org,
+    ).save()
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        before = _get(app, client, "email_templates.index", organization_id=str(s.org.id)).get_data(as_text=True)
+        s.org.update(set__enabled_modules=["inventory"])
+        after = _get(app, client, "email_templates.index", organization_id=str(s.org.id)).get_data(as_text=True)
+
+    assert 'data-role="hidden-templates"' not in before
+    notice = after[after.index('data-role="hidden-templates"'):]
+    assert "1 รายการ" in notice[:notice.index("</div>")]
+    assert "แจ้งยืมรถ" not in after[after.index("<tbody>"):after.index("</tbody>")]
+
+
+def test_legacy_type_is_not_counted_as_hidden_and_stays_in_all_tab(app, login_as, email_setup):
+    s = email_setup
+    models.EmailTemplate._get_collection().insert_one({
+        "name": "แบบเก่า", "subject": "s", "body": "b",
+        "type": "retired_type", "organization": s.org.to_dbref(),
+    })
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        html = _get(app, client, "email_templates.index", organization_id=str(s.org.id)).get_data(as_text=True)
+
+    assert 'data-role="hidden-templates"' not in html
+    assert "แบบเก่า" in html[html.index("<tbody>"):html.index("</tbody>")]

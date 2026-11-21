@@ -210,7 +210,6 @@
     const eventsUrl = "{{ url_for('car_reservation.calendar.events', organization_id=organization.id) }}";
     const modalUrl = "{{ url_for('car_reservation.calendar.event_modal', reservation_id='RESERVATION_ID', organization_id=organization.id) }}";
 
-    const isMobile = window.matchMedia('(max-width: 640px)').matches;
     const calendarEl = document.getElementById('calendar');
     // เหลือที่ใต้ปฏิทินเท่ากับ padding ของการ์ดและหน้า
     const CALENDAR_BOTTOM_GAP = 48;
@@ -219,8 +218,6 @@
       const top = calendarEl.getBoundingClientRect().top + window.scrollY;
       return Math.max(CALENDAR_MIN_HEIGHT, window.innerHeight - top - CALENDAR_BOTTOM_GAP);
     }
-    const VIEW_KEY = 'car_reservation.calendar.view';
-    const VIEWS = ['dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listMonth'];
     // หัวคอลัมน์ของตารางเวลาแบบ Google Calendar: ชื่อวันตัวเล็กด้านบน ตัวเลขวันที่ตัวใหญ่ด้านล่าง
     function dayHeaderStacked(arg) {
       const weekday = arg.date.toLocaleDateString('th-TH', { weekday: 'long' }).replace(/^วัน/, '');
@@ -229,15 +226,9 @@
           + `<span class="day-header-number">${arg.date.getDate()}</span>`,
       };
     }
-    let savedView = null;
-    try { savedView = localStorage.getItem(VIEW_KEY); } catch (e) {}
     const calendar = new FullCalendar.Calendar(calendarEl, {
       locale: 'th',
-      initialView: VIEWS.includes(savedView) ? savedView : (isMobile ? 'listMonth' : 'dayGridMonth'),
-      // จำมุมมองที่ผู้ใช้เลือกล่าสุด (เดือน/สัปดาห์/รายการ)
-      datesSet: function (info) {
-        try { localStorage.setItem(VIEW_KEY, info.view.type); } catch (e) {}
-      },
+      initialView: 'dayGridMonth',
       // สูงพอดีหน้าจอ ตารางเวลาเลื่อนขึ้นลงอยู่ข้างในปฏิทินแทนการเลื่อนทั้งหน้า
       height: calendarHeight(),
       // FullCalendar ต่อ &start=&end= ของช่วงที่แสดงให้เองทุกครั้งที่เปลี่ยนเดือน
