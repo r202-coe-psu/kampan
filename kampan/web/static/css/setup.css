@@ -167,6 +167,13 @@ fieldset {
     font-weight: 600;
   }
 
+  .badge.role-badge.role-badge-wrap {
+    white-space: normal;
+    height: auto;
+    min-height: var(--size);
+    text-align: left;
+  }
+
   .role-staff {
     --role-color: var(--color-neutral);
   }
