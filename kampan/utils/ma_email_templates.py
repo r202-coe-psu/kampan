@@ -89,10 +89,19 @@ def get_template(organization, email_type: str):
         return template
     if models.EmailTemplate.objects(organization=organization, type=email_type).count():
         raise MaEmailTemplateError(NO_TEMPLATE_ERROR)
-    default = DEFAULT_TEMPLATES[email_type]
-    return models.EmailTemplate(
-        organization=organization, type=email_type, is_default=True, **default
+    return _create_default(organization, email_type)
+
+
+def _create_default(organization, email_type: str):
+    """สร้าง template เริ่มต้น โดย worker หลายตัวอาจสร้างพร้อมกัน (ไม่มี unique index ให้ upsert อะตอมมิก)
+    จึงสร้างแล้วอ่านกลับ: ทุกตัวเลือกตัวที่ _id เล็กสุดเป็นผู้ชนะ ตัวที่แพ้ลบของตัวเองทิ้ง เหลือ default ตัวเดียวเสมอ"""
+    created = models.EmailTemplate(
+        organization=organization, type=email_type, is_default=True, **DEFAULT_TEMPLATES[email_type]
     ).save()
+    winner = models.EmailTemplate.objects(organization=organization, type=email_type, is_default=True).order_by("id").first()
+    if winner.id != created.id:
+        created.delete()
+    return winner
 
 
 def render(template, context: dict) -> tuple[str, str]:

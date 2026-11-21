@@ -144,3 +144,25 @@ def test_ma_types_are_listed_and_creatable_on_the_template_page(app, world, logi
     assert page.status_code == 200 and "ระบบ MA" in page.get_data(as_text=True)
     assert created.status_code == 302
     assert models.EmailTemplate.objects.get(organization=world.org, type="ma_payment").subject == "s {{ item_name }}"
+
+
+def test_concurrent_default_creation_leaves_a_single_default(world, monkeypatch):
+    """worker อีกตัวสร้าง default แทรกระหว่างตรวจกับบันทึก: ต้องเหลือตัวเดียวและทั้งสองฝั่งได้ตัวเดียวกัน"""
+    real_save = models.EmailTemplate.save
+    rival = {}
+
+    def save_with_rival(self, *args, **kwargs):
+        if not rival:
+            rival["doc"] = real_save(
+                models.EmailTemplate(organization=self.organization, type=self.type, is_default=True, **_FIELDS)
+            )
+        return real_save(self, *args, **kwargs)
+
+    _FIELDS = {"name": "rival", "subject": "s", "body": "b"}
+    monkeypatch.setattr(models.EmailTemplate, "save", save_with_rival)
+
+    chosen = ma_email_templates.get_template(world.org, "ma_expiry")
+
+    defaults = models.EmailTemplate.objects(organization=world.org, type="ma_expiry", is_default=True)
+    assert defaults.count() == 1
+    assert chosen.id == rival["doc"].id == defaults.first().id
