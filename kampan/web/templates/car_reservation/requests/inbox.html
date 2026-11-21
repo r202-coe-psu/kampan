@@ -21,9 +21,10 @@
 <dialog id="{{ dialog_id }}" class="modal modal-bottom sm:modal-middle">
   <form method="post" class="modal-box whitespace-normal text-left"
         action="{{ url_for('car_reservation.requests.' ~ route, request_id=reservation.id, organization_id=organization.id) }}">
-    {% set quick = quick_form(route, dialog_id) %}
+    {% set quick = quick_form(route, dialog_id, reservation) %}
     {{ quick.csrf_token }}
     {{ quick.next }}
+    {% if quick.step is defined %}{{ quick.step }}{% endif %}
     <h3 class="text-lg font-bold">{{ title }}</h3>
     <dl class="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm" data-role="quick-summary">
       <dt class="text-base-content/60">วัตถุประสงค์</dt><dd class="break-words">{{ reservation.request_reason }}</dd>

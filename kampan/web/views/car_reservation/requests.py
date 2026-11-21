@@ -1,5 +1,6 @@
 import datetime
 import io
+import re
 
 from bson import ObjectId
 from flask import (
@@ -54,26 +55,89 @@ def index():
         return redirect(
             url_for("car_reservation.tasks.index", organization_id=g.organization.id)
         )
+    filters = request_filters(request.args)
     reservations = models.CarReservation.objects(
-        organization=g.organization, creator=current_user._get_current_object()
+        organization=g.organization, creator=user, **filters.query
     ).order_by("-created_date")
     return render_template(
         "/car_reservation/requests/index.html",
         organization=g.organization,
         reservations=reservations,
+        filters=filters,
+        request_types=models.car_reservations.RESERVATION_TYPES,
+        statuses=models.car_reservations.RESERVATION_STATUS,
     )
 
 
-def quick_decision_form(route, dom_id):
+class RequestFilters:
+    """ตัวกรองหน้า "คำขอของฉัน" จาก query string: ข้อความ ประเภท สถานะ ช่วงวันออกเดินทาง"""
+
+    def __init__(self, q, request_type, status, date_from, date_to):
+        self.q = q
+        self.request_type = request_type
+        self.status = status
+        self.date_from = date_from
+        self.date_to = date_to
+
+    @property
+    def active(self):
+        return any([self.q, self.request_type, self.status, self.date_from, self.date_to])
+
+    @property
+    def query(self):
+        query = {}
+        if self.q:
+            query["__raw__"] = {
+                "$or": [
+                    {"request_reason": {"$regex": re.escape(self.q), "$options": "i"}},
+                    {"location": {"$regex": re.escape(self.q), "$options": "i"}},
+                ]
+            }
+        if self.request_type:
+            query["request_type"] = self.request_type
+        if self.status:
+            query["status"] = self.status
+        if self.date_from:
+            query["departure_datetime__gte"] = datetime.datetime.combine(
+                self.date_from, datetime.time.min
+            )
+        if self.date_to:
+            query["departure_datetime__lte"] = datetime.datetime.combine(
+                self.date_to, datetime.time.max
+            )
+        return query
+
+
+def parse_date(value):
+    try:
+        return datetime.date.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def request_filters(args):
+    types = {key for key, _ in models.car_reservations.RESERVATION_TYPES}
+    statuses = {key for key, _ in models.car_reservations.RESERVATION_STATUS}
+    request_type = args.get("request_type", "")
+    status = args.get("status", "")
+    return RequestFilters(
+        q=args.get("q", "").strip()[:128],
+        request_type=request_type if request_type in types else "",
+        status=status if status in statuses else "",
+        date_from=parse_date(args.get("date_from")),
+        date_to=parse_date(args.get("date_to")),
+    )
+
+
+def quick_decision_form(route, dom_id, reservation):
     """ฟอร์มใน modal อนุมัติ/ไม่อนุมัติของกล่องรออนุมัติ: next ตั้งเป็น URL กล่องนี้ และ id ไม่ซ้ำต่อ modal"""
-    form_class = (
-        forms.car_reservation.DenyDecisionForm
-        if route == "deny"
-        else forms.car_reservation.QuickApprovalForm
-    )
-    form = form_class(
-        next=url_for("car_reservation.requests.inbox", organization_id=g.organization.id)
-    )
+    next_url = url_for("car_reservation.requests.inbox", organization_id=g.organization.id)
+    if route == "deny":
+        form = forms.car_reservation.DenyDecisionForm(next=next_url)
+    else:
+        form = forms.car_reservation.QuickApprovalForm(
+            next=next_url, step=reservation.current_step
+        )
     return forms.car_reservation.with_id_suffix(form, dom_id)
 
 
@@ -406,6 +470,7 @@ def detail(request_id):
     else:
         form = forms.car_reservation.ApprovalDecisionForm()
         workload = []
+    form.step.data = reservation.current_step
     return render_template(
         "/car_reservation/requests/detail.html",
         organization=g.organization,
@@ -565,6 +630,17 @@ def inbox_url_if_requested(form):
     return inbox_url if form.next.data == inbox_url else None
 
 
+def already_handled(reservation):
+    flash(flow.ALREADY_HANDLED, "warning")
+    return redirect(
+        url_for(
+            "car_reservation.requests.detail",
+            request_id=reservation.id,
+            organization_id=g.organization.id,
+        )
+    )
+
+
 @module.route("/<request_id>/approve", methods=["POST"])
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def approve(request_id):
@@ -577,6 +653,8 @@ def approve(request_id):
     )
     if not form.validate_on_submit():
         abort(400)
+    if form.step.data and form.step.data != str(reservation.current_step):
+        return already_handled(reservation)
 
     assignment = {}
     if dispatching:
@@ -599,6 +677,8 @@ def approve(request_id):
             comment=form.comment.data or "",
             **assignment,
         )
+    except flow.ConcurrentChangeError:
+        return already_handled(reservation)
     except flow.FlowError as error:
         if not dispatching or not flow.can_act(
             reservation, current_user._get_current_object()
@@ -647,11 +727,14 @@ def deny(request_id):
         flash("กรุณาระบุเหตุผลที่ไม่อนุมัติ", "danger")
         return redirect_to_detail
 
-    flow.deny(
-        reservation,
-        current_user._get_current_object(),
-        comment=form.comment.data,
-    )
+    try:
+        flow.deny(
+            reservation,
+            current_user._get_current_object(),
+            comment=form.comment.data,
+        )
+    except flow.ConcurrentChangeError:
+        return already_handled(reservation)
     utils.car_reservation_email.notify(reservation, "denied")
     flash("บันทึกการไม่อนุมัติเรียบร้อยแล้ว", "success")
     inbox_url = inbox_url_if_requested(form)
@@ -671,6 +754,8 @@ def overtime(request_id):
             current_user._get_current_object(),
             form.is_overtime.data,
         )
+    except flow.ConcurrentChangeError:
+        return already_handled(reservation)
     except flow.FlowError:
         abort(403)
     flash("บันทึกสถานะงานนอกเวลาเรียบร้อยแล้ว", "success")
@@ -696,6 +781,8 @@ def cancel(request_id):
             current_user._get_current_object(),
             reason=form.reason.data or "",
         )
+    except flow.ConcurrentChangeError:
+        return already_handled(reservation)
     except flow.FlowError:
         abort(403)
     utils.car_reservation_email.notify(reservation, reservation.status)
@@ -717,6 +804,8 @@ def confirm_cancel(request_id):
         abort(400)
     try:
         flow.confirm_cancel(reservation, current_user._get_current_object())
+    except flow.ConcurrentChangeError:
+        return already_handled(reservation)
     except flow.FlowError:
         abort(403)
     utils.car_reservation_email.notify(reservation, "cancelled")

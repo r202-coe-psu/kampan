@@ -637,6 +637,8 @@ class ApprovalDecisionForm(FlaskForm):
     )
     # ปุ่มลัดในกล่องรออนุมัติส่งมา: view ยอมรับเฉพาะ URL กล่องรออนุมัติของ org เป๊ะ ๆ
     next = fields.HiddenField()
+    # current_step ตอนเปิดหน้า: กดซ้ำหรือถือหลาย role จะไม่อนุมัติขั้นถัดไปที่ยังไม่เคยเห็น
+    step = fields.HiddenField()
 
 
 class QuickApprovalForm(ApprovalDecisionForm):

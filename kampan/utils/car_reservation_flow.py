@@ -7,6 +7,8 @@
 import dataclasses
 import datetime
 
+import mongoengine as me
+
 from kampan import models, utils
 from kampan.utils.template_filters import format_amount
 
@@ -103,6 +105,10 @@ class FlowError(Exception):
 
 class MileageError(FlowError):
     pass
+
+
+class ConcurrentChangeError(FlowError):
+    """มีคนอื่นเปลี่ยนคำขอนี้ไปก่อนระหว่างที่เรากำลังบันทึก"""
 
 
 MILEAGE_IN_BELOW_OUT = "เลข กม. กลับต้องไม่น้อยกว่าเลข กม. ออก"
@@ -589,6 +595,34 @@ def driver_workload(
     )
 
 
+ALREADY_HANDLED = "คำขอนี้เพิ่งถูกดำเนินการโดยผู้อื่น กรุณาเปิดหน้าใหม่แล้วตรวจสอบอีกครั้ง"
+
+# ยืมรถ (DIIS) ใช้รถคันเดียวกัน: คำขอที่ยังไม่จบและมีรถแล้วนับว่าจองรถคันนั้น
+DIIS_BOOKED_STATUSES = ["pending on header", "pending on director", "pending on admin", "active"]
+
+
+def _save_if(app, **expected):
+    """บันทึกเฉพาะเมื่อ state ใน DB ยังเป็นค่าตอนตรวจสิทธิ์ สองคนกดพร้อมกัน คนที่สองได้ FlowError แทนการเขียนทับ"""
+    try:
+        app.save(save_condition=expected)
+    except me.errors.SaveConditionError:
+        raise ConcurrentChangeError(ALREADY_HANDLED)
+
+
+def _car_booked_by_diis(app, car):
+    return models.vehicle_applications.CarApplication.objects(
+        organization=app.organization,
+        car=car,
+        status__in=DIIS_BOOKED_STATUSES,
+        departure_datetime__lt=app.return_datetime,
+        return_datetime__gt=app.departure_datetime,
+    ).first()
+
+
+def _car_is_taken(app, car):
+    return _overlapping_bookings(app, car=car).first() or _car_booked_by_diis(app, car)
+
+
 def _overlapping_bookings(app, **resource):
     """คำขออื่นของ org ที่จองรถ/คนขับคนเดียวกัน (ผ่านขั้นจัดรถแล้วและยังไม่จบ) เวลาทับกัน"""
     return models.CarReservation.objects(
@@ -614,6 +648,8 @@ def approve(
         raise FlowError("ไม่มีสิทธิ์อนุมัติขั้นนี้")
 
     key = current_step_key(app)
+    step = app.current_step
+    previous_assignment = (app.car, app.driver, app.is_overtime, app.extra_travelers)
     audit_comment = comment
     changes = []
     if key == "dispatcher":
@@ -623,7 +659,7 @@ def approve(
             assignable_drivers(app.organization)
         ):
             raise FlowError(CAR_OR_DRIVER_NOT_ASSIGNABLE)
-        if _overlapping_bookings(app, car=car).first():
+        if _car_is_taken(app, car):
             raise FlowError(f"รถ {car.license_plate} มีงานช่วงเวลานี้แล้ว")
         before = _assignment_snapshot(app)
         app.car = car
@@ -651,7 +687,26 @@ def approve(
     app.current_step += 1
     if app.current_step >= len(app.route_snapshot):
         app.status = "active"
-    app.save()
+    _save_if(app, status="pending", current_step=step)
+    if key == "dispatcher" and _car_is_taken(app, car):
+        # ผู้จัดรถอีกคนจัดรถคันเดียวกันช่วงเวลาเดียวกันในจังหวะเดียวกัน: ถอยของเรากลับ ไม่ให้รถถูกจองซ้อน
+        _undo_dispatch(app, step, previous_assignment)
+        raise FlowError(f"รถ {car.license_plate} มีงานช่วงเวลานี้แล้ว")
+
+
+def _undo_dispatch(app, step, previous_assignment):
+    car, driver, is_overtime, extra_travelers = previous_assignment
+    models.CarReservation.objects(id=app.id, current_step=step + 1).update_one(
+        set__current_step=step,
+        set__status="pending",
+        set__car=car,
+        set__driver=driver,
+        set__is_overtime=is_overtime,
+        set__extra_travelers=extra_travelers,
+        pop__step_approvals=1,
+        pop__audit_logs=1,
+    )
+    app.reload()
 
 
 def deny(app, user, comment):
@@ -661,6 +716,7 @@ def deny(app, user, comment):
         raise FlowError("ต้องระบุเหตุผลที่ไม่อนุมัติ")
 
     key = current_step_key(app)
+    step = app.current_step
     app.step_approvals.append(
         models.car_reservations.StepApproval(
             step_key=key,
@@ -673,7 +729,7 @@ def deny(app, user, comment):
     )
     _log(app, "denied", user, step_key=key, comment=comment)
     app.status = "denied"
-    app.save()
+    _save_if(app, status="pending", current_step=step)
 
 
 def can_cancel(app, user):
@@ -683,13 +739,14 @@ def can_cancel(app, user):
 def cancel(app, user, reason=""):
     if not can_cancel(app, user):
         raise FlowError("ไม่มีสิทธิ์ยกเลิกคำขอนี้")
+    status = app.status
     if app.car is None:
         app.status = "cancelled"
         _log(app, "cancelled", user, comment=reason)
     else:
         app.status = "cancel_requested"
         _log(app, "cancel_requested", user, comment=reason)
-    app.save()
+    _save_if(app, status=status, current_step=app.current_step)
 
 
 def confirm_cancel(app, user):
@@ -697,7 +754,7 @@ def confirm_cancel(app, user):
         raise FlowError("ไม่มีสิทธิ์รับทราบการยกเลิก")
     app.status = "cancelled"
     _log(app, "cancel_confirmed", user, step_key="dispatcher")
-    app.save()
+    _save_if(app, status="cancel_requested")
 
 
 def can_set_overtime(app, user):
@@ -726,7 +783,7 @@ def set_overtime(app, user, is_overtime):
             {"is_overtime": ASSIGNMENT_LABELS["is_overtime"]},
         ),
     )
-    app.save()
+    _save_if(app, status="pending")
 
 
 def can_close(app, user):
@@ -814,7 +871,7 @@ def close_trip(
         user,
         changes=diff_fields(before, _trip_report_snapshot(app), TRIP_REPORT_LABELS),
     )
-    app.save()
+    _save_if(app, status="active")
     if app.car is not None:
         app.car.update(max__last_mileage=mileage_in)
         app.car.reload("last_mileage")

@@ -1547,6 +1547,87 @@ def test_a_car_already_booked_in_an_overlapping_time_is_refused(world, blocking_
     assert "รถ กก 1234 มีงานช่วงเวลานี้แล้ว" in html
 
 
+def test_a_car_lent_through_diis_for_the_same_time_cannot_be_dispatched(world):
+    models.vehicle_applications.CarApplication(
+        organization=world.org,
+        car=world.car,
+        location="สนามบินหาดใหญ่",
+        status="active",
+        using_type="general",
+        request_reason="ไปราชการ",
+        departure_datetime=DAY + datetime.timedelta(hours=2),
+        return_datetime=DAY + datetime.timedelta(hours=6),
+    ).save()
+    car_application = at_dispatcher_with_times(world, DAY, DAY + datetime.timedelta(hours=9))
+
+    client = world.client_for(world.dispatcher)
+    client.post(approve_url(world, car_application), data=dispatch_data(world.car, world.driver))
+
+    car_application.reload()
+    assert car_application.current_step == 1
+    assert car_application.car is None
+
+
+def test_two_dispatchers_booking_the_same_car_at_once_leave_it_booked_once(world):
+    first = at_dispatcher_with_times(world, DAY, DAY + datetime.timedelta(hours=4))
+    second = at_dispatcher_with_times(
+        world, DAY + datetime.timedelta(hours=1), DAY + datetime.timedelta(hours=5)
+    )
+    first.reload()
+    second.reload()
+    original = flow._car_is_taken
+    calls = []
+
+    def racing_check(app, car):
+        # ครั้งแรกของคำขอที่สอง (ก่อนบันทึก) เห็นว่ารถว่าง เหมือนตรวจพร้อมกับคำขอแรก
+        calls.append(app.id)
+        if app.id == second.id and calls.count(second.id) == 1:
+            return None
+        return original(app, car)
+
+    flow.approve(first, world.dispatcher, car=world.car, driver=world.driver)
+    flow._car_is_taken = racing_check
+    try:
+        with pytest.raises(flow.FlowError):
+            flow.approve(second, world.dispatcher, car=world.car, driver=world.driver)
+    finally:
+        flow._car_is_taken = original
+
+    second.reload()
+    assert second.current_step == 1
+    assert second.car is None
+    assert [a.step_key for a in second.step_approvals] == ["supervisor"]
+
+
+def test_a_decision_on_a_stale_copy_is_refused_instead_of_overwriting(world):
+    car_application = world.submit_request()
+    stale = models.CarReservation.objects.get(id=car_application.id)
+    utils.car_reservation_flow.approve(car_application, world.supervisor)
+
+    with pytest.raises(utils.car_reservation_flow.ConcurrentChangeError):
+        utils.car_reservation_flow.deny(stale, world.supervisor, "ไม่อนุมัติ")
+
+    car_application.reload()
+    assert car_application.status == "pending"
+    assert car_application.current_step == 1
+
+
+def test_approving_again_with_the_step_already_decided_does_not_approve_the_next_step(world):
+    car_application = world.submit_request()
+    world.assign_in_division(world.supervisor, ["dispatcher"], world.division)
+    client = world.client_for(world.supervisor)
+
+    client.post(approve_url(world, car_application), data={"comment": "", "step": "0"})
+    response = client.post(
+        approve_url(world, car_application), data={**step_data(world, "dispatcher"), "step": "0"}
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.current_step == 1
+    assert car_application.car is None
+
+
 def test_a_driver_with_an_overlapping_job_can_still_be_assigned_another_car(world):
     other_car = models.vehicles.Car(
         organization=world.org, license_plate="งง 2222", status="active"

@@ -185,6 +185,7 @@
           action="{{ url_for('car_reservation.requests.approve', request_id=reservation.id, organization_id=organization.id) }}"
           class="flex flex-col gap-2">
       {{ form.csrf_token }}
+      {{ form.step }}
       {% if form.car is defined %}
       <div class="flex flex-col gap-2" data-role="driver-workload">
         <div class="flex flex-wrap items-center justify-between gap-2">
