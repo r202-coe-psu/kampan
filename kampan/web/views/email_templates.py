@@ -66,20 +66,22 @@ def index():
         selected_system = system_keys[0]
     if selected_system not in system_keys:
         selected_system = ""
-    shown_systems = [selected_system] if selected_system else system_keys
-    types = [
-        value
-        for value, info in models.email_templates.EMAIL_TYPE_INFO.items()
-        if info["system"] in shown_systems
-    ]
+    types_by_system = {}
+    for value, info in models.email_templates.EMAIL_TYPE_INFO.items():
+        types_by_system.setdefault(info["system"], []).append(value)
     # template ของระบบที่ org ปิดไปแล้วไม่แสดง แต่บอกจำนวนไว้ admin จะได้ไม่คิดว่าข้อมูลหาย
-    enabled_types = [
+    # type เก่าที่ไม่อยู่ใน EMAIL_TYPE_INFO ไม่นับเป็นของระบบที่ปิด ยังเห็นได้ในแท็บ "ทั้งหมด"
+    disabled_types = [
         value
-        for value, info in models.email_templates.EMAIL_TYPE_INFO.items()
-        if info["system"] in system_keys
+        for system, values in types_by_system.items()
+        if system not in system_keys
+        for value in values
     ]
-    hidden_count = email_templates.filter(type__nin=enabled_types).count()
-    email_templates = email_templates.filter(type__in=types)
+    hidden_count = email_templates.filter(type__in=disabled_types).count()
+    if selected_system and len(system_keys) > 1:
+        email_templates = email_templates.filter(type__in=types_by_system[selected_system])
+    else:
+        email_templates = email_templates.filter(type__nin=disabled_types)
 
     form = forms.email_templates.EmailTemplateFileForm()
 

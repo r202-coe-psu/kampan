@@ -431,3 +431,17 @@ def test_index_tells_how_many_templates_belong_to_disabled_systems(app, login_as
     notice = after[after.index('data-role="hidden-templates"'):]
     assert "1 รายการ" in notice[:notice.index("</div>")]
     assert "แจ้งยืมรถ" not in after[after.index("<tbody>"):after.index("</tbody>")]
+
+
+def test_legacy_type_is_not_counted_as_hidden_and_stays_in_all_tab(app, login_as, email_setup):
+    s = email_setup
+    models.EmailTemplate._get_collection().insert_one({
+        "name": "แบบเก่า", "subject": "s", "body": "b",
+        "type": "retired_type", "organization": s.org.to_dbref(),
+    })
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        html = _get(app, client, "email_templates.index", organization_id=str(s.org.id)).get_data(as_text=True)
+
+    assert 'data-role="hidden-templates"' not in html
+    assert "แบบเก่า" in html[html.index("<tbody>"):html.index("</tbody>")]
