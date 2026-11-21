@@ -345,3 +345,57 @@ def test_org_sees_only_email_systems_of_its_enabled_modules():
     legacy = models.Organization(enabled_modules=None)
     assert "car_reservation" not in dict(get_email_systems(legacy))
     assert {"inventory", "vehicle_lending", "procurement"} <= set(dict(get_email_systems(legacy)))
+
+
+def test_every_email_system_maps_to_an_org_module():
+    from kampan.models.email_templates import EMAIL_SYSTEM_ORG_MODULE
+
+    assert {system for system, _ in EMAIL_SYSTEMS} <= set(EMAIL_SYSTEM_ORG_MODULE)
+
+
+def test_editing_template_of_disabled_system_keeps_its_type(app, login_as, email_setup):
+    s = email_setup
+    template = models.EmailTemplate(
+        name="แจ้งยืมรถ", subject="s", body="b",
+        type="car_application", organization=s.org,
+    ).save()
+    s.org.update(set__enabled_modules=["inventory"])
+    s.org.reload()
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        html = _get(
+            app, client, "email_templates.create_or_edit",
+            organization_id=str(s.org.id), email_template_id=str(template.id),
+        ).get_data(as_text=True)
+
+    assert '<option value="car_application" selected>' in html
+    assert '<optgroup label="ระบบยืมรถ">' in html
+    assert '<optgroup label="ระบบจองรถ">' not in html
+
+
+def test_create_rejects_type_of_disabled_system(app, login_as, email_setup):
+    s = email_setup
+    s.org.update(set__enabled_modules=["inventory"])
+    s.org.reload()
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        with app.test_request_context():
+            url = url_for("email_templates.create_or_edit", organization_id=str(s.org.id))
+        client.post(url, data={
+            "name": "แอบสร้าง", "type": "car_application", "subject": "s", "body": "b",
+        })
+
+    assert models.EmailTemplate.objects(name="แอบสร้าง").count() == 0
+
+
+def test_create_defaults_to_first_type_of_an_enabled_system(app, login_as, email_setup):
+    s = email_setup
+    s.org.update(set__enabled_modules=["car_reservation"])
+    s.org.reload()
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        html = _get(app, client, "email_templates.create_or_edit", organization_id=str(s.org.id)).get_data(as_text=True)
+
+    assert '<option value="car_reservation_submitted" selected>' in html
+    assert 'data-email-type="car_reservation_submitted" class="mt-4 "' in html
+

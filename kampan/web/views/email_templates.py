@@ -29,11 +29,16 @@ module = Blueprint("email_templates", __name__, url_prefix="/email_templates")
 subviews = []
 
 
-def email_template_context(organization):
+def email_template_context(organization, email_template=None):
+    # ระบบของ template ที่กำลังดู/แก้ต้องอยู่ในรายการเสมอ แม้ org ปิด module ไปแล้ว
+    # ไม่งั้น select ไม่มี option ที่ตรง เบราว์เซอร์เลือกตัวแรกแทน แล้ว type เปลี่ยนเองตอนบันทึก
+    keep = email_template.get_system() if email_template else None
     return dict(
         email_types=models.email_templates.EMAIL_TYPE,
         email_variables=models.email_templates.EMAIL_TEMPLATE_VARIABLES,
-        email_types_by_system=models.email_templates.get_email_types_by_system(organization),
+        email_types_by_system=models.email_templates.get_email_types_by_system(
+            organization, keep=keep
+        ),
         email_type_info=models.email_templates.EMAIL_TYPE_INFO,
     )
 
@@ -89,18 +94,24 @@ def index():
 @module.route("/<email_template_id>/edit", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def create_or_edit(email_template_id):
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
-    form = forms.email_templates.EmailTemplateForm()
+    organization = models.Organization.objects.get(id=request.args.get("organization_id"))
     upload_form = forms.email_templates.EmailTemplateFileForm()
-    organization = models.Organization.objects.get(id=organization_id)
 
     email_template = None
     if email_template_id:
         email_template = get_email_template(organization, email_template_id)
-        form = forms.email_templates.EmailTemplateForm(obj=email_template)
+    form = forms.email_templates.EmailTemplateForm(obj=email_template)
+
+    context = email_template_context(organization, email_template)
+    # จำกัดประเภทฝั่ง server ให้ตรงกับที่ select แสดง POST ตรงๆ ก็สร้างของระบบที่ปิดไม่ได้
+    form.type.choices = [
+        choice for _, _, types in context["email_types_by_system"] for choice in types
+    ]
+    if not form.type.choices:
+        flash("องค์กรนี้ยังไม่ได้เปิดใช้ระบบที่ส่งอีเมล", "warning")
+        return redirect(url_for("email_templates.index", organization_id=organization.id))
+    if not form.is_submitted() and form.type.data not in dict(form.type.choices):
+        form.type.data = form.type.choices[0][0]
 
     uploaded_email_template = session.get("uploaded_email_template_form", None)
     if uploaded_email_template:
@@ -114,7 +125,7 @@ def create_or_edit(email_template_id):
             upload_form=upload_form,
             email_template=email_template,
             organization=organization,
-            **email_template_context(organization),
+            **context,
         )
 
     if not email_template_id:
@@ -193,7 +204,7 @@ def detail(email_template_id):
         "/email_templates/detail.html",
         email_template=email_template,
         organization=organization,
-        **email_template_context(organization),
+        **email_template_context(organization, email_template),
     )
 
 

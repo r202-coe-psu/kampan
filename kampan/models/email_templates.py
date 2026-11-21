@@ -45,13 +45,16 @@ EMAIL_SYSTEM_ORG_MODULE = {
 }
 
 
-def get_email_systems(organization=None):
+def get_email_systems(
+    organization: "Organization | None" = None, keep: str | None = None
+) -> list[tuple[str, str]]:
+    """keep: ระบบที่ต้องอยู่ในรายการเสมอ เช่นระบบของ template ที่กำลังแก้ แม้ org ปิด module ไปแล้ว"""
     if organization is None:
         return list(EMAIL_SYSTEMS)
     return [
         (system, label)
         for system, label in EMAIL_SYSTEMS
-        if organization.has_module(EMAIL_SYSTEM_ORG_MODULE[system])
+        if system == keep or organization.has_module(EMAIL_SYSTEM_ORG_MODULE[system])
     ]
 
 
@@ -158,7 +161,9 @@ EMAIL_TYPE_INFO = {
 }
 
 
-def get_email_types_by_system(organization=None):
+def get_email_types_by_system(
+    organization: "Organization | None" = None, keep: str | None = None
+) -> list[tuple[str, str, list[tuple[str, str]]]]:
     """[(system, system_label, [(type, type_label), ...]), ...] สำหรับ optgroup และ filter"""
     return [
         (
@@ -170,7 +175,7 @@ def get_email_types_by_system(organization=None):
                 if EMAIL_TYPE_INFO[value]["system"] == system
             ],
         )
-        for system, system_label in get_email_systems(organization)
+        for system, system_label in get_email_systems(organization, keep=keep)
     ]
 
 # ตัวแปรที่ใช้ใน {{ ... }} ของหัวข้อและเนื้อหาได้ แยกตามประเภทอีเมล
