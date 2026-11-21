@@ -36,7 +36,7 @@
       <div>
         <h2 class="card-title text-xl">สมาชิกในแผนก</h2>
         <p class="text-base-content/60">
-          <span class="font-medium tabular-nums text-base-content" data-member-total>{{ members | length }}</span> คน
+          ทั้งหมด <span class="font-medium tabular-nums text-base-content" data-member-total>{{ members | length }}</span> รายการ
           {% if pending_count %}· รอเข้าสู่ระบบ {{ pending_count }} คน{% endif %}
         </p>
       </div>
@@ -54,52 +54,73 @@
     </div>
 
     {% if members %}
-    <div class="overflow-x-auto mt-4 rounded-xl">
-      <table class="table-auto w-full" id="division-members">
-        <thead>
-          <tr>
-            <th class="table-style">ชื่อ</th>
-            <th class="table-style">ตำแหน่ง</th>
-            <th class="table-style w-px whitespace-nowrap">วันที่เพิ่ม</th>
-            <th class="table-style w-px whitespace-nowrap">จัดการ</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for member in members %}
-          <tr data-filter-text="{{ member.display_fullname() }} {{ member.display_email() }}">
-            <td class="table-style">
-              <p class="font-medium break-words">{{ member.display_fullname() }}</p>
-              <p class="text-sm text-base-content/60 break-all">{{ member.display_email() }}</p>
-              {% if member.status == 'pending' %}
-              <span class="badge badge-sm badge-warning badge-outline mt-1">รอเข้าสู่ระบบ</span>
-              {% endif %}
-            </td>
-            <td class="table-style">{{ RoleBadges(member.role_items()) }}</td>
-            <td class="table-style whitespace-nowrap">{{ member.created_date.strftime('%d/%m/%Y') if member.created_date else '-' }}</td>
-            <td class="table-style whitespace-nowrap">
-              {{ IconButton('ph-pen', 'แก้ไขตำแหน่ง', href=url_for('organizations.members.edit_roles', organization_id=organization.id, org_user_id=member.id)) }}
-              {{ IconButton('ph-user-minus', 'นำออกจากแผนก', onclick=open_modal('remove-member-%s' | format(member.id)), tone='error') }}
-              {% call DeleteModal(
-                  'remove-member-%s' | format(member.id),
-                  'นำออกจากแผนก',
-                  url_for('organizations.divisions.remove_division_user', organization_id=organization.id,
-                          division_id=division.id, division_user_id=member.id),
-                  confirm_label='นำออก', icon='ph-user-minus', hidden=action_form.hidden_tag()) %}
-                <p class="text-left whitespace-normal">
-                  นำ <b>{{ member.display_fullname() }}</b> ออกจากแผนก {{ division.name }}
-                </p>
-                <p class="mt-2 text-left text-sm whitespace-normal text-base-content/60">
-                  ยังเป็นสมาชิกขององค์กรอยู่ แค่ไม่มีแผนก
-                </p>
-              {% endcall %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    {% macro MemberActions(member) %}
+      {{ IconButton('ph-pen', 'แก้ไขตำแหน่ง', href=url_for('organizations.members.edit_roles', organization_id=organization.id, org_user_id=member.id)) }}
+      {{ IconButton('ph-user-minus', 'นำออกจากแผนก', onclick=open_modal('remove-member-%s' | format(member.id)), tone='error') }}
+    {% endmacro %}
+    {# id อยู่ที่กล่องนอก เพื่อให้ช่องค้นหากรองได้ทั้งแถวในตารางและการ์ดมือถือ #}
+    <div id="division-members">
+      <div class="overflow-x-auto mt-4 hidden md:block" data-table-view>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ชื่อ</th>
+              <th>ตำแหน่ง</th>
+              <th class="w-px whitespace-nowrap">วันที่เพิ่ม</th>
+              <th class="w-px whitespace-nowrap text-right">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for member in members %}
+            <tr data-filter-text="{{ member.display_fullname() }} {{ member.display_email() }}">
+              <td>
+                <p class="font-medium break-words">{{ member.display_fullname() }}</p>
+                <p class="text-sm text-base-content/60 break-all">{{ member.display_email() }}</p>
+                {% if member.status == 'pending' %}
+                <span class="badge badge-sm badge-warning badge-soft mt-1">รอเข้าสู่ระบบ</span>
+                {% endif %}
+              </td>
+              <td>{{ RoleBadges(member.role_items()) }}</td>
+              <td class="whitespace-nowrap">{{ member.created_date.strftime('%d/%m/%Y') if member.created_date else '-' }}</td>
+              <td class="whitespace-nowrap text-right">{{ MemberActions(member) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-4 grid gap-3 md:hidden" data-mobile-list>
+        {% for member in members %}
+        <div class="rounded-box border border-base-300 p-4" data-filter-text="{{ member.display_fullname() }} {{ member.display_email() }}">
+          <p class="font-semibold break-words">{{ member.display_fullname() }}</p>
+          <p class="text-sm text-base-content/60 break-all">{{ member.display_email() }}</p>
+          {% if member.status == 'pending' %}
+          <span class="badge badge-sm badge-warning badge-soft mt-1">รอเข้าสู่ระบบ</span>
+          {% endif %}
+          <div class="mt-2">{{ RoleBadges(member.role_items()) }}</div>
+          <p class="mt-2 text-sm text-base-content/60">เพิ่มเมื่อ {{ member.created_date.strftime('%d/%m/%Y') if member.created_date else '-' }}</p>
+          <div class="mt-2 flex flex-wrap gap-1">{{ MemberActions(member) }}</div>
+        </div>
+        {% endfor %}
+      </div>
       {{ EmptyState('ph-magnifying-glass', 'ไม่พบสมาชิกที่ค้นหา', description='ลองค้นหาด้วยชื่อหรืออีเมลอื่น',
                     size='sm', hidden=True, attrs='data-filter-empty="division-members"') }}
     </div>
+    {# modal นำออกอยู่นอกตารางและการ์ด เพื่อให้แต่ละคนมี dialog id เดียว #}
+    {% for member in members %}
+    {% call DeleteModal(
+        'remove-member-%s' | format(member.id),
+        'นำออกจากแผนก',
+        url_for('organizations.divisions.remove_division_user', organization_id=organization.id,
+                division_id=division.id, division_user_id=member.id),
+        confirm_label='นำออก', icon='ph-user-minus', hidden=action_form.hidden_tag()) %}
+      <p class="text-left whitespace-normal">
+        นำ <b>{{ member.display_fullname() }}</b> ออกจากแผนก {{ division.name }}
+      </p>
+      <p class="mt-2 text-left text-sm whitespace-normal text-base-content/60">
+        ยังเป็นสมาชิกขององค์กรอยู่ แค่ไม่มีแผนก
+      </p>
+    {% endcall %}
+    {% endfor %}
     {% else %}
     {{ EmptyState('ph-users-three', 'ยังไม่มีสมาชิกในแผนกนี้',
                   description='เพิ่มสมาชิกขององค์กรเข้ามาในแผนก เพื่อให้เบิกวัสดุและส่งคำขออนุมัติได้',

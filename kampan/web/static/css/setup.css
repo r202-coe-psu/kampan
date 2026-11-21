@@ -38,8 +38,9 @@
   --color-base-200: oklch(97% 0.001 106.424);
   --color-base-300: oklch(92% 0.003 48.717);
   --color-base-content: oklch(21% 0.006 56.043);
-  --color-primary: oklch(62% 0.214 259.815);
-  --color-primary-content: oklch(97% 0.014 254.604);
+  /* navy แทนฟ้าสว่าง (blue-500 เดิม) ให้ปุ่ม/ลิงก์ดูสุขุม และอ่านตัวขาวบนพื้นได้ชัด */
+  --color-primary: oklch(37% 0.11 262);
+  --color-primary-content: oklch(98% 0.005 255);
   --color-secondary: oklch(76% 0.188 70.08);
   --color-secondary-content: oklch(98% 0.016 73.684);
   --color-accent: oklch(65% 0.241 354.308);
@@ -143,15 +144,11 @@ fieldset {
 }
 
 /* Organization role badges: one color per organization role.
-   Use with `badge badge-outline`; see templates/base/components/role_badge.html.
+   หน้าตาเดียวกับ .module-badge (พื้นจาง ตัวอักษรเข้ม ขอบบาง ตัวหนา) แต่ไล่สีจาก --role-color
+   ใช้คู่กับ `badge` ดู templates/base/components/role_badge.html
+   อยู่ใน layer utilities ด้วยเหตุผลเดียวกับ .module-badge (daisyUI ใส่ .badge ไว้ใน utilities)
    admin = primary and driver = success follow the vehicle system. */
 @layer components {
-  .role-badge {
-    --role-color: var(--color-neutral);
-    --badge-color: var(--role-color);
-    white-space: nowrap;
-  }
-
   /* Icon inside badge: ให้ขนาด icon สอดคล้องกับขนาดตัวอักษรของ badge และไม่ทะลุกรอบ */
   .badge .ph {
     font-size: 0.9em;
@@ -159,22 +156,15 @@ fieldset {
     display: inline-block;
     vertical-align: middle;
   }
+}
 
-  /* ตัวอักษรสีดำอ่านง่าย สีของ role อยู่ที่จุดหน้าข้อความ ขอบ และพื้นจาง ๆ */
-  .role-badge.badge-outline {
-    gap: 0.375rem;
-    color: var(--color-base-content);
-    background-color: color-mix(in oklab, var(--role-color) 12%, var(--color-base-100));
-    border-color: color-mix(in oklab, var(--role-color) 45%, transparent);
-  }
-
-  .role-badge::before {
-    content: "";
-    flex-shrink: 0;
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 9999px;
-    background-color: var(--role-color);
+@layer utilities {
+  .badge.role-badge {
+    --badge-bg: color-mix(in oklab, var(--role-color, var(--color-neutral)) 16%, var(--color-base-100));
+    --badge-fg: color-mix(in oklab, var(--role-color, var(--color-neutral)) 60%, black);
+    --badge-color: color-mix(in oklab, var(--badge-fg) 20%, transparent);
+    white-space: nowrap;
+    font-weight: 600;
   }
 
   .role-staff {
@@ -207,6 +197,31 @@ fieldset {
 
   .role-manager {
     --role-color: oklch(48% 0.09 45);
+  }
+
+  /* ตำแหน่งผู้อนุมัติของระบบจองรถ */
+  .role-dispatcher {
+    --role-color: var(--color-info);
+  }
+
+  .role-vehicle_unit_head {
+    --role-color: oklch(58% 0.12 230);
+  }
+
+  .role-strategy_head {
+    --role-color: oklch(55% 0.13 265);
+  }
+
+  .role-physical_director {
+    --role-color: oklch(52% 0.14 320);
+  }
+
+  .role-vice_president_hatyai {
+    --role-color: oklch(52% 0.15 20);
+  }
+
+  .role-president {
+    --role-color: var(--color-error);
   }
 }
 
@@ -242,4 +257,77 @@ fieldset {
     --module-bg: var(--color-module-motorcycle);
     --module-fg: var(--color-module-motorcycle-content);
   }
+}
+
+/* เขียวโทนเข้ม (ใกล้ green-700) สำหรับ stepper / ป้ายสถานะ / timeline ของระบบรถ
+   เขียวของธีม (72% lightness) สว่างจนแสบตาและตัวอักษรบนพื้นเขียวอ่านยาก */
+.tone-deep-success {
+  --color-success: oklch(52.7% 0.154 150.069);
+  --color-success-content: oklch(98.2% 0.018 155.826);
+}
+
+/* ติ๊กถูกของ stepper เป็นเส้นมุมแหลม (miter) แทนตัวอักษร ✓ ของฟอนต์ที่โค้ง
+   วาดทับ background-color ของวงกลม (step-bg) */
+.steps .step[data-content="✓"]::after {
+  content: "";
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='square' stroke-linejoin='miter'%3E%3Cpolyline points='6 12.5 10 16.5 18 8'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 60%;
+}
+
+/* dropdown ของ .select (base-select) ไม่แสดงเครื่องหมายถูกหน้าตัวเลือกที่เลือกอยู่ */
+.select select option::checkmark {
+  display: none;
+}
+
+/* ขั้นอนุมัติของระบบจองรถ (car_reservation/components/approval_steps.html)
+   ผ่านแล้ว = เขียวเข้ม, ขั้นที่ค้างอยู่ = วงกลมเหลือง + นาฬิกาทราย + วงกระพริบสีเหลือง */
+.step-done::after,
+.step-done + .step-done::before,
+.step-done + .step-current::before {
+  --step-bg: var(--color-green-700);
+  --step-fg: var(--color-white);
+}
+.step-current::after {
+  --step-bg: var(--color-amber-400);
+  --step-fg: var(--color-amber-950);
+  content: "";
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23451a03' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 22h14M5 2h14'/%3E%3Cpath d='M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22'/%3E%3Cpath d='M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 55%;
+  /* daisyUI ใช้ radius แบบ infinity ทำให้วงกระพริบ (box-shadow) เป็นเหลี่ยม: ใช้ 50% แทน */
+  border-radius: 50%;
+  animation: step-current-pulse 1.6s ease-out infinite;
+}
+/* .steps ของ daisyUI ตัด overflow (hidden) ทำให้วงกระพริบโดนตัดเป็นเหลี่ยม
+   โดยเฉพาะแบบแนวตั้งที่วงกลมชิดขอบซ้าย: ปล่อยให้ล้นได้ และเผื่อที่บนล่าง (กว้างสุด 10px) */
+.steps:has(.step-current) {
+  overflow: visible;
+  padding-block: 12px;
+}
+@keyframes step-current-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-amber-400) 70%, transparent); }
+  70% { box-shadow: 0 0 0 10px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .step-current::after { animation: none; }
+}
+
+/* toast (base/components/toast.html): เลื่อนลงจากบนตอนแสดง เลื่อนขึ้นจางหายตอนปิด */
+@keyframes toast-enter {
+  from { opacity: 0; transform: translateY(-120%); }
+}
+.toast-card {
+  animation: toast-enter 260ms cubic-bezier(0.21, 1.02, 0.73, 1);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.toast-card.toast-leave {
+  opacity: 0;
+  transform: translateY(-40%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast-card { animation: none; transition: none; }
 }

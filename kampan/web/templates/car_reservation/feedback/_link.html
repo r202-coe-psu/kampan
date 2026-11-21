@@ -1,0 +1,7 @@
+{# ลิงก์ประเมินความพึงพอใจของใบขอ (ตัวแปร reservation) ผู้ขอเห็นเมื่อปิดงานแล้วและรถคันนั้นมีแบบประเมิน: ไปหน้าประเมินของรถโดยเลือกเที่ยวนี้ให้ #}
+{% set link = feedback_link(reservation) if feedback_link is defined else None %}
+{% if link %}
+<a class="btn btn-primary btn-soft btn-xs whitespace-nowrap" data-role="feedback-link" href="{{ link }}">
+  ประเมินความพึงพอใจ
+</a>
+{% endif %}

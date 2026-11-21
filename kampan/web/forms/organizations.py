@@ -13,6 +13,8 @@ BaseOrganizationForm = model_form(
         "created_by",
         "last_updated_by",
         "status",
+        "enabled_modules",
+        "enabled_roles",
     ],
     field_args={
         "name": {"label": "Name"},
@@ -23,7 +25,20 @@ BaseOrganizationForm = model_form(
 
 
 class OrganizationForm(BaseOrganizationForm):
-    pass
+    enabled_modules = fields.SelectMultipleField(
+        "ระบบที่เปิดใช้",
+        choices=models.organizations.MODULES,
+        widget=widgets.ListWidget(prefix_label=False),
+        option_widget=widgets.CheckboxInput(),
+        validate_choice=True,
+    )
+    enabled_roles = fields.SelectMultipleField(
+        "Role ที่เปิดใช้",
+        choices=models.organizations.ORGANIZATION_ROLES,
+        widget=widgets.ListWidget(prefix_label=False),
+        option_widget=widgets.CheckboxInput(),
+        validate_choice=True,
+    )
 
 
 BaseLogoForm = model_form(
@@ -62,8 +77,9 @@ class OrganizationRoleEditForm(FlaskForm):
 
 
 class OrganizationAddMemberForm(FlaskForm):
-    members = fields.SelectField(
+    members = fields.SelectMultipleField(
         "เลือกสมาชิก",
+        validators=[validators.InputRequired(message="เลือกผู้ใช้อย่างน้อยหนึ่งคน")],
     )
     roles = fields.SelectMultipleField(
         "ระดับผู้ใช้งาน",

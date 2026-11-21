@@ -49,8 +49,15 @@ def add_member(organization_id):
     divisions = list(
         models.Division.objects(organization=organization, status="active").order_by("name")
     )
+    form.roles.choices = organization.available_roles()
     form.members.choices = [(str(u.id), u.get_name()) for u in candidates]
     form.division.choices = [("", "ยังไม่ระบุแผนก")] + [(str(d.id), d.name) for d in divisions]
+
+    recent_members = (
+        models.OrganizationUserRole.objects(organization=organization, status="active")
+        .order_by("-created_date")
+        .limit(10)
+    )
 
     if not form.validate_on_submit():
         return render_template(
@@ -59,30 +66,47 @@ def add_member(organization_id):
             organization=organization,
             candidates=candidates,
             divisions=divisions,
-            role_choices=models.organizations.ORGANIZATION_ROLES,
+            role_choices=form.roles.choices,
+            recent_members=recent_members,
+            just_added=request.args.getlist("added"),
         )
 
-    user = models.User.objects(id=form.members.data).first()
-    if user and not user.get_default_organization():
-        user.user_setting.current_organization = organization
-        user.save()
+    division = next((d for d in divisions if str(d.id) == form.division.data), None)
+    users = models.User.objects(id__in=form.members.data)
+    added = []
+    for user in users:
+        if user.id in member_ids:
+            continue
+        if not user.get_default_organization():
+            user.user_setting.current_organization = organization
+            user.save()
 
-    org_user = models.OrganizationUserRole(
-        organization=organization,
-        user=user,
-        roles=form.roles.data,
-        # เลือกได้เฉพาะแผนกขององค์กรนี้
-        division=next((d for d in divisions if str(d.id) == form.division.data), None),
-        appointment=form.appointment.data,
-        added_by=current_user._get_current_object(),
-        last_modifier=current_user._get_current_object(),
-        last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
-        created_date=datetime.datetime.now(),
+        org_user = models.OrganizationUserRole(
+            organization=organization,
+            user=user,
+            roles=form.roles.data,
+            # เลือกได้เฉพาะแผนกขององค์กรนี้
+            division=division,
+            appointment=form.appointment.data,
+            added_by=current_user._get_current_object(),
+            last_modifier=current_user._get_current_object(),
+            last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
+            created_date=datetime.datetime.now(),
+        )
+        org_user.save()
+        added.append(org_user)
+
+    if len(added) == 1:
+        flash(f"เพิ่มสมาชิก {added[0].display_fullname()} แล้ว", "success")
+    elif added:
+        flash(f"เพิ่มสมาชิก {len(added)} คนแล้ว", "success")
+    return redirect(
+        url_for(
+            "organizations.members.add_member",
+            organization_id=organization.id,
+            added=[str(o.id) for o in added],
+        )
     )
-    org_user.save()
-
-    flash(f"เพิ่มสมาชิก {org_user.display_fullname()} แล้ว", "success")
-    return redirect(url_for("organizations.members.index", organization_id=organization.id))
 
 
 @module.route("/", methods=["GET", "POST"])
@@ -202,8 +226,22 @@ def edit_roles(organization_id, org_user_id):
             org_user.email = org_user.user.email
 
     form = forms.organizations.OrganizationRoleEditForm(obj=org_user)
+    # role ที่สมาชิกถืออยู่แล้วยังเลือกค้างไว้ได้ แม้องค์กรปิด role นั้นภายหลัง
+    form.roles.choices = [
+        (key, label)
+        for key, label in models.organizations.ORGANIZATION_ROLES
+        if key in dict(organization.available_roles()) or key in org_user.roles
+    ]
 
     if not form.validate_on_submit():
+        if form.errors:
+            name, errors = next(iter(form.errors.items()))
+            reason = (
+                f"กรุณาเลือก{form[name].label.text}"
+                if "required" in errors[0]
+                else errors[0]
+            )
+            flash(f"บันทึกไม่สำเร็จ: {reason}", "error")
         return render_template(
             "/organizations/edit_roles.html",
             form=form,

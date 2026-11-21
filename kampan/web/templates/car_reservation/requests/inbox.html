@@ -1,0 +1,127 @@
+{% extends "/car_reservation/base/default-page.html" %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+{% from '/car_reservation/components/list_header.html' import ListHeader %}
+{% import '/car_reservation/components/status_badge.html' as status_badge %}
+
+{% macro QuickActions(reservation, suffix, block=False) %}
+{% set key = step_key(reservation) %}
+{% set detail_url = url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) %}
+{% if key == 'dispatcher' %}
+<a class="btn btn-success {% if block %}btn-md btn-block{% else %}btn-sm{% endif %}" data-role="dispatch-link"{% if block %} style="grid-column: 1 / -1"{% endif %} href="{{ detail_url }}">จัดรถ</a>
+{% elif key %}
+{% set approve_id = 'quick-approve-' ~ reservation.id ~ suffix %}
+{% set deny_id = 'quick-deny-' ~ reservation.id ~ suffix %}
+<button type="button" class="btn btn-success {% if block %}btn-md btn-block{% else %}btn-sm{% endif %}" data-role="quick-approve"
+        onclick="document.getElementById('{{ approve_id }}').showModal()">อนุมัติ</button>
+<button type="button" class="btn btn-error btn-outline {% if block %}btn-md btn-block{% else %}btn-sm{% endif %}" data-role="quick-deny"
+        onclick="document.getElementById('{{ deny_id }}').showModal()">ไม่อนุมัติ</button>
+{% for dialog_id, route, title, confirm, button_class in [
+  (approve_id, 'approve', 'อนุมัติคำขอ', 'ยืนยันอนุมัติ', 'btn-success'),
+  (deny_id, 'deny', 'ไม่อนุมัติคำขอ', 'ยืนยันไม่อนุมัติ', 'btn-error')] %}
+<dialog id="{{ dialog_id }}" class="modal modal-bottom sm:modal-middle">
+  <form method="post" class="modal-box whitespace-normal text-left"
+        action="{{ url_for('car_reservation.requests.' ~ route, request_id=reservation.id, organization_id=organization.id) }}">
+    {% set quick = quick_form(route, dialog_id, reservation) %}
+    {{ quick.csrf_token }}
+    {{ quick.next }}
+    {% if quick.step is defined %}{{ quick.step }}{% endif %}
+    <h3 class="text-lg font-bold">{{ title }}</h3>
+    <dl class="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm" data-role="quick-summary">
+      <dt class="text-base-content/60">วัตถุประสงค์</dt><dd class="break-words">{{ reservation.request_reason }}</dd>
+      <dt class="text-base-content/60">ผู้ขอ</dt><dd>{{ reservation.creator.get_resources_fullname_th() if reservation.creator else '-' }}</dd>
+      <dt class="text-base-content/60">วันเดินทาง</dt><dd>{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</dd>
+      <dt class="text-base-content/60">ปลายทาง</dt><dd class="break-words">{{ reservation.location }}</dd>
+      <dt class="text-base-content/60">ขั้นที่รอ</dt><dd>{{ step_label(reservation) }}</dd>
+    </dl>
+    <div class="mt-4 flex w-full flex-col gap-1">
+      <label for="{{ quick.comment.id }}" class="text-sm font-medium">{{ quick.comment.label.text }}{% if quick.comment.flags.required %} <span class="text-error">*</span>{% endif %}</label>
+      {{ quick.comment(class_="textarea w-full", rows=3) }}
+    </div>
+    <div class="modal-action">
+      <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">ยกเลิก</button>
+      <button type="submit" class="btn {{ button_class }}">{{ confirm }}</button>
+    </div>
+  </form>
+  <form method="dialog" class="modal-backdrop"><button>ปิด</button></form>
+</dialog>
+{% endfor %}
+{% endif %}
+{% endmacro %}
+
+{% block title %}รายการรออนุมัติ{% endblock %}
+
+{% block page_subtitle %}คำขอใช้รถที่รอการพิจารณาจากคุณ{% endblock %}
+
+{% block content %}
+{% set total = reservations | length %}
+<div class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4">
+    {{ ListHeader('รอการพิจารณา', total, icon='ph-tray') }}
+    {% if total %}
+    <div class="hidden overflow-x-auto md:block">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>วัตถุประสงค์</th>
+            <th>ผู้ขอ</th>
+            <th>ประเภท</th>
+            <th>ปลายทาง</th>
+            <th>วันเดินทาง</th>
+            <th>ขั้นที่รอ</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for reservation in reservations %}
+          <tr class="hover:bg-base-200/50">
+            <td class="font-medium">
+              {{ reservation.request_reason }}
+              {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
+            </td>
+            <td>{{ reservation.creator.get_resources_fullname_th() if reservation.creator else '-' }}</td>
+            <td>{{ reservation.get_request_type_display() }}</td>
+            <td>{{ reservation.location }}</td>
+            <td>{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</td>
+            <td><span class="badge badge-warning badge-soft badge-sm whitespace-nowrap">{{ step_label(reservation) }}</span></td>
+            <td class="text-right">
+              <a class="btn btn-ghost btn-sm btn-square tooltip tooltip-left" data-tip="ดูรายละเอียด" aria-label="ดูรายละเอียด" data-role="view-request"
+                 href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">
+                <i class="ph ph-eye text-lg"></i>
+              </a>
+              <div class="mt-1 flex justify-end gap-1">{{ QuickActions(reservation, '') }}</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="flex flex-col gap-3 md:hidden">
+      {% for reservation in reservations %}
+      <div class="card card-border bg-base-100" data-role="request-card">
+        <div class="card-body gap-1 p-4">
+          <div class="flex items-start justify-between gap-2">
+            <span class="font-medium break-words">{{ reservation.request_reason }}</span>
+            {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
+          </div>
+          <p class="text-sm text-base-content/70">
+            {{ reservation.creator.get_resources_fullname_th() if reservation.creator else '-' }}
+            · {{ reservation.get_request_type_display() }}
+          </p>
+          <div class="text-sm text-base-content/60">ปลายทาง: {{ reservation.location }}</div>
+          <div class="text-sm text-base-content/60">{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</div>
+          <div class="text-sm">รอ: {{ step_label(reservation) }}</div>
+          <div class="mt-2 grid grid-cols-2 gap-2">{{ QuickActions(reservation, '-m', block=True) }}</div>
+          <div class="card-actions mt-2">
+            <a class="btn btn-sm btn-primary"
+               href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">ดูรายละเอียด</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    {{ EmptyState('ph-tray', 'ไม่มีรายการรออนุมัติ', description='เมื่อมีคำขอรอการพิจารณาจะแสดงที่นี่') }}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

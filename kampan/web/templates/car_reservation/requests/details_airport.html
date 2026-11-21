@@ -1,0 +1,25 @@
+{% set details = reservation.details %}
+<div><dt class="text-sm text-base-content/60">ต้องการให้รถไป</dt><dd class="font-medium break-words">{{ details.get_transfer_display() }}ที่สนามบิน</dd></div>
+<div><dt class="text-sm text-base-content/60">เที่ยวบินที่</dt><dd class="font-medium break-words">{{ details.flight_number }}</dd></div>
+<div><dt class="text-sm text-base-content/60">วันที่</dt><dd class="font-medium break-words">{{ details.flight_date.strftime('%d/%m/%Y') }}</dd></div>
+{% if details.arrival_time %}
+<div><dt class="text-sm text-base-content/60">เครื่องบินถึงสนามบิน เวลา</dt><dd class="font-medium break-words">{{ details.arrival_time }}</dd></div>
+{% endif %}
+{% if details.departure_time %}
+<div><dt class="text-sm text-base-content/60">เครื่องบินออกจากสนามบิน เวลา</dt><dd class="font-medium break-words">{{ details.departure_time }}</dd></div>
+{% endif %}
+<div><dt class="text-sm text-base-content/60">ตำแหน่งผู้ขอใช้รถ</dt><dd class="font-medium break-words">{{ details.requester_position }}</dd></div>
+<div class="md:col-span-2">
+  <dt class="text-sm text-base-content/60">รายชื่อผู้โดยสาร</dt>
+  <dd class="font-medium break-words">
+    <ol class="list-decimal list-inside" data-role="airport-passengers">
+      {% for passenger in details.passengers %}
+      <li>{{ passenger.name }} โทร {{ passenger.phone }}</li>
+      {% endfor %}
+    </ol>
+  </dd>
+</div>
+{% if details.in_office_of_president %}
+<div><dt class="text-sm text-base-content/60">หน่วยงานในสำนักงานอธิการบดี</dt><dd class="font-medium break-words">ใช่</dd></div>
+<div><dt class="text-sm text-base-content/60">ยินดีรับผิดชอบ</dt><dd class="font-medium break-words">{{ details.cost_responsibilities | join(', ') }}</dd></div>
+{% endif %}

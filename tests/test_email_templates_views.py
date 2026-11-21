@@ -12,7 +12,7 @@ from kampan.models.email_templates import (
     EMAIL_TYPE,
     EMAIL_TYPE_INFO,
 )
-from kampan.utils import email_utils
+from kampan.utils import car_reservation_email, email_utils
 
 
 def _person(name):
@@ -229,3 +229,103 @@ def test_create_form_groups_types_by_system(app, login_as, email_setup):
     vehicle = html.index('<optgroup label="ระบบยืมรถ">')
     assert inventory < html.index('value="to endorser"') < vehicle < html.index('value="car_application"')
     assert "ส่งเมื่อ" in html and EMAIL_TYPE_INFO["to staff"]["recipient"] in html
+
+
+CAR_RESERVATION_TYPES = [
+    "car_reservation_submitted",
+    "car_reservation_approved",
+    "car_reservation_active",
+    "car_reservation_denied",
+    "car_reservation_cancel_requested",
+    "car_reservation_cancelled",
+    "car_reservation_completed",
+    "car_reservation_close_disputed",
+]
+
+
+def test_create_form_lists_car_reservation_types_in_their_own_group(app, login_as, email_setup):
+    s = email_setup
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        html = _get(app, client, "email_templates.create_or_edit", organization_id=str(s.org.id)).get_data(as_text=True)
+
+    group = html.index('<optgroup label="ระบบจองรถ">')
+    group_end = html.index("</optgroup>", group)
+    for email_type in CAR_RESERVATION_TYPES:
+        assert group < html.index(f'value="{email_type}"') < group_end
+
+
+def test_index_filters_templates_by_car_reservation_system(app, login_as, email_setup):
+    s = email_setup
+    models.EmailTemplate(
+        name="ใบจองรถรอพิจารณา", subject="s", body="b",
+        type="car_reservation_submitted", organization=s.org,
+    ).save()
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        html = _get(
+            app, client, "email_templates.index",
+            organization_id=str(s.org.id), system="car_reservation",
+        ).get_data(as_text=True)
+
+    tbody = html[html.index("<tbody>"):html.index("</tbody>")]
+    assert "ใบจองรถรอพิจารณา" in tbody
+    assert "ระบบจองรถ" in tbody
+    assert "แจ้งผู้อนุมัติ" not in tbody
+
+
+def _reservation(car=None, driver=None, audit_logs=(), status="pending"):
+    return SimpleNamespace(
+        id="abc123",
+        organization=SimpleNamespace(id="org1", name="Org"),
+        creator=_person("requester"),
+        contact_name="",
+        contact_email="",
+        request_type="domestic",
+        location="หาดใหญ่",
+        departure_datetime=datetime.datetime(2026, 12, 25, 8, 30),
+        return_datetime=datetime.datetime(2026, 12, 26, 17, 0),
+        status=status,
+        route_snapshot=["supervisor", "dispatcher"],
+        current_step=1,
+        car=car,
+        driver=driver,
+        request_reason="ประชุม",
+        audit_logs=list(audit_logs),
+    )
+
+
+@pytest.mark.parametrize("email_type", CAR_RESERVATION_TYPES)
+def test_car_reservation_variables_match_what_is_sent(email_type):
+    sent = car_reservation_email.template_variables(_reservation(), "http://x")
+    assert _documented(email_type) == set(sent)
+
+
+def test_car_reservation_variables_carry_trip_details_as_text():
+    reservation = _reservation(
+        car=SimpleNamespace(id="car789", license_plate="กก 1234"),
+        driver=_person("driver"),
+        audit_logs=[SimpleNamespace(action="denied", comment="รถไม่ว่าง")],
+        status="denied",
+    )
+    sent = car_reservation_email.template_variables(reservation, "http://x")
+    assert sent["organization_name"] == "Org"
+    assert sent["requester_name"] == "requester"
+    assert sent["request_type_label"] == "ใบขอใช้รถยนต์ไปปฏิบัติงานภายในประเทศ"
+    assert sent["departure"] == "25 ธ.ค. 2569 08:30 น."
+    assert sent["return_at"] == "26 ธ.ค. 2569 17:00 น."
+    assert sent["status_label"] == "ไม่อนุมัติ"
+    assert sent["car_plate"] == "กก 1234"
+    assert sent["driver_name"] == "driver"
+    assert sent["reason"] == "ประชุม"
+    assert sent["comment"] == "รถไม่ว่าง"
+    assert sent["request_url"] == "http://x/car_reservation/requests/abc123?organization_id=org1"
+    assert (
+        sent["feedback_url"]
+        == "http://x/car_reservation/cars/car789/feedback?reservation_id=abc123"
+    )
+
+
+def test_car_reservation_feedback_url_is_empty_until_a_car_is_assigned():
+    sent = car_reservation_email.template_variables(_reservation(), "http://x")
+    assert sent["feedback_url"] == ""

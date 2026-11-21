@@ -1,0 +1,12 @@
+{# รูปรถ: มีรูปแสดงรูป ไม่มีรูปแสดงไอคอนรถ #}
+{% macro CarPhoto(car, organization, size="size-14") %}
+<div class="{{ size }} shrink-0 rounded-box bg-base-200 flex items-center justify-center overflow-hidden">
+  {% if car.image %}
+  <img class="w-full h-full object-cover"
+       src="{{ url_for('car_reservation.cars.image', car_id=car.id, organization_id=organization.id) }}"
+       alt="{{ car.license_plate }}">
+  {% else %}
+  <i class="ph ph-car text-2xl"></i>
+  {% endif %}
+</div>
+{% endmacro %}

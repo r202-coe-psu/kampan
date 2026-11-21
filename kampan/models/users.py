@@ -36,7 +36,11 @@ class User(me.Document, UserMixin):
     student_id = me.StringField(max_length=10)
 
     picture_url = me.StringField(max_length=500)
-    picture = me.ImageField(thumbnail_size=(800, 600, True), collection_name="user_picture")
+    picture = me.ImageField(
+        size=(512, 512, False), thumbnail_size=(128, 128, True), collection_name="user_picture"
+    )
+
+    signature = me.ImageField(size=(800, 300, False), collection_name="user_signature")
 
     biography = me.StringField(max_length=500)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)

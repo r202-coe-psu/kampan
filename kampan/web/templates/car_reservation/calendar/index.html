@@ -1,0 +1,303 @@
+{% extends '/car_reservation/base/default-page.html' %}
+
+{% block title %}ปฏิทินการจองรถ{% endblock %}
+{% block dashboard_title %}ปฏิทินการจองรถ{% endblock %}
+
+{% block page_subtitle %}ตารางรถที่มีการจองของหน่วยงาน กดที่รายการเพื่อดูสถานะการอนุมัติ{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-primary" data-role="new-request" data-open-new-request
+   href="{{ url_for('car_reservation.requests.create', organization_id=organization.id) }}">
+  <i class="ph ph-plus"></i> ยื่นคำขอ
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4 p-4 sm:p-6">
+    <ul class="flex flex-wrap items-center gap-2" aria-label="คำอธิบายสี">
+      <li class="badge badge-sm badge-soft badge-warning gap-1.5"><span class="size-1.5 rounded-full bg-warning"></span> รออนุมัติ</li>
+      <li class="badge badge-sm badge-soft badge-success gap-1.5"><span class="size-1.5 rounded-full bg-success"></span> อนุมัติแล้ว</li>
+      <li class="badge badge-sm badge-soft badge-neutral gap-1.5"><span class="size-1.5 rounded-full bg-neutral"></span> เสร็จสิ้น</li>
+    </ul>
+    <div id="calendar" class="tone-deep-success"></div>
+  </div>
+</div>
+
+<div id="modal_container"></div>
+
+<style>
+  #calendar {
+    --fc-border-color: var(--color-base-300);
+    --fc-page-bg-color: var(--color-base-100);
+    --fc-neutral-bg-color: var(--color-base-200);
+    --fc-today-bg-color: color-mix(in oklab, var(--color-primary) 8%, transparent);
+    --fc-button-bg-color: var(--color-base-100);
+    --fc-button-border-color: var(--color-base-300);
+    --fc-button-text-color: var(--color-base-content);
+    --fc-button-hover-bg-color: var(--color-base-200);
+    --fc-button-hover-border-color: var(--color-base-300);
+    --fc-button-active-bg-color: var(--color-primary);
+    --fc-button-active-border-color: var(--color-primary);
+  }
+  #calendar .fc-toolbar-title { font-size: 1.5rem; font-weight: 700; margin-left: .25rem; }
+  #calendar .fc-button { border-radius: var(--radius-field); font-size: .875rem; box-shadow: none; text-transform: none; }
+  #calendar .fc-button-active { color: var(--color-primary-content); }
+  #calendar .fc-button:disabled { opacity: .5; }
+
+  /* แถบเครื่องมือแบบ Google Calendar: "วันนี้" ‹ › ติดกับชื่อเดือนทางซ้าย, ตัวเลือกมุมมองอยู่ขวา */
+  #calendar .fc-toolbar-chunk { display: flex; align-items: center; gap: .5rem; }
+  /* ‹ › และ เดือน/สัปดาห์/รายการ: แคปซูลแบบ tabs-box */
+  #calendar .fc-toolbar .fc-button-group {
+    gap: 2px;
+    padding: 3px;
+    background: var(--color-base-200);
+    border-radius: calc(var(--radius-field) + 3px);
+  }
+  #calendar .fc-toolbar .fc-button-group .fc-button {
+    margin: 0;
+    border: 0;
+    border-radius: var(--radius-field);
+    background: transparent;
+    transition: background-color .15s, color .15s;
+  }
+  #calendar .fc-prev-button,
+  #calendar .fc-next-button { padding: .3rem .5rem; color: var(--color-base-content); }
+  #calendar .fc-prev-button:hover,
+  #calendar .fc-next-button:hover {
+    background: var(--color-base-100) !important;
+    box-shadow: 0 1px 2px color-mix(in oklab, var(--color-base-content) 15%, transparent);
+  }
+  #calendar .fc-dayGridMonth-button,
+  #calendar .fc-timeGridWeek-button,
+  #calendar .fc-timeGridDay-button,
+  #calendar .fc-listMonth-button {
+    padding: .3rem .9rem;
+    font-weight: 500;
+    color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+  }
+  #calendar .fc-button-group .fc-button:hover:not(.fc-button-active) { color: var(--color-base-content); }
+  #calendar .fc-toolbar .fc-button-group .fc-button-active {
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+    font-weight: 600;
+    box-shadow: 0 1px 2px color-mix(in oklab, var(--color-primary) 35%, transparent);
+  }
+  #calendar .fc-today-button {
+    margin: 0 !important;
+    padding: .4rem .9rem;
+    border: 1px solid var(--color-primary);
+    background: transparent;
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+  #calendar .fc-today-button:hover:not(:disabled) {
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+  }
+  /* อยู่ในช่วงที่มีวันนี้แล้ว: แสดงเป็นป้ายจางๆ ไม่ใช่ปุ่มที่กดไม่ได้ */
+  #calendar .fc-today-button:disabled {
+    opacity: 1;
+    border-color: transparent;
+    background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+    cursor: default;
+  }
+  #calendar .fc-toolbar-chunk .fc-button:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+  #calendar .fc-col-header-cell-cushion { font-weight: 600; font-size: .8rem; color: color-mix(in oklab, var(--color-base-content) 65%, transparent); }
+  #calendar .fc-daygrid-day-number { font-size: .8rem; }
+  #calendar .fc-daygrid-day-number:hover,
+  #calendar .fc-col-header-cell-cushion[data-navlink]:hover { color: var(--color-primary); text-decoration: underline; }
+  /* วันที่กดได้: ชี้แล้วพื้นเป็นสี primary อ่อนๆ กดแล้วเปิดมุมมองรายวัน */
+  #calendar .fc-daygrid-day { cursor: pointer; transition: background-color .15s; }
+  #calendar .fc-daygrid-day:hover { background: color-mix(in oklab, var(--color-primary) 10%, transparent); }
+  #calendar .fc-daygrid-day:active { background: color-mix(in oklab, var(--color-primary) 18%, transparent); }
+  /* หัวคอลัมน์ตารางเวลา (สัปดาห์/วัน) แบบ Google Calendar */
+  #calendar .fc-timegrid .fc-col-header-cell { border-left-color: transparent; border-right-color: transparent; }
+  #calendar .fc-timegrid .fc-col-header-cell-cushion {
+    display: flex; flex-direction: column; align-items: center; gap: .15rem;
+    padding: .5rem 0 .4rem;
+    text-decoration: none !important;
+  }
+  /* มุมมองรายวัน: หัวคอลัมน์ชิดซ้ายเหมือน Google Calendar */
+  #calendar .fc-timeGridDay-view .fc-col-header-cell { text-align: left; }
+  #calendar .fc-timeGridDay-view .fc-col-header-cell-cushion { display: inline-flex; padding-left: .75rem; }
+  /* สัปดาห์/วัน: ไม่ระบายพื้นทั้งคอลัมน์ของวันนี้ ใช้วงกลมที่ตัวเลขวันที่บอกแทน */
+  #calendar .fc-timegrid .fc-timegrid-col.fc-day-today,
+  #calendar .fc-timegrid .fc-col-header-cell.fc-day-today { background: transparent; }
+  #calendar .day-header-weekday { font-size: .75rem; font-weight: 500; color: color-mix(in oklab, var(--color-base-content) 65%, transparent); }
+  #calendar .day-header-number {
+    display: grid; place-items: center;
+    width: 2.6rem; height: 2.6rem; border-radius: 9999px;
+    font-size: 1.5rem; font-weight: 400; line-height: 1;
+    color: var(--color-base-content);
+    transition: background-color .15s;
+  }
+  #calendar .fc-col-header-cell-cushion[data-navlink]:hover .day-header-number {
+    background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+  }
+  #calendar .fc-day-today .day-header-weekday { color: var(--color-primary); font-weight: 600; }
+  #calendar .fc-day-today .day-header-number { background: color-mix(in oklab, var(--color-primary) 14%, transparent); color: var(--color-primary); font-weight: 600; }
+  #calendar .fc-day-today .fc-col-header-cell-cushion[data-navlink]:hover .day-header-number {
+    background: color-mix(in oklab, var(--color-primary) 24%, transparent);
+  }
+  #calendar .fc-day-today .fc-daygrid-day-number { color: var(--color-primary); font-weight: 700; }
+  #calendar a { text-decoration: none; color: inherit; }
+  #calendar .fc-event { cursor: pointer; border-width: 0 0 0 3px; border-radius: 4px; padding: 1px 4px; font-size: .75rem; }
+  #calendar .event-success { --tone: var(--color-success); }
+  #calendar .event-warning { --tone: var(--color-warning); }
+  #calendar .event-neutral { --tone: color-mix(in oklab, var(--color-base-content) 45%, transparent); }
+  #calendar .fc-event[class*="event-"] {
+    background: color-mix(in oklab, var(--tone) 15%, var(--color-base-100));
+    border-color: var(--tone);
+    color: var(--color-base-content);
+  }
+  #calendar .fc-event[class*="event-"] .fc-event-main { color: inherit; }
+  #calendar .fc-event:hover { filter: brightness(.95); }
+
+  /* มุมมองรายสัปดาห์: ตารางเวลาแบบ Google Calendar */
+  #calendar .fc-timegrid-slot { height: 1rem; }
+
+  /* แถบเลื่อนในตารางเวลาและรายการ: สี primary บนราง base-200 ให้เห็นชัดว่าเลื่อนได้ */
+  #calendar .fc-scroller { scrollbar-color: color-mix(in oklab, var(--color-primary) 55%, transparent) var(--color-base-200); }
+  #calendar .fc-scroller::-webkit-scrollbar { width: 12px; height: 12px; }
+  #calendar .fc-scroller::-webkit-scrollbar-track { background: var(--color-base-200); border-radius: 9999px; }
+  #calendar .fc-scroller::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, var(--color-primary) 55%, transparent);
+    border: 2px solid var(--color-base-200);
+    border-radius: 9999px;
+  }
+  #calendar .fc-scroller::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
+  #calendar .fc-timegrid-slot-minor { border-top-style: none; }
+  #calendar .fc-timegrid-slot-label-cushion { font-size: .75rem; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
+  #calendar .fc-timegrid-event { border-width: 0 0 0 3px; padding: 2px 4px; }
+  /* เว้นช่องและขอบบางๆ ระหว่างรายการที่วางเคียงกัน ให้แยกออกจากกันชัด แม้สีสถานะเดียวกัน */
+  #calendar .fc-timegrid-event-harness .fc-timegrid-event {
+    box-shadow: 0 0 0 1px var(--color-base-100);
+    margin-right: 2px;
+  }
+  #calendar .fc-timegrid-event .fc-event-title { font-size: .7rem; line-height: 1.25; overflow-wrap: anywhere; }
+  #calendar .fc-timegrid-event .fc-event-title { white-space: normal; font-weight: 500; }
+  #calendar .fc-day-today .fc-col-header-cell-cushion { color: var(--color-primary); font-weight: 700; }
+  #calendar .fc-timegrid-now-indicator-line { border-color: var(--color-error); }
+  #calendar .fc-timegrid-now-indicator-arrow { border-color: var(--color-error); border-top-color: transparent; border-bottom-color: transparent; }
+
+  .fc-view-harness,
+  .fc-view-harness-active {
+    display: block !important;
+    z-index: 0 !important;
+  }
+
+  /* ชื่อรายการมีเวลาออกเดินทางอยู่แล้ว ไม่ต้องแสดงคอลัมน์ "all-day" ของมุมมองรายการ */
+  #calendar .fc-list-event-time { display: none; }
+  #calendar .fc-list-event[class*="event-"] { background: transparent; }
+  #calendar .fc-list-event-dot { border-color: var(--tone, var(--color-base-content)); }
+  #calendar .fc-list-event:hover td { background: var(--color-base-200); }
+
+  @media (max-width: 640px) {
+    #calendar .fc-toolbar { flex-direction: column; align-items: stretch; gap: .5rem; }
+    #calendar .fc-toolbar-chunk { flex-wrap: wrap; }
+  }
+</style>
+{% endblock %}
+
+{% block additional_js %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const eventsUrl = "{{ url_for('car_reservation.calendar.events', organization_id=organization.id) }}";
+    const modalUrl = "{{ url_for('car_reservation.calendar.event_modal', reservation_id='RESERVATION_ID', organization_id=organization.id) }}";
+
+    const isMobile = window.matchMedia('(max-width: 640px)').matches;
+    const calendarEl = document.getElementById('calendar');
+    // เหลือที่ใต้ปฏิทินเท่ากับ padding ของการ์ดและหน้า
+    const CALENDAR_BOTTOM_GAP = 48;
+    const CALENDAR_MIN_HEIGHT = 480;
+    function calendarHeight() {
+      const top = calendarEl.getBoundingClientRect().top + window.scrollY;
+      return Math.max(CALENDAR_MIN_HEIGHT, window.innerHeight - top - CALENDAR_BOTTOM_GAP);
+    }
+    const VIEW_KEY = 'car_reservation.calendar.view';
+    const VIEWS = ['dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listMonth'];
+    // หัวคอลัมน์ของตารางเวลาแบบ Google Calendar: ชื่อวันตัวเล็กด้านบน ตัวเลขวันที่ตัวใหญ่ด้านล่าง
+    function dayHeaderStacked(arg) {
+      const weekday = arg.date.toLocaleDateString('th-TH', { weekday: 'long' }).replace(/^วัน/, '');
+      return {
+        html: `<span class="day-header-weekday">${weekday}</span>`
+          + `<span class="day-header-number">${arg.date.getDate()}</span>`,
+      };
+    }
+    let savedView = null;
+    try { savedView = localStorage.getItem(VIEW_KEY); } catch (e) {}
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+      locale: 'th',
+      initialView: VIEWS.includes(savedView) ? savedView : (isMobile ? 'listMonth' : 'dayGridMonth'),
+      // จำมุมมองที่ผู้ใช้เลือกล่าสุด (เดือน/สัปดาห์/รายการ)
+      datesSet: function (info) {
+        try { localStorage.setItem(VIEW_KEY, info.view.type); } catch (e) {}
+      },
+      // สูงพอดีหน้าจอ ตารางเวลาเลื่อนขึ้นลงอยู่ข้างในปฏิทินแทนการเลื่อนทั้งหน้า
+      height: calendarHeight(),
+      // FullCalendar ต่อ &start=&end= ของช่วงที่แสดงให้เองทุกครั้งที่เปลี่ยนเดือน
+      events: eventsUrl,
+      buttonText: {
+        today: 'วันนี้',
+        month: 'เดือน',
+        week: 'สัปดาห์',
+        day: 'วัน',
+        list: 'รายการ',
+      },
+      // ข้อความ tooltip ของปุ่ม ($0 = หน่วยของมุมมอง เช่น เดือน/สัปดาห์ จาก buttonText)
+      buttonHints: {
+        prev: '$0ก่อนหน้า',
+        next: '$0ถัดไป',
+        today: '$0นี้',
+      },
+      viewHint: 'มุมมอง$0',
+      navLinkHint: 'ไปที่ $0',
+      moreLinkHint: function (n) { return `ดูอีก ${n} รายการ`; },
+      moreLinkText: function (n) { return `+ อีก ${n} รายการ`; },
+      noEventsText: 'ไม่มีการจองรถในเดือนนี้',
+      headerToolbar: { left: 'today prev,next title', center: '', right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth' },
+      // กดวันที่ (ตัวเลขวันหรือหัวคอลัมน์) เพื่อเปิดมุมมองรายวันของวันนั้น
+      navLinks: true,
+      navLinkDayClick: 'timeGridDay',
+      // กดช่องว่างของวันในมุมมองเดือนก็เปิดมุมมองรายวันเช่นกัน
+      dateClick: function (info) {
+        if (info.view.type === 'dayGridMonth') calendar.changeView('timeGridDay', info.date);
+      },
+      // มุมมองเดือนแสดงรายการเท่าที่ช่องพอ ที่เหลือรวมเป็น "+ อีก n รายการ"
+      dayMaxEvents: true,
+      // ชื่อรายการมีเวลาออกเดินทางอยู่แล้ว
+      displayEventTime: false,
+      // มุมมองเดือนแสดงเป็นแถบสีเหมือนเดิม ไม่ใช่จุด+ข้อความ
+      eventDisplay: 'block',
+      allDaySlot: false,
+      // การจองที่เวลาชนกันวางเคียงกันคนละครึ่ง ไม่ซ้อนทับกัน
+      slotEventOverlap: false,
+      nowIndicator: true,
+      scrollTime: '07:00:00',
+      slotLabelFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+      eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+      views: {
+        timeGridWeek: { dayHeaderContent: dayHeaderStacked },
+        timeGridDay: { dayHeaderContent: dayHeaderStacked },
+      },
+      eventClick: async function (info) {
+        try {
+          const response = await fetch(modalUrl.replace('RESERVATION_ID', info.event.id));
+          if (!response.ok) throw new Error('Network response was not ok');
+          document.getElementById('modal_container').innerHTML = await response.text();
+        } catch (error) {
+          console.error('Error loading modal:', error);
+        }
+      },
+    });
+
+    calendar.render();
+    window.addEventListener('resize', function () { calendar.setOption('height', calendarHeight()); });
+  });
+</script>
+{% endblock %}

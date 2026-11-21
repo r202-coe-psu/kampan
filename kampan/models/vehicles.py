@@ -7,6 +7,13 @@ VEHICLE_STATUS = [
     ("disactive", "ไม่สามารถใช้งานได้"),
 ]
 
+VEHICLE_TYPES = [
+    ("บัส", "รถบัส"),
+    ("ตู้", "รถตู้"),
+    ("เก๋ง", "รถเก๋ง"),
+    ("มินิบัส", "รถมินิบัส"),
+]
+
 
 class BaseVehicle:
     image = me.ImageField()
@@ -26,7 +33,15 @@ class BaseVehicle:
 
 
 class Car(BaseVehicle, me.Document):
+    vehicle_type = me.StringField(choices=VEHICLE_TYPES)
+    brand = me.StringField(default="", max_length=128)  # ยี่ห้อ เช่น Toyota (ไม่บังคับ)
+    car_model = me.StringField(default="", max_length=128)  # รุ่น เช่น Commuter (ไม่บังคับ)
+    seat_count = me.IntField(min_value=1)
     last_mileage = me.IntField(min_value=0, required=True, default=0)
+
+    def get_brand_and_model(self):
+        """"Toyota Commuter" ไม่กรอกเลยได้ "" """
+        return " ".join(part for part in (self.brand, self.car_model) if part)
     meta = {"collection": "cars"}
 
 

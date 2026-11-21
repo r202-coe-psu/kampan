@@ -6,6 +6,7 @@ from flask import (
     request,
     send_file,
     abort,
+    flash,
 )
 import calendar
 from flask_login import login_required, current_user
@@ -17,10 +18,15 @@ import pandas as pd
 from mongoengine.queryset.visitor import Q
 
 from kampan.web import forms, acl
-from kampan import models
+from kampan import models, utils
 from kampan.repositories.history_car_lending import HistoryCarLendingRepository
 
 module = Blueprint("car_tasks", __name__, url_prefix="/car_tasks")
+
+
+def sees_only_own_tasks(organization):
+    """คนขับที่ไม่ใช่ admin เห็นและปิดได้เฉพาะงานที่ถูก assign ให้ตัวเอง"""
+    return not current_user.has_organization_roles("admin", organization=organization)
 
 
 @module.route("", methods=["GET", "POST"])
@@ -37,6 +43,8 @@ def index():
     order_dir = request.args.get("order", "asc")
 
     query = Q(organization=organization, status="active")
+    if sees_only_own_tasks(organization):
+        query &= Q(driver=current_user._get_current_object())
 
     if date_str:
         target_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -52,6 +60,11 @@ def index():
         sort_field
     )
 
+    q = request.args.get("q", "").strip()
+    if q:
+        matched_ids = [c.id for c in utils.car_search.search(car_lendings, q=q)]
+        car_lendings = car_lendings.filter(id__in=matched_ids)
+
     page = request.args.get("page", 1, type=int)
     paginated_car_applications = Pagination(car_lendings, page=page, per_page=30)
     today_date = datetime.date.today()
@@ -62,10 +75,11 @@ def index():
         car_lendings=car_lendings,
         target_date=target_date,
         today_date=today_date,
+        q=q,
         sort_by=sort_by,
         order_dir=order_dir,
         paginated_car_applications=paginated_car_applications,
-        closable_car_application_ids=models.vehicle_applications.CarApplication.get_oldest_active_ids(organization),
+        oldest_active_by_car=models.vehicle_applications.CarApplication.get_oldest_active_per_car(organization),
     )
 
 
@@ -84,6 +98,8 @@ def submit_task_modal(car_application_id):
     )
     if not car_application:
         abort(404)
+    if sees_only_own_tasks(organization) and car_application.driver != current_user._get_current_object():
+        abort(403)
     if car_application.id not in models.vehicle_applications.CarApplication.get_oldest_active_ids(organization):
         abort(403)
 
@@ -104,6 +120,7 @@ def submit_task_modal(car_application_id):
         car_application.updater = current_user._get_current_object()
         car_application.updated_date = datetime.datetime.now()
         car_application.save()
+        flash(f"ปิดงานรถ {car.license_plate} แล้ว", "success")
 
         return redirect(
             url_for(

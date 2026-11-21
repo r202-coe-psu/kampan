@@ -1,0 +1,75 @@
+{% extends "/car_reservation/base/default-page.html" %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+{% from '/car_reservation/components/car_deactivate.html' import DeactivateButton %}
+{% from '/car_reservation/components/list_header.html' import ListHeader %}
+
+{% block title %}จัดการรถ{% endblock %}
+
+{% block page_subtitle %}เพิ่ม แก้ไข และปิดใช้งานรถของหน่วยงาน{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-primary" data-role="add-car" href="{{ url_for('car_reservation.cars.create_or_edit', organization_id=organization.id) }}">
+  เพิ่มรถ
+</a>
+{% endblock %}
+
+{% block content %}
+{% set total = cars | length %}
+<div class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4">
+    {{ ListHeader('รถของหน่วยงาน', total, icon='ph-car') }}
+    {% if total %}
+    {# การ์ดรูปใหญ่ชุดเดียวทุกขนาดจอ: ทะเบียนเป็นจุดเด่นเพราะเป็นสิ่งที่ใช้ระบุรถ #}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" data-role="car-grid">
+      {% for car in cars %}
+      {% set active = car.status == 'active' %}
+      <article class="card card-border overflow-hidden bg-base-100" data-role="car-card">
+        <figure class="relative aspect-[4/3] bg-base-200">
+          {% if car.image %}
+          <img class="size-full object-cover {{ '' if active else 'opacity-60 grayscale' }}" loading="lazy"
+               src="{{ url_for('car_reservation.cars.image', car_id=car.id, organization_id=organization.id) }}"
+               alt="รูปรถทะเบียน {{ car.license_plate }}">
+          {% else %}
+          <i class="ph ph-car text-6xl! text-base-content/25" aria-hidden="true"></i>
+          {% endif %}
+          <span class="badge badge-sm absolute right-3 top-3 shadow-sm {{ 'badge-success' if active else 'badge-neutral' }}">
+            {{ car.get_status_display() }}
+          </span>
+        </figure>
+        <div class="card-body gap-3 p-4">
+          <p class="w-fit rounded-field border-2 border-base-content/80 bg-base-100 px-3 py-1 text-xl font-bold tracking-wide"
+             data-role="license-plate">{{ car.license_plate }}</p>
+          {% if car.get_brand_and_model() %}<p class="-mt-1 font-medium" data-role="car-brand-model">{{ car.get_brand_and_model() }}</p>{% endif %}
+          <dl class="grid grid-cols-3 gap-2 text-sm">
+            <div>
+              <dt class="text-base-content/60">ประเภท</dt>
+              <dd class="font-medium">{{ car.get_vehicle_type_display() or '-' }}</dd>
+            </div>
+            <div>
+              <dt class="text-base-content/60">ความจุ</dt>
+              <dd class="font-medium tabular-nums">{% if car.seat_count %}{{ car.seat_count }} ที่นั่ง{% else %}-{% endif %}</dd>
+            </div>
+            <div>
+              <dt class="text-base-content/60">เลขไมล์</dt>
+              <dd class="font-medium tabular-nums">{{ car.last_mileage | format_number if car.last_mileage else 0 }} กม.</dd>
+            </div>
+          </dl>
+          <div class="card-actions mt-auto items-center justify-end border-t border-base-300 pt-3">
+            {{ DeactivateButton(car, organization) }}
+            <a class="btn btn-sm btn-primary"
+               href="{{ url_for('car_reservation.cars.create_or_edit', car_id=car.id, organization_id=organization.id) }}">
+              แก้ไข
+            </a>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    {{ EmptyState('ph-car', 'ยังไม่มีรถ', description='เพิ่มรถคันแรกเพื่อให้ผู้จัดรถเลือกใช้งานได้',
+                  action_label='เพิ่มรถ',
+                  action_href=url_for('car_reservation.cars.create_or_edit', organization_id=organization.id)) }}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

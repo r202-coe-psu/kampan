@@ -1,0 +1,17 @@
+{# เอกสารเบิกค่าใช้จ่ายของ พขร. (PDF) แสดงเมื่อคำขอเสร็จสิ้นและผู้ดูมีสิทธิออกเอกสาร (finance_documents ว่างเมื่อไม่ต้องแสดง) #}
+{% if finance_documents %}
+<div class="card bg-base-100 border border-base-300 shadow-sm" data-role="finance-documents">
+  <div class="card-body gap-3">
+    <h2 class="card-title text-lg">เอกสารเบิกค่าใช้จ่ายพนักงานขับรถ</h2>
+    <div class="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+      {% for doc, label in finance_documents %}
+      <a class="btn btn-primary btn-soft h-auto min-h-10 py-2 whitespace-normal justify-between text-left sm:justify-center" data-role="finance-document" data-doc="{{ doc }}"
+         href="{{ url_for('car_reservation.requests.finance_document', request_id=reservation.id, doc=doc, organization_id=organization.id) }}">
+        {{ label }}
+        {% if doc in finance_saved %}<span class="badge badge-success badge-sm shrink-0" data-role="finance-saved">บันทึกแล้ว</span>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}

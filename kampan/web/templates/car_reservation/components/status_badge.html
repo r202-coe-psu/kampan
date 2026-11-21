@@ -1,0 +1,40 @@
+{# ป้ายสถานะคำขอของระบบจองรถออนไลน์ แยกจากของระบบ DIIS เพื่อปรับหน้าตาได้อิสระ
+   หลักสีของ badge ทั้งระบบจองรถ: ใช้ badge-sm เสมอ และใช้สีบอกสถานะเท่านั้น
+   warning = รอคนดำเนินการ, success = อนุมัติ/ใช้งานได้/ว่าง, error = ไม่อนุมัติ/เร่งด่วน,
+   neutral = จบแล้ว, ghost = ข้อมูลประกอบ (บทบาท, OT, งานแทรก, จำนวน) และสถานะที่ไม่ใช้งานแล้ว #}
+{% macro render(reservation, compact=false) %}
+  {% set styles = {
+    'pending': 'badge-warning',
+    'active': 'badge-success',
+    'completed': 'badge-neutral',
+    'denied': 'badge-error',
+    'cancel_requested': 'badge-warning',
+    'cancelled': 'badge-ghost',
+  } %}
+  {% set tone = styles.get(reservation.status, 'badge-neutral') %}
+  <span class="badge {{ tone }} badge-soft {{ 'badge-xs' if compact else 'badge-sm' }}{{ ' tone-deep-success' if tone == 'badge-success' }} whitespace-nowrap font-medium align-middle"
+        data-status="{{ reservation.status }}"
+        title="สถานะ: {{ reservation.get_status_display() }}">
+    {{ reservation.get_status_display() }}
+  </span>
+{% endmacro %}
+
+{# ป้ายเร่งด่วน ใช้หน้าตาเดียวกันทุกหน้า (รายการ กล่องรับเรื่อง รายละเอียด ปฏิทิน) #}
+{% macro urgent() %}
+  <span class="badge badge-error badge-soft badge-sm whitespace-nowrap font-medium align-middle" data-role="urgent-badge">เร่งด่วน</span>
+{% endmacro %}
+
+{# ป้ายเตือน: พขร. ปิดงานจาก IP นอกช่วงของมหาวิทยาลัย #}
+{% macro off_campus() %}
+  <span class="badge badge-warning badge-soft badge-sm whitespace-nowrap font-medium align-middle" data-role="off-campus-badge">ปิดงานนอกมหาวิทยาลัย</span>
+{% endmacro %}
+
+{# ป้ายงานนอกเวลา (OT) ที่ผู้จัดรถติ๊กไว้ #}
+{% macro overtime() %}
+  <span class="badge badge-ghost badge-sm whitespace-nowrap font-medium align-middle" data-role="overtime-badge">นอกเวลา (OT)</span>
+{% endmacro %}
+
+{# ป้ายงานแทรก (ผู้จัดรถเพิ่มให้ พขร. ที่มีงานอยู่แล้วในวันนั้น) #}
+{% macro insert() %}
+  <span class="badge badge-ghost badge-sm whitespace-nowrap font-medium align-middle" data-role="insert-badge">งานแทรก</span>
+{% endmacro %}

@@ -20,6 +20,7 @@ BaseCarForm = model_form(
         "license_plate": {"label": "ป้ายทะเบียนรถ"},
         "last_mileage": {"label": "เลขไมล์สุดท้าย"},
         "description": {"label": "รายละเอียด/ลักษณะ"},
+        "vehicle_type": {"label": "ประเภทรถ", "filters": [lambda value: value or None]},
     },
 )
 

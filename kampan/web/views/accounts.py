@@ -1,7 +1,9 @@
 import datetime
+import io
 import markdown
 import mongoengine as me
 
+from bson import ObjectId
 from flask import (
     Blueprint,
     render_template,
@@ -10,12 +12,13 @@ from flask import (
     request,
     session,
     current_app,
-    send_file,
     abort,
     g,
 )
 from flask_login import login_user, logout_user, login_required, current_user
+from flask_wtf import FlaskForm
 
+from kampan import utils
 from .. import models
 from .. import oauth2
 from .. import acl
@@ -52,10 +55,20 @@ def get_user_and_remember():
         login_user(user, remember=True)
 
 
+PROFILE_FROM_SELECT_SYSTEM = "select_system"
+
+
+def redirect_to_profile(**params):
+    """กลับหน้าข้อมูลผู้ใช้ โดยคงมุมมองแบบเปิดจากหน้าเลือกระบบไว้ถ้ามาจากที่นั่น"""
+    if request.args.get("from") == PROFILE_FROM_SELECT_SYSTEM:
+        params["from"] = PROFILE_FROM_SELECT_SYSTEM
+    return redirect(url_for("accounts.index", **params))
+
+
 @module.route("/login", methods=("GET", "POST"))
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for("accounts.index"))
+        return redirect(url_for("site.select_system"))
 
     # if "next" in request.args:
     #     session["next"] = request.args.get("next", None)
@@ -148,6 +161,8 @@ def index():
             user=current_user,
             organization=organization,
             errors=errors,
+            picture_form=forms.accounts.PictureForm(),
+            signature_form=forms.accounts.SignatureForm(),
         )
     if not organization and "admin" not in current_user.roles:
         return render_template(
@@ -155,6 +170,8 @@ def index():
             user=current_user,
             organization=organization,
             errors=errors,
+            picture_form=forms.accounts.PictureForm(),
+            signature_form=forms.accounts.SignatureForm(),
         )
 
     if "admin" in current_user.roles and organization_id:
@@ -166,6 +183,8 @@ def index():
         user=current_user,
         organization=organization,
         errors=errors,
+        picture_form=forms.accounts.PictureForm(),
+        signature_form=forms.accounts.SignatureForm(),
     )
 
 
@@ -207,19 +226,116 @@ def edit_profile():
     return redirect(url_for("accounts.index"))
 
 
-@module.route("/accounts/<user_id>/picture/<filename>", methods=["GET", "POST"])
-def picture(user_id, filename):
-    user = models.User.objects.get(id=user_id)
+@module.route("/accounts/picture", methods=["POST"])
+@login_required
+def upload_picture():
+    form = forms.accounts.PictureForm()
+    if not form.validate_on_submit():
+        errors = " ".join(message for messages in form.errors.values() for message in messages)
+        return redirect_to_profile(errors=errors)
 
-    if not user or not user.picture or user.picture.filename != filename:
+    user = current_user._get_current_object()
+    upload = form.picture.data
+    if user.picture:
+        user.picture.replace(
+            upload, filename=upload.filename, content_type=upload.content_type
+        )
+    else:
+        user.picture.put(
+            upload, filename=upload.filename, content_type=upload.content_type
+        )
+    user.save()
+
+    return redirect_to_profile()
+
+
+def get_user_or_404(user_id):
+    user = models.User.objects(id=user_id).first() if ObjectId.is_valid(user_id) else None
+    if not user:
+        abort(404)
+    return user
+
+
+@module.route("/accounts/<user_id>/picture")
+@login_required
+def user_picture(user_id):
+    user = get_user_or_404(user_id)
+    if not user.picture:
+        abort(404)
+
+    return utils.uploaded_files.send_uploaded_file(
+        user.picture, download_name=user.picture.filename or "picture"
+    )
+
+
+@module.route("/accounts/signature", methods=["POST"])
+@login_required
+def upload_signature():
+    form = forms.accounts.SignatureForm()
+    if not form.validate_on_submit():
+        errors = " ".join(
+            message for messages in form.errors.values() for message in messages
+        )
+        return redirect_to_profile(errors=errors)
+
+    user = current_user._get_current_object()
+    image = io.BytesIO(form.image_bytes)
+    if user.signature:
+        user.signature.replace(
+            image,
+            filename=form.image_filename,
+            content_type=form.image_content_type,
+        )
+    else:
+        user.signature.put(
+            image,
+            filename=form.image_filename,
+            content_type=form.image_content_type,
+        )
+    user.save()
+
+    return redirect_to_profile()
+
+
+@module.route("/accounts/signature/remove", methods=["POST"])
+@login_required
+def remove_signature():
+    if not FlaskForm().validate_on_submit():
+        abort(400)
+    user = current_user._get_current_object()
+    if user.signature:
+        user.signature.delete()
+        user.save()
+
+    return redirect_to_profile()
+
+
+@module.route("/accounts/<user_id>/signature")
+@login_required
+def user_signature(user_id):
+    # ลายเซ็นถูกพิมพ์ลงเอกสารทางการ ฝั่ง server อ่านจาก GridFS เอง หน้าเว็บจึงให้ดูได้แค่ลายเซ็นของตัวเอง
+    if user_id != str(current_user.id):
+        abort(404)
+    user = current_user._get_current_object()
+    if not user.signature:
+        abort(404)
+
+    return utils.uploaded_files.send_uploaded_file(
+        user.signature, download_name=user.signature.filename or "signature.png"
+    )
+
+
+@module.route("/accounts/<user_id>/picture/<filename>", methods=["GET", "POST"])
+@login_required
+def picture(user_id, filename):
+    user = get_user_or_404(user_id)
+
+    if not user.picture or user.picture.filename != filename:
         return abort(403)
 
-    response = send_file(
-        user.picture,
-        download_name=user.picture.filename,
-        mimetype=user.picture.content_type,
+    return utils.uploaded_files.send_uploaded_file(
+        user.picture, download_name=user.picture.filename
     )
-    return response
 
 
 @module.route("/user-roles")

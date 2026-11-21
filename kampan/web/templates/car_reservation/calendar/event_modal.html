@@ -1,0 +1,54 @@
+{% from '/car_reservation/components/approval_steps.html' import ApprovalSteps %}
+{# ป๊อปอัปรายละเอียดคำขอบนปฏิทินการจองรถ แยกจากของ DIIS เพื่อปรับหน้าตาได้อิสระ #}
+{% import '/car_reservation/components/status_badge.html' as status_badge %}
+{% macro row(icon, label) %}
+<div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg">
+  <div class="bg-primary/10 p-2 rounded-full text-primary flex items-center justify-center">
+    <i class="ph {{ icon }} text-xl"></i>
+  </div>
+  <div class="min-w-0">
+    <div class="text-sm text-base-content/70">{{ label }}</div>
+    <div class="font-semibold text-base break-words">{{ caller() }}</div>
+  </div>
+</div>
+{% endmacro %}
+<dialog class="modal modal-open" data-role="calendar-event-modal">
+  <div class="modal-box w-11/12 max-w-2xl">
+    <form method="dialog">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" aria-label="ปิด" onclick="this.closest('dialog').remove()">✕</button>
+    </form>
+    <h3 class="font-bold text-xl text-primary mb-4 border-b border-base-300 pb-2 flex flex-wrap items-center gap-2">
+      <i class="ph ph-car-profile text-2xl"></i>
+      <span>{{ reservation.get_request_type_display() }}</span>
+      {{ status_badge.render(reservation) }}
+      {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
+    </h3>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {% call row('ph-user', 'ผู้ขอ') %}{{ reservation.creator.get_name() if reservation.creator else '-' }}{% endcall %}
+      {% call row('ph-map-pin', 'สถานที่ปฏิบัติงาน') %}{{ reservation.location or '-' }}{% endcall %}
+      {% call row('ph-calendar-plus', 'วัน-เวลา เริ่ม') %}{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M น.') }}{% endcall %}
+      {% call row('ph-calendar-check', 'วัน-เวลา กลับ') %}{{ reservation.return_datetime.strftime('%d/%m/%Y %H:%M น.') if reservation.return_datetime else '-' }}{% endcall %}
+      {% if reservation.car %}
+      {% call row('ph-identification-card', 'รถ') %}<span data-role="assigned-car">{{ reservation.car.license_plate }}{% if reservation.car.vehicle_type %} ({{ reservation.car.vehicle_type }}){% endif %}</span>{% endcall %}
+      {% endif %}
+      {% if reservation.driver %}
+      {% call row('ph-user', 'พนักงานขับรถ') %}<span data-role="assigned-driver">{{ reservation.driver.get_name() }}</span>{% endcall %}
+      {% endif %}
+    </div>
+
+    <h4 class="mt-4 font-semibold">สถานะการอนุมัติ</h4>
+    {{ ApprovalSteps(steps, class_='steps-vertical mt-2 w-full') }}
+
+    <div class="modal-action">
+      <a class="btn btn-primary btn-soft"
+         href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">
+        ดูรายละเอียดคำขอ
+      </a>
+      <form method="dialog">
+        <button class="btn px-8" onclick="this.closest('dialog').remove()">ปิด</button>
+      </form>
+    </div>
+  </div>
+  <div class="modal-backdrop" onclick="this.closest('dialog').remove()"></div>
+</dialog>

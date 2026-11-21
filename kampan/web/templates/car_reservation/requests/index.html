@@ -1,0 +1,133 @@
+{% extends "/car_reservation/base/default-page.html" %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+{% from '/car_reservation/components/list_header.html' import ListHeader %}
+{% import '/car_reservation/components/status_badge.html' as status_badge %}
+
+{% block title %}คำขอของฉัน{% endblock %}
+
+{% block page_subtitle %}ติดตามสถานะคำขอใช้รถที่คุณยื่นไว้{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-primary" data-open-new-request href="{{ url_for('car_reservation.requests.create', organization_id=organization.id) }}">
+  <i class="ph ph-plus"></i> ยื่นคำขอ
+</a>
+{% endblock %}
+
+{% block content %}
+{% set total = reservations | length %}
+<div class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4">
+    {{ ListHeader('รายการคำขอ', total, icon='ph-list-bullets') }}
+    <form method="get" class="flex flex-col gap-3 rounded-box border border-base-300 p-4" data-role="request-filters">
+      <input type="hidden" name="organization_id" value="{{ organization.id }}" />
+      <div class="grid grid-cols-1 gap-x-3 gap-y-2 sm:grid-cols-2 lg:grid-cols-4 sm:items-end">
+        <fieldset class="fieldset sm:col-span-2">
+          <legend class="fieldset-legend">ค้นหา</legend>
+          <label class="input w-full">
+            <i class="ph ph-magnifying-glass text-base-content/60"></i>
+            <input type="search" name="q" value="{{ filters.q }}" maxlength="128"
+                   placeholder="วัตถุประสงค์ / สถานที่" aria-label="ค้นหาวัตถุประสงค์หรือสถานที่" />
+          </label>
+        </fieldset>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">ประเภท</legend>
+          <select name="request_type" class="select w-full" aria-label="ประเภทคำขอ">
+            <option value="">ทุกประเภท</option>
+            {% for key, label in request_types %}
+            <option value="{{ key }}" {{ 'selected' if filters.request_type == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </fieldset>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">สถานะ</legend>
+          <select name="status" class="select w-full" aria-label="สถานะคำขอ">
+            <option value="">ทุกสถานะ</option>
+            {% for key, label in statuses %}
+            <option value="{{ key }}" {{ 'selected' if filters.status == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </fieldset>
+        <fieldset class="fieldset sm:col-span-2">
+          <legend class="fieldset-legend">วันออกเดินทาง</legend>
+          <div class="flex items-center gap-2">
+            <input type="date" name="date_from" class="input min-w-0 flex-1" aria-label="ตั้งแต่วันที่"
+                   value="{{ filters.date_from.isoformat() if filters.date_from else '' }}" />
+            <span class="text-base-content/60">–</span>
+            <input type="date" name="date_to" class="input min-w-0 flex-1" aria-label="ถึงวันที่"
+                   value="{{ filters.date_to.isoformat() if filters.date_to else '' }}" />
+          </div>
+        </fieldset>
+        <div class="flex flex-wrap justify-end gap-2 sm:col-span-2 sm:pb-1">
+          {% if filters.active %}
+          <a class="btn btn-ghost" href="{{ url_for('car_reservation.requests.index', organization_id=organization.id) }}">
+            <i class="ph ph-x"></i> ล้างตัวกรอง
+          </a>
+          {% endif %}
+          <button type="submit" class="btn btn-primary"><i class="ph ph-funnel"></i> ค้นหา</button>
+        </div>
+      </div>
+    </form>
+    {% if total %}
+    <div class="hidden overflow-x-auto md:block">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>วัตถุประสงค์</th>
+            <th>ประเภท</th>
+            <th>วันออกเดินทาง</th>
+            <th>สถานะ</th>
+            <th class="w-px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for reservation in reservations %}
+          <tr class="hover:bg-base-200/50">
+            <td>
+              <a class="link link-hover font-medium"
+                 href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">
+                {{ reservation.request_reason }}
+              </a>
+              {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
+              {% if reservation.is_insert %}{{ status_badge.insert() }}{% endif %}
+            </td>
+            <td>{{ reservation.get_request_type_display() }}</td>
+            <td>{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</td>
+            <td>{{ status_badge.render(reservation) }} {% include '/car_reservation/feedback/_link.html' %}</td>
+            <td class="text-right">
+              <a class="btn btn-ghost btn-sm btn-square tooltip tooltip-left" data-tip="ดูรายละเอียด" aria-label="ดูรายละเอียด" data-role="view-request"
+                 href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">
+                <i class="ph ph-eye text-lg"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="flex flex-col gap-3 md:hidden">
+      {% for reservation in reservations %}
+      <a class="card card-border bg-base-100 transition hover:border-primary"
+         data-role="request-card"
+         href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">
+        <div class="card-body gap-1 p-4">
+          <div class="flex items-start justify-between gap-2">
+            <span class="font-medium break-words">{{ reservation.request_reason }}</span>
+            {{ status_badge.render(reservation) }} {% include '/car_reservation/feedback/_link.html' %}
+          </div>
+          <p class="text-sm text-base-content/70">{{ reservation.get_request_type_display() }}</p>
+          <div class="flex items-center justify-between gap-2 text-sm text-base-content/60">
+            <span>{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</span>
+            {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% elif filters.active %}
+    {{ EmptyState('ph-magnifying-glass', 'ไม่พบคำขอที่ตรงกับตัวกรอง', description='ลองเปลี่ยนคำค้นหรือล้างตัวกรอง') }}
+    {% else %}
+    {{ EmptyState('ph-car-profile', 'ยังไม่มีคำขอ', description='กดปุ่ม "ยื่นคำขอ" เพื่อขอใช้รถ') }}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

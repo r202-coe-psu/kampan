@@ -1,5 +1,5 @@
 {% extends '/organizations/base/default-organization-page.html' %}
-{% import '/base/html-renderer.html' as renderer %}
+{% from '/base/components/role_badge.html' import RoleBadge %}
 
 {% block title %} แก้ไขตำแหน่ง {% endblock %}
 {% block dashboard_title %} แก้ไขตำแหน่ง {% endblock %}
@@ -10,26 +10,94 @@
 ("แก้ไขตำแหน่ง " + org_user.display_fullname(), "")]) }}
 {% endblock %}
 
-{% block content %}
-<div class="flex flex-row justify-between">
-  <div class="flex justify-start w-full gap-2">
-    <a class="btn  btn-primary"
-      href="{{ url_for('organizations.members.index', organization_id=organization.id) }}">
-      <i class="ph ph-arrow-u-up-left"></i>
-      ย้อนกลับ
-    </a>
+{% macro StepTitle(number, title, hint="") %}
+<div class="flex items-start gap-3">
+  <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">{{ number }}</span>
+  <div>
+    <h2 class="text-lg font-bold">{{ title }}</h2>
+    {% if hint %}<p class="text-sm text-base-content/60">{{ hint }}</p>{% endif %}
   </div>
 </div>
-<div>
-  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST">
-    {{ form.hidden_tag() }}
-    {{ renderer.render_field(form.first_name) }}
-    {{ renderer.render_field(form.last_name) }}
-    {{ renderer.render_field(form.email) }}
-    {{ renderer.render_multiple_select_field(form.roles) }}
-    {{ renderer.render_field(form.appointment) }}
-    <button class="btn btn-primary mt-4" type="submit">ยืนยันข้อมูล</button>
-  </form>
-</div>
+{% endmacro %}
 
+{% macro FieldErrors(field) %}
+{% for error in field.errors %}
+<p class="mt-2 text-sm text-error"><i class="ph ph-warning-circle"></i> {{ error }}</p>
+{% endfor %}
+{% endmacro %}
+
+{% macro TextField(field, label, placeholder="", type="text") %}
+<fieldset class="fieldset">
+  <legend class="fieldset-legend">{{ label }}</legend>
+  <input type="{{ type }}" class="input w-full" name="{{ field.name }}" value="{{ field.data or '' }}"
+    placeholder="{{ placeholder }}" />
+  {{ FieldErrors(field) }}
+</fieldset>
+{% endmacro %}
+
+{% block content %}
+<form method="POST" id="edit-roles-form">
+  {{ form.hidden_tag() }}
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+
+    {# 1. ข้อมูลสมาชิก #}
+    <section class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+      {{ StepTitle(1, "ข้อมูลสมาชิก", "ชื่อ อีเมล และตำแหน่งงานที่แสดงในองค์กรนี้") }}
+      <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {{ TextField(form.first_name, "ชื่อ") }}
+        {{ TextField(form.last_name, "นามสกุล") }}
+        <div class="sm:col-span-2">{{ TextField(form.email, "อีเมล", type="email") }}</div>
+        <div class="sm:col-span-2">{{ TextField(form.appointment, "ตำแหน่งงาน", placeholder="เช่น นักวิชาการพัสดุ") }}</div>
+      </div>
+    </section>
+
+    {# 2. ตำแหน่งในองค์กร #}
+    <section class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+      {{ StepTitle(2, "ตำแหน่งในองค์กร", "เลือกได้มากกว่าหนึ่ง กำหนดว่าเห็นเมนูและอนุมัติอะไรได้บ้าง") }}
+      <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {% for role_key, role_label in form.roles.choices %}
+        <label class="flex cursor-pointer items-center gap-3 rounded-box border border-base-300 px-3 py-2.5 hover:bg-base-200 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+          <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" name="{{ form.roles.name }}"
+            value="{{ role_key }}" {% if form.roles.data and role_key in form.roles.data %}checked{% endif %} />
+          {{ RoleBadge(role_key, role_label) }}
+        </label>
+        {% endfor %}
+      </div>
+      {{ FieldErrors(form.roles) }}
+    </section>
+  </div>
+
+  {# แถบยืนยัน #}
+  <div class="segment mt-4 flex flex-col gap-3 border border-base-300 bg-base-100 rounded-2xl p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+    <p class="text-base-content/70" data-summary></p>
+    <div class="flex justify-end gap-2">
+      <a class="btn btn-ghost" href="{{ url_for('organizations.members.index', organization_id=organization.id) }}">ยกเลิก</a>
+      <button type="submit" class="btn btn-primary" data-submit>
+        <i class="ph ph-floppy-disk"></i> บันทึก
+      </button>
+    </div>
+  </div>
+</form>
 {% endblock content %}
+
+{% block additional_js %}
+<script>
+  (function () {
+    var form = document.getElementById('edit-roles-form');
+    if (!form) return;
+    var summary = form.querySelector('[data-summary]');
+    var submit = form.querySelector('[data-submit]');
+
+    function update() {
+      var roles = form.querySelectorAll('input[name="{{ form.roles.name }}"]:checked').length;
+      submit.disabled = roles === 0;
+      summary.textContent = roles === 0
+        ? 'เลือกตำแหน่งอย่างน้อยหนึ่งตำแหน่ง'
+        : 'เลือกแล้ว ' + roles + ' ตำแหน่ง';
+    }
+
+    form.addEventListener('change', update);
+    update();
+  })();
+</script>
+{% endblock %}

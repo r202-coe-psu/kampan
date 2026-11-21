@@ -16,6 +16,14 @@ EMAIL_TYPE = [
     ("lost_break", "แจ้งเตือนวัสดุชำรุด/สูญหาย/แก้ไข"),
     ("car_application", "ขอยืมรถยนต์"),
     ("car_application_result", "แจ้งผลการขอใช้รถยนต์ถึงผู้ขอ"),
+    ("car_reservation_submitted", "จองรถ: ยื่นใบขอใช้รถ"),
+    ("car_reservation_approved", "จองรถ: อนุมัติขั้นหนึ่ง รอขั้นถัดไป"),
+    ("car_reservation_active", "จองรถ: อนุมัติครบทุกขั้น"),
+    ("car_reservation_denied", "จองรถ: ไม่อนุมัติใบขอใช้รถ"),
+    ("car_reservation_cancel_requested", "จองรถ: ขอยกเลิกใบขอใช้รถ"),
+    ("car_reservation_cancelled", "จองรถ: ยกเลิกใบขอใช้รถ"),
+    ("car_reservation_completed", "จองรถ: ปิดงาน ขอให้ประเมินความพึงพอใจ"),
+    ("car_reservation_close_disputed", "จองรถ: ผู้ขอแจ้งเวลาปิดงานไม่ถูกต้อง"),
     ("ma_assigned", "MA: แจ้งมอบหมายผู้รับผิดชอบ"),
     ("ma_expiry", "MA: เตือนใกล้หมดอายุ / สิ้นสุดสัญญา"),
     ("ma_payment", "MA: เตือนครบกำหนดจ่ายงวด"),
@@ -24,6 +32,7 @@ EMAIL_TYPE = [
 EMAIL_SYSTEMS = [
     ("inventory", "ระบบพัสดุ"),
     ("vehicle_lending", "ระบบยืมรถ"),
+    ("car_reservation", "ระบบจองรถ"),
     ("procurement", "ระบบ MA"),
 ]
 
@@ -31,6 +40,7 @@ EMAIL_SYSTEMS = [
 EMAIL_SYSTEM_MODULE = {
     "inventory": "module-inventory",
     "vehicle_lending": "module-car",
+    "car_reservation": "module-car",
     "procurement": "module-procurement",
 }
 
@@ -70,6 +80,46 @@ EMAIL_TYPE_INFO = {
         "system": "vehicle_lending",
         "recipient": "ผู้ขอใช้รถ",
         "trigger": "เมื่อสถานะคำขอใช้รถเปลี่ยน (อนุมัติ / ปฏิเสธ)",
+    },
+    "car_reservation_submitted": {
+        "system": "car_reservation",
+        "recipient": "หัวหน้าฝ่ายของผู้ขอ",
+        "trigger": "เมื่อผู้ขอยื่นใบขอใช้รถ",
+    },
+    "car_reservation_approved": {
+        "system": "car_reservation",
+        "recipient": "ผู้ดำรงตำแหน่งและผู้รับมอบหมายของขั้นอนุมัติถัดไป",
+        "trigger": "เมื่อผู้อนุมัติขั้นก่อนหน้าอนุมัติ และยังมีขั้นถัดไป",
+    },
+    "car_reservation_active": {
+        "system": "car_reservation",
+        "recipient": "ผู้ขอและพนักงานขับรถ",
+        "trigger": "เมื่อผู้อนุมัติขั้นสุดท้ายอนุมัติ ใบขอพร้อมใช้งาน",
+    },
+    "car_reservation_denied": {
+        "system": "car_reservation",
+        "recipient": "ผู้ขอใช้รถ",
+        "trigger": "เมื่อผู้อนุมัติขั้นใดขั้นหนึ่งไม่อนุมัติ",
+    },
+    "car_reservation_cancel_requested": {
+        "system": "car_reservation",
+        "recipient": "ผู้ดำรงตำแหน่งและผู้รับมอบหมายของงานจัดรถ (dispatcher)",
+        "trigger": "เมื่อผู้ขอแจ้งยกเลิกใบขอที่จัดรถแล้ว",
+    },
+    "car_reservation_cancelled": {
+        "system": "car_reservation",
+        "recipient": "ผู้ขอและพนักงานขับรถ",
+        "trigger": "เมื่อยกเลิกใบขอใช้รถ (หรืองานจัดรถรับทราบการยกเลิก)",
+    },
+    "car_reservation_completed": {
+        "system": "car_reservation",
+        "recipient": "ผู้ขอใช้รถ",
+        "trigger": "เมื่อพนักงานขับรถปิดงาน พร้อมลิงก์แบบประเมินความพึงพอใจ",
+    },
+    "car_reservation_close_disputed": {
+        "system": "car_reservation",
+        "recipient": "ผู้ดำรงตำแหน่งและผู้รับมอบหมายของงานจัดรถ (dispatcher)",
+        "trigger": "เมื่อผู้ขอแจ้งว่าเวลาปิดงานที่พนักงานขับรถบันทึกไม่ถูกต้อง",
     },
     "ma_assigned": {
         "system": "procurement",
@@ -200,6 +250,34 @@ EMAIL_TEMPLATE_VARIABLES = {
         ("due_date", "วันครบกำหนดจ่ายของงวด"),
     ],
 }
+
+# อีเมลของระบบจองรถทุกประเภทใช้ตัวแปรชุดเดียวกัน
+# ต้องตรงกับ dict ที่ kampan/utils/car_reservation_email.py ส่งให้ template.render() (มี test คุมไว้)
+_CAR_RESERVATION_VARIABLES = [
+    ("organization_name", "ชื่อองค์กร"),
+    ("requester_name", "ชื่อผู้ขอใช้รถ"),
+    ("contact_name", "ชื่อผู้ติดต่อรับแจ้งสถานะ"),
+    ("request_type_label", "ประเภทใบขอ"),
+    ("destination", "สถานที่ปลายทาง"),
+    ("departure", "วันเวลาออกเดินทาง"),
+    ("return_at", "วันเวลากลับ"),
+    ("status_label", "สถานะใบขอ"),
+    ("step_label", "ขั้นอนุมัติที่รอพิจารณา (เป็น - ถ้าไม่มี)"),
+    ("car_plate", "ทะเบียนรถ (ว่างถ้ายังไม่จัดรถ)"),
+    ("driver_name", "ชื่อพนักงานขับรถ (ว่างถ้ายังไม่จัดรถ)"),
+    ("reason", "เหตุผลการขอใช้รถ"),
+    ("comment", "ความเห็นล่าสุดของผู้พิจารณา เช่น เหตุผลที่ไม่อนุมัติ/ยกเลิก (เป็น - ถ้าไม่มี)"),
+    ("request_url", "ลิงก์ไปหน้ารายละเอียดใบขอ"),
+    ("feedback_url", "ลิงก์ไปหน้าแบบประเมินความพึงพอใจของรถคันที่ใช้ (เลือกเที่ยวนี้ให้ ว่างถ้ายังไม่จัดรถ)"),
+]
+
+EMAIL_TEMPLATE_VARIABLES.update(
+    {
+        email_type: _CAR_RESERVATION_VARIABLES
+        for email_type, info in EMAIL_TYPE_INFO.items()
+        if info["system"] == "car_reservation"
+    }
+)
 
 
 class EmailTemplate(me.Document):

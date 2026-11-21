@@ -1,0 +1,14 @@
+{% set details = reservation.details %}
+<div><dt class="text-sm text-base-content/60">ส่วนงาน</dt><dd class="font-medium break-words">{{ details.section }}</dd></div>
+<div><dt class="text-sm text-base-content/60">ที่</dt><dd class="font-medium break-words">{{ details.document_number }}</dd></div>
+<div><dt class="text-sm text-base-content/60">ประเภทรถ</dt><dd class="font-medium break-words">{{ details.vehicle_kind }}</dd></div>
+<div><dt class="text-sm text-base-content/60">จำนวนรถ (คัน)</dt><dd class="font-medium break-words">{{ details.vehicle_count }}</dd></div>
+<div><dt class="text-sm text-base-content/60">เมือง/รัฐ</dt><dd class="font-medium break-words">{{ details.city_state }}</dd></div>
+<div><dt class="text-sm text-base-content/60">ประเทศ</dt><dd class="font-medium break-words">{{ details.country }}</dd></div>
+<div><dt class="text-sm text-base-content/60">ผู้ประสานงาน</dt><dd class="font-medium break-words">{{ details.coordinator_name }} โทร {{ details.coordinator_phone }}</dd></div>
+<div><dt class="text-sm text-base-content/60">ตำแหน่งผู้ขอใช้รถ</dt><dd class="font-medium break-words">{{ details.requester_position }}</dd></div>
+{% if reservation.project_file %}
+<div><dt class="text-sm text-base-content/60">เอกสารโครงการ</dt>
+  <dd class="font-medium break-words"><a class="link link-primary" data-role="project-file"
+         href="{{ url_for('car_reservation.requests.project_file', request_id=reservation.id, organization_id=organization.id) }}">{{ reservation.project_file.filename }}</a></dd></div>
+{% endif %}

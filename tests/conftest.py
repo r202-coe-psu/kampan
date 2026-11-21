@@ -5,9 +5,14 @@ import pytest
 import mongoengine as me
 import mongomock
 from flask import Flask
+from mongomock import gridfs as mongomock_gridfs
 
 from kampan import models
 from kampan.web import acl, oauth2, redis_rq, views
+
+
+# ImageField เก็บไฟล์ผ่าน GridFS ซึ่งไม่รู้จัก mongomock เอง ต้องเปิด integration ก่อน
+mongomock_gridfs.enable_gridfs_integration()
 
 
 @pytest.fixture(scope="session")
@@ -113,11 +118,12 @@ def login_as(app):
 
 @pytest.fixture
 def create_car():
-    def _create_car(organization, license_plate="กก 1111", status="active"):
+    def _create_car(organization, license_plate="กก 1111", status="active", vehicle_type=None):
         car = models.vehicles.Car(
             license_plate=license_plate,
             organization=organization,
             status=status,
+            vehicle_type=vehicle_type,
         )
         car.save()
         return car
@@ -153,6 +159,34 @@ def create_car_application():
 
 
 @pytest.fixture
+def create_car_reservation():
+    """เที่ยวรถของระบบจองรถ (CarReservation) ที่ผูกรถแล้ว ใช้เป็นเที่ยวของแบบประเมิน"""
+
+    def _create_car_reservation(
+        organization,
+        car,
+        location="สนามบินหาดใหญ่",
+        status="active",
+        departure_datetime=None,
+    ):
+        departure = departure_datetime or datetime.datetime(2026, 1, 15, 8, 0)
+        reservation = models.CarReservation(
+            organization=organization,
+            car=car,
+            location=location,
+            status=status,
+            request_type="domestic",
+            request_reason="ไปราชการ",
+            departure_datetime=departure,
+            return_datetime=departure + datetime.timedelta(hours=9),
+        )
+        reservation.save()
+        return reservation
+
+    return _create_car_reservation
+
+
+@pytest.fixture
 def make_question():
     """สร้าง QuestionTemplate แบบสั้น ๆ สำหรับประกอบแบบประเมินในเทสต์"""
 
@@ -185,12 +219,15 @@ def create_feedback_template():
 
 @pytest.fixture
 def create_feedback_response():
-    def _create_feedback_response(template, car, answers=None, car_application=None, created_date=None):
+    def _create_feedback_response(
+        template, car, answers=None, car_application=None, car_reservation=None, created_date=None
+    ):
         response = models.CarFeedbackResponse(
             feedback_template=template,
             organization=template.organization,
             car=car,
             car_application=car_application,
+            car_reservation=car_reservation,
             answers=list(answers or []),
             created_date=created_date or datetime.datetime(2026, 2, 1, 10, 0),
         )

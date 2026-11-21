@@ -1,0 +1,10 @@
+<fieldset class="fieldset">
+  <legend class="fieldset-legend">{{ form.project_file.label.text }} {% if reservation is not defined %}<span class="text-error">*</span>{% endif %}</legend>
+  {{ form.project_file(class_="file-input file-input-bordered w-full", accept=".pdf,.doc,.docx,.jpg,.jpeg,.png") }}
+  {% if reservation is defined and reservation.project_file %}
+  <p class="text-sm text-base-content/70">มีไฟล์แนบเดิม ({{ reservation.project_file.filename }}) หากไม่เลือกไฟล์ใหม่จะใช้ไฟล์เดิม</p>
+  {% endif %}
+  <p class="text-sm text-base-content/70">ไฟล์ PDF, DOC, DOCX, JPG หรือ PNG ขนาดไม่เกิน 10 MB</p>
+  {% for error in form.project_file.errors %}<p class="text-error text-sm">{{ error }}</p>{% endfor %}
+</fieldset>
+<p class="text-sm text-base-content/70">หมายเหตุ ต้องส่งใบขอใช้รถนี้ล่วงหน้า 10 วันทำการ และให้แนบเอกสารโครงการ/หรือเอกสารอื่นที่เกี่ยวข้องด้วยทุกครั้ง</p>

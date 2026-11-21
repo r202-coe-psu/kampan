@@ -1,0 +1,52 @@
+{% extends "/base/base.html" %}
+{% from '/base/components/breadcrumbs.html' import RenderBreadcrumb %}
+{% from "/base/components/dialogs.html" import ModalNegative, ModalPositive %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block body %}
+  <div class="drawer 2xl:drawer-open">
+    <input id="drawer-menu" type="checkbox" class="drawer-toggle" />
+    <div class="drawer-content bg-base-200 min-h-screen">
+      <div class="flex min-h-screen flex-col">
+        {# จอต่ำกว่า 2xl sidebar ซ่อนอยู่ จึงมีแถบเล็กไว้เปิดเมนู ส่วนโปรไฟล์อยู่ท้าย sidebar #}
+        <div class="flex items-center gap-2 border-b border-base-300 bg-base-100 px-2 py-2 2xl:hidden">
+          <label for="drawer-menu" class="btn btn-square btn-ghost drawer-button" aria-label="เปิดเมนู">
+            <i class="ph ph-size ph-list"></i>
+          </label>
+          <span class="flex items-center gap-1.5 font-bold"><i class="ph ph-car-profile text-xl! text-primary" aria-hidden="true"></i>ระบบจองรถ</span>
+        </div>
+        <main class="w-full flex-1 px-4 py-6 lg:px-10">
+          <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="min-w-0">
+              <h1 class="flex items-center gap-4 font-bold">
+                <span class="text-3xl font-bold">
+                  {% block dashboard_title %}{{ self.title() }}{% endblock %}
+                </span>
+              </h1>
+              {% set subtitle %}{% block page_subtitle %}{% endblock %}{% endset %}
+              {% if subtitle | trim %}
+              <p class="mt-1 text-sm text-base-content/60" data-role="page-subtitle">{{ subtitle }}</p>
+              {% endif %}
+            </div>
+            {% set actions %}{% block page_actions %}{% endblock %}{% endset %}
+            {% if actions | trim %}
+            <div class="flex shrink-0 flex-wrap items-center gap-2" data-role="page-actions">{{ actions }}</div>
+            {% endif %}
+          </header>
+          {% block breadcrumbs %}{% endblock %}
+          <div class="mt-4">
+            {% block content %}
+            {% endblock content %}
+          </div>
+        </main>
+        <footer class="footer sm:footer-horizontal bg-base-200 text-base-content p-10 border-t border-base-300 items-end">
+          {% include "/base/footer.html" %}
+        </footer>
+      </div>
+    </div>
+    {% include "/car_reservation/base/sidebar.html" %}
+  </div>
+  {% include "/car_reservation/requests/_new_request_modal.html" %}
+  {% include "/base/components/flash_messages.html" %}
+
+{% endblock body %}

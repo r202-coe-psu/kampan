@@ -49,11 +49,9 @@ def _post_and_follow(app, login_as, user, url, data=None):
 
 
 def _assert_toast(html, message, tone="alert-success"):
-    assert message in html
-    toast = html[html.index('class="toast') :]
-    assert message in toast
-    assert "data-toast" in toast
-    assert tone in toast
+    category = tone.removeprefix("alert-")
+    toast = html[html.index(f'data-toast-category="{category}"') :]
+    assert message in toast[: toast.index("</div>")]
 
 
 def test_create_division_shows_toast(app, login_as, setup):

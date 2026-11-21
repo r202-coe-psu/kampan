@@ -1,0 +1,82 @@
+{% extends "/car_reservation/base/default-page.html" %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+
+{% block title %}แดชบอร์ดพนักงานขับรถ{% endblock %}
+
+{% block content %}
+<div class="mt-4 flex flex-wrap items-center justify-between gap-2">
+  <div role="tablist" class="tabs tabs-box">
+    {% for key, label, _ in periods %}
+    <a role="tab" class="tab {{ 'tab-active' if key == period else '' }}"
+       href="{{ url_for('car_reservation.stats.drivers', organization_id=organization.id, period=key, driver=driver_id or None) }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+  <form method="get" class="flex items-center gap-2" data-role="driver-filter">
+    {{ form.organization_id }}
+    {{ form.period }}
+    {{ renderer.render_select_field(form.driver, class_="select-sm sm:w-56") }}
+  </form>
+</div>
+
+{% set total_jobs = rows | sum(attribute='in_hours_jobs') + rows | sum(attribute='ot_jobs') %}
+<div class="mt-4 stats stats-vertical sm:stats-horizontal w-full border border-base-300 bg-base-100 shadow-sm">
+  <div class="stat">
+    <div class="stat-title">งานทั้งหมด</div>
+    <div class="stat-value text-primary">{{ total_jobs }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-title">ชั่วโมงรวม</div>
+    <div class="stat-value">{{ '%.1f' | format(rows | sum(attribute='hours')) }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-title">ระยะทางรวม (กม.)</div>
+    <div class="stat-value">{{ rows | sum(attribute='km') }}</div>
+  </div>
+</div>
+
+<div class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4">
+    <h3 class="card-title">รายคน</h3>
+    {% if rows %}
+    <div class="overflow-x-auto">
+      <table class="table table-zebra">
+        <thead>
+          <tr>
+            <th>พนักงานขับรถ</th>
+            <th class="text-right">งานในเวลา</th>
+            <th class="text-right">งาน OT</th>
+            <th class="text-right">ชั่วโมงรวม</th>
+            <th class="text-right">ระยะทาง (กม.)</th>
+            <th class="text-right">งานที่จะมาถึง</th>
+            <th class="text-right">ชั่วโมงที่จองไว้</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr class="hover" data-role="driver-row" data-driver-id="{{ row.driver.id }}">
+            <td class="font-medium" data-field="name">{{ row.driver.get_name() }}</td>
+            <td class="text-right" data-field="in_hours">{{ row.in_hours_jobs }}</td>
+            <td class="text-right" data-field="ot">{{ row.ot_jobs }}</td>
+            <td class="text-right" data-field="hours">{{ '%.1f' | format(row.hours) }}</td>
+            <td class="text-right" data-field="km">{{ row.km }}</td>
+            <td class="text-right" data-field="upcoming">{{ row.upcoming }}</td>
+            <td class="text-right" data-field="upcoming_hours">{{ '%.1f' | format(row.upcoming_hours) }}</td>
+            <td class="text-right">
+              <a class="btn btn-ghost btn-sm btn-square" data-role="open-driver"
+                 aria-label="ดูแดชบอร์ดของ {{ row.driver.get_name() }}" title="ดูแดชบอร์ดของ {{ row.driver.get_name() }}"
+                 href="{{ url_for('car_reservation.stats.driver', driver_id=row.driver.id, organization_id=organization.id, period=period) }}">
+                <i class="ph ph-eye text-lg"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    {{ EmptyState('ph-user', 'ไม่พบพนักงานขับรถ') }}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

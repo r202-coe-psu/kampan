@@ -1,0 +1,14 @@
+{% extends '/car_reservation/base/default-page.html' %}
+{% from '/car_reservation/requests/_type_cards.html' import TypeCards with context %}
+
+{% block title %}ยื่นคำขอใช้รถ{% endblock %}
+
+{% block page_subtitle %}เลือกแบบฟอร์มที่ต้องการยื่น{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 border border-base-300 shadow-sm max-w-2xl">
+  <div class="card-body">
+    {{ TypeCards(organization, new_request_date) }}
+  </div>
+</div>
+{% endblock %}
