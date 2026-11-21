@@ -6,6 +6,7 @@
 
 import datetime
 
+import bson
 from flask import Blueprint, abort, g, render_template, request, url_for
 from flask_login import current_user
 
@@ -115,3 +116,51 @@ def index():
             "/car_reservation/timeline/_grid.html", nav_oob=True, **context
         )
     return render_template("/car_reservation/timeline/index.html", **context)
+
+
+def object_id_or_none(value):
+    """ObjectId จากค่าที่ผู้ใช้ส่งมา ค่าขยะคืน None"""
+    value = (value or "").strip() if isinstance(value, str) else ""
+    return bson.ObjectId(value) if bson.ObjectId.is_valid(value) else None
+
+
+def parse_slot(value, limit=car_timeline.PICKER_MAX_SLOTS):
+    """คันที่กำลังเลือก (1..limit) ค่าขยะคืน 0"""
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return number if 1 <= number <= limit else 0
+
+
+@module.route("/picker")
+@acl.organization_roles_required("dispatcher")
+def picker():
+    """ตัวเลือกรถของฟอร์มจัดรถ (partial สำหรับ htmx): ตารางรถของช่วง start..end พร้อมบอกว่ารถคันไหนเลือกได้
+
+    query: start, end (datetime-local/ISO), kind (ประเภทรถที่ขอ), exclude (id คำขอที่กำลังจัดรถ),
+    driver (id พขร. ของงานแทรก), selected (id รถของแต่ละช่อง คั่นด้วยจุลภาค), slot (คันที่กำลังเลือก)
+    ค่าที่ผิดรูปแบบถูกข้าม: ช่วงเวลาใช้ไม่ได้ได้คำใบ้ ไม่ใช่ error
+    """
+    organization = g.organization
+    # system admin ผ่านตัว decorator แต่ต้องถือ role ผู้จัดรถขององค์กรนี้ด้วย (กติกาเดียวกับอนุมัติ/งานด่วน/งานแทรก)
+    if not flow.can_create_insert(organization, current_user._get_current_object()):
+        abort(403)
+
+    args = request.args
+    timeline, picker_error = car_timeline.picker_or_hint(
+        organization,
+        car_timeline.parse_datetime_local(args.get("start")),
+        car_timeline.parse_datetime_local(args.get("end")),
+        kind=(args.get("kind") or "").strip(),
+        exclude_id=object_id_or_none(args.get("exclude")),
+        driver_id=object_id_or_none(args.get("driver")),
+        selected=car_timeline.parse_id_list(args.get("selected")),
+        active_slot=parse_slot(args.get("slot")),
+    )
+    return render_template(
+        "/car_reservation/timeline/_picker.html",
+        organization=organization,
+        timeline=timeline,
+        picker_error=picker_error,
+    )

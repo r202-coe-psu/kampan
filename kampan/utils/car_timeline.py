@@ -8,6 +8,10 @@
 
 ตำแหน่งแท่งคำนวณจากเวลาจริงเทียบกับช่วงที่แสดง [start 00:00, start + days 00:00) แถวหนึ่งเป็น track ต่อเนื่องทุกวัน
 ความกว้างขั้นต่ำของแท่งแคบให้ CSS จัดการ แท่งที่เวลาทับกันในแถวเดียวกันถูกจัดเป็นเลน (lane) เรียงซ้อนกัน
+
+ตัวเลือกรถในฟอร์มจัดรถ (#79 ส่วน B) ใช้ตารางเดียวกันผ่าน `build_picker(...)`: ช่วงที่แสดงคือช่วงของคำขอ ±2 วัน (ไม่เกิน 31 วัน)
+มีแถบไฮไลต์ช่วงของคำขอ กลุ่มประเภทที่ผู้ขอขอขึ้นก่อน และทุกแถวบอกว่าเลือกได้หรือไม่ (ชนกับคำขอไหน/ใบยืม DIIS)
+โดยใช้ `overlapping_reservations` / `diis_bookings_overlapping` ชุดเดียวกับที่ server ใช้บล็อกตอนจัดรถ
 """
 
 import dataclasses
@@ -46,6 +50,13 @@ THAI_MONTHS = (
     "พ.ย.",
     "ธ.ค.",
 )
+
+# ตัวเลือกรถ: แสดงช่วงของคำขอ + ก่อน/หลังข้างละกี่วัน และเพดานจำนวนวันทั้งหมด
+PICKER_PADDING_DAYS = 2
+PICKER_MAX_DAYS = 31
+PICKER_NEEDS_WINDOW = "กรอกวัน-เวลาออกและกลับให้ครบ แล้วตารางรถจะแสดงที่นี่"
+PICKER_END_BEFORE_START = "เวลากลับต้องหลังเวลาออก"
+PICKER_MAX_SLOTS = 10
 
 # ปีที่รับเป็น start (กัน overflow ของ datetime และค่าขยะ)
 MIN_YEAR = 2000
@@ -144,10 +155,31 @@ class Bar:
 
 
 @dataclasses.dataclass
+class Conflict:
+    """งานที่ทับช่วงของคำขอที่กำลังจัดรถ (ใช้ในตัวเลือกรถ): คำขอในระบบนี้ (มีลิงก์) หรือใบยืมรถ DIIS (ไม่มีหน้ารายละเอียด)"""
+
+    source: str  # "reservation" | "diis"
+    reservation_id: str = ""
+    requester_name: str = ""
+    departure: datetime.datetime | None = None
+    return_: datetime.datetime | None = None
+
+    @property
+    def is_reservation(self):
+        return self.source == "reservation"
+
+
+@dataclasses.dataclass
 class CarRow:
     car: object
     bars: list
     lane_count: int  # จำนวนเลนที่แถวต้องสูง อย่างน้อย 1
+    conflict: Conflict | None = None  # เฉพาะตัวเลือกรถ: มีงานทับช่วงของคำขอ = เลือกไม่ได้
+    chosen_slot: int = 0  # เฉพาะตัวเลือกรถ: คันที่ (1..N) ที่เลือกรถคันนี้ไว้แล้ว 0 = ยังไม่ได้เลือก
+
+    @property
+    def selectable(self):
+        return self.conflict is None
 
 
 @dataclasses.dataclass
@@ -155,10 +187,24 @@ class TypeGroup:
     key: str  # ค่า vehicle_type ("" = ไม่ระบุประเภท) ใช้เป็น data-group
     label: str
     rows: list
+    is_requested: bool = False  # เฉพาะตัวเลือกรถ: ประเภทที่ผู้ขอขอ
+    collapsed: bool = False  # เฉพาะตัวเลือกรถ: เริ่มต้นพับไว้
 
     @property
     def car_count(self):
         return len(self.rows)
+
+
+@dataclasses.dataclass
+class PickerInfo:
+    """ข้อมูลเฉพาะของตัวเลือกรถที่แนบกับ Timeline (Timeline.picker เป็น None = หน้าตารางรถปกติ)"""
+
+    window_start: datetime.datetime
+    window_end: datetime.datetime
+    left_pct: float  # แถบไฮไลต์ช่วงของคำขอ (% ของช่วงที่แสดง ตัดขอบแล้ว)
+    width_pct: float
+    kind: str = ""  # ประเภทรถที่ผู้ขอขอ
+    active_slot: int = 0  # คันที่กำลังเลือก (1..N) 0 = ไม่ระบุ
 
 
 @dataclasses.dataclass
@@ -174,6 +220,7 @@ class Timeline:
     filters: TimelineFilters
     hour_ticks: list  # [(label, left_pct)] เฉพาะมุมมอง 1 วัน
     car_count: int = 0
+    picker: PickerInfo | None = None
 
     @property
     def end_date(self):
@@ -432,9 +479,16 @@ def build_timeline(organization, start_date, days, filters=None, now=None):
     แสดงเฉพาะรถ active ของ org และคำขอของ org ที่มีชุดรถ/พขร. แล้ว (คำขอที่ยังไม่จัดรถไม่ถูกวาด)
     ใช้ query คำขอครั้งเดียวทั้งช่วง และดึงชื่อผู้ใช้ทีเดียว (ไม่ dereference ทีละแท่ง)
     """
+    return _build(organization, start_date, normalize_days(days), filters, now)
+
+
+def _build(organization, start_date, days, filters=None, now=None, exclude_id=None):
+    """ตัวสร้างตารางจริง: days ใช้ตามที่ให้มา (หน้าตารางรถ normalize ก่อน ตัวเลือกรถกำหนดเองจากช่วงของคำขอ)
+
+    exclude_id = ไม่วาดแท่งของคำขอนี้ (ตัวคำขอที่กำลังจัดรถ)
+    """
     now = now or datetime.datetime.now()
     filters = filters or TimelineFilters()
-    days = normalize_days(days)
     range_start = datetime.datetime.combine(start_date, datetime.time.min)
     range_end = range_start + datetime.timedelta(days=days)
 
@@ -464,6 +518,7 @@ def build_timeline(organization, start_date, days, filters=None, now=None):
                 if filters.driver_id
                 else {}
             ),
+            **({"id__ne": exclude_id} if exclude_id is not None else {}),
         )
         # โหลดเฉพาะฟิลด์ที่วาดแท่ง (ไม่ดึงรายงานปิดงาน/ไฟล์ของแต่ละชุด) และไม่ dereference ผู้ขอ/พขร./รถ
         reservations = list(reservations.only(*RESERVATION_FIELDS).no_dereference())
@@ -528,3 +583,162 @@ def build_timeline(organization, start_date, days, filters=None, now=None):
         hour_ticks=hour_ticks,
         car_count=sum(len(group.rows) for group in groups),
     )
+
+
+# ---------------------------------------------------------------- car picker
+
+
+def picker_window_error(start, end):
+    """ข้อความบอกว่าช่วงเวลาของคำขอใช้ไม่ได้ (ว่าง = ใช้ได้) ใช้แสดงเป็นคำใบ้แทน error"""
+    if start is None or end is None:
+        return PICKER_NEEDS_WINDOW
+    if end <= start:
+        return PICKER_END_BEFORE_START
+    return ""
+
+
+def parse_id_list(value, limit=PICKER_MAX_SLOTS):
+    """id รถแยกด้วยจุลภาค เก็บตำแหน่งของแต่ละช่อง (ช่องว่างหรือค่าขยะเป็น "") เช่น "a,,c" = คันที่ 1 และ 3
+
+    ตัดท้ายที่ว่างทิ้งและจำกัดจำนวนช่อง
+    """
+    items = [
+        item.strip() if bson.ObjectId.is_valid(item.strip()) else ""
+        for item in (value or "").split(",")[:limit]
+    ]
+    while items and not items[-1]:
+        items.pop()
+    return items
+
+
+def picker_range(start, end):
+    """(วันแรก, จำนวนวัน) ของตัวเลือกรถ: ช่วงของคำขอ ±PICKER_PADDING_DAYS วัน ไม่เกิน PICKER_MAX_DAYS วัน"""
+    padding = datetime.timedelta(days=PICKER_PADDING_DAYS)
+    first = start.date() - padding
+    # เวลากลับ 00:00 พอดีถือว่าวันสุดท้ายคือวันก่อนหน้า
+    last = (end - datetime.timedelta(microseconds=1)).date() + padding
+    return first, min((last - first).days + 1, PICKER_MAX_DAYS)
+
+
+def _conflicts_by_car(organization, start, end, exclude_id=None, except_driver_id=None):
+    """{id รถ: Conflict} ของรถที่มีงานทับ [start, end) ใช้ query คำขอหนึ่งครั้งและ DIIS หนึ่งครั้ง แล้วจับคู่ใน Python
+
+    ใช้ predicate เดียวกับ `_car_is_taken` ของ server: คำขอ (สถานะใน OCCUPYING_STATUSES) ก่อน แล้วค่อยใบยืม DIIS
+    except_driver_id = ไม่นับชุดที่ พขร. คนนี้ขับ (งานแทรกใช้รถร่วมกับงานหลักของ พขร. คนเดิมได้ DIIS ไม่ยกเว้น)
+    """
+    reservations = list(
+        flow.overlapping_reservations(organization, start, end, exclude_id=exclude_id)
+        .only(
+            "creator",
+            "contact_name",
+            "departure_datetime",
+            "return_datetime",
+            "assignments.car",
+            "assignments.driver",
+        )
+        .no_dereference()
+        .order_by("departure_datetime")
+    )
+    diis = list(
+        flow.diis_bookings_overlapping(organization, start, end)
+        .only("car", "departure_datetime", "return_datetime")
+        .no_dereference()
+    )
+    names = _user_names({_ref_id(reservation.creator) for reservation in reservations})
+
+    conflicts = {}
+    for reservation in reservations:
+        for assignment in reservation.assignments:
+            car_id = _ref_id(assignment.car)
+            if car_id is None or car_id in conflicts:
+                continue
+            if except_driver_id is not None and _ref_id(assignment.driver) == except_driver_id:
+                continue
+            conflicts[car_id] = Conflict(
+                source="reservation",
+                reservation_id=str(reservation.id),
+                requester_name=names.get(_ref_id(reservation.creator))
+                or reservation.contact_name
+                or "",
+                departure=reservation.departure_datetime,
+                return_=reservation.return_datetime,
+            )
+    for application in diis:
+        car_id = _ref_id(application.car)
+        if car_id is not None and car_id not in conflicts:
+            conflicts[car_id] = Conflict(
+                source="diis",
+                departure=application.departure_datetime,
+                return_=application.return_datetime,
+            )
+    return conflicts
+
+
+def build_picker(
+    organization,
+    start,
+    end,
+    *,
+    kind="",
+    exclude_id=None,
+    driver_id=None,
+    selected=(),
+    active_slot=0,
+    now=None,
+):
+    """ตัวเลือกรถของฟอร์มจัดรถ: Timeline ของช่วง [start, end) ±2 วัน (ไม่เกิน 31 วัน) พร้อมข้อมูลเลือกรถ
+
+    - `Timeline.picker` ถือแถบไฮไลต์ช่วงของคำขอ; กลุ่มประเภท `kind` (ที่ผู้ขอขอ) มาก่อนและขยายไว้ ประเภทอื่นพับไว้
+    - แต่ละ CarRow มี `conflict` (มีงานทับ = เลือกไม่ได้) และ `chosen_slot` จาก `selected`
+      (รายการ id รถตามลำดับช่อง ช่องว่างเป็น "")
+    - exclude_id = คำขอที่กำลังจัดรถ (ไม่นับว่าชน), driver_id = พขร. ของงานแทรก (ดู `_conflicts_by_car`)
+    ต้องมีช่วงเวลาที่ถูกต้อง (`picker_window_error` ว่าง) ไม่เช่นนั้นยก ValueError
+    """
+    error = picker_window_error(start, end)
+    if error:
+        raise ValueError(error)
+    first, days = picker_range(start, end)
+    timeline = _build(organization, first, days, now=now, exclude_id=exclude_id)
+
+    conflicts = _conflicts_by_car(
+        organization, start, end, exclude_id=exclude_id, except_driver_id=driver_id
+    )
+    chosen = {}
+    for number, car_id in enumerate(selected, start=1):
+        if car_id:
+            chosen.setdefault(car_id, number)
+    for row in timeline.rows:
+        row.conflict = conflicts.get(row.car.id)
+        row.chosen_slot = chosen.get(str(row.car.id), 0)
+
+    kind = kind if kind in VEHICLE_TYPE_LABELS else ""
+    for group in timeline.groups:
+        group.is_requested = bool(kind) and group.key == kind
+        group.collapsed = bool(kind) and not group.is_requested
+    if kind:
+        # sorted เสถียร: ประเภทที่ขอขึ้นก่อน ที่เหลือคงลำดับมาตรฐาน
+        timeline.groups.sort(key=lambda group: not group.is_requested)
+
+    total = (timeline.range_end - timeline.range_start).total_seconds()
+    shown_start = max(start, timeline.range_start)
+    shown_end = min(end, timeline.range_end)
+    timeline.picker = PickerInfo(
+        window_start=start,
+        window_end=end,
+        left_pct=round((shown_start - timeline.range_start).total_seconds() / total * 100, 4),
+        width_pct=round(max((shown_end - shown_start).total_seconds(), 0) / total * 100, 4),
+        kind=kind,
+        active_slot=active_slot,
+    )
+    return timeline
+
+
+def picker_or_hint(organization, start, end, **kwargs):
+    """(timeline, hint) สำหรับ partial ตัวเลือกรถ: ช่วงเวลาใช้ไม่ได้ได้ (None, คำใบ้) ไม่ใช่ error
+
+    kwargs ส่งต่อให้ `build_picker` endpoint `timeline.picker` และหน้าฟอร์มจัดรถ (ตอน render ครั้งแรก) ใช้ตัวเดียวกัน
+    """
+    error = picker_window_error(start, end)
+    if error:
+        return None, error
+    return build_picker(organization, start, end, **kwargs), ""

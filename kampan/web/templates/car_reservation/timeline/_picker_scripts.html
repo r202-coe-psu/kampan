@@ -1,0 +1,305 @@
+{# สคริปต์ตัวเลือกรถแบบตาราง (vanilla JS) include หนึ่งครั้งต่อหน้า ต่อจากฟอร์มที่มี CarPicker/PickerSlot (ดู _picker_widget.html)
+
+   แนวคิด
+   - ช่อง (slot) = <select> รถเดิมของแต่ละคัน ซึ่งยังเป็นช่องที่ฟอร์มส่งจริง JS ซ่อนมัน (ยังโฟกัส/ขึ้นข้อความตรวจฟอร์มได้) แล้วขับค่าของมัน
+   - มี "ช่องที่กำลังเลือก" (active) ช่องเดียว กดปุ่ม "เลือกรถ" ของช่องไหน ช่องนั้นเป็น active
+   - กดแถวรถที่ว่าง: ใส่รถนั้นในช่อง active แล้วย้ายไปช่องว่างถัดไป · กดแถวที่เลือกอยู่ในช่อง active ซ้ำ หรือกด "ล้าง": ล้างช่อง
+   - รถที่ชนเวลา (data-selectable="0") และรถที่เลือกในช่องอื่นแล้ว กดเลือกไม่ได้
+   - ค่าที่ส่งขึ้น server ยังตรวจซ้ำทั้งหมด (ชน ซ้ำ ใช้งานได้) ฝั่งนี้เป็นแค่ตัวช่วยเลือก ไม่ใช่การบังคับ
+   - ฟอร์มที่กรอกเวลาเอง (reload): คัดลอกเวลา/ประเภท/พขร./ช่องที่เลือกไปใส่ input ซ่อนใน #car-picker-params แล้วยิง change
+     เมื่อค่าที่มีผลต่อตารางเปลี่ยน htmx (hx-trigger ที่ container) ก็โหลดตารางใหม่ หลังสลับตารางจะใส่การเลือกกลับ
+     ถ้ารถที่เลือกไว้กลายเป็นไม่ว่างจะล้างช่องนั้นพร้อมแจ้ง #}
+<script>
+  (function () {
+    if (window.__carPickerReady) return;
+    window.__carPickerReady = true;
+
+    var ID_PATTERN = /^[0-9a-f]{24}$/;
+
+    function initPicker(root) {
+      if (root.dataset.pickerReady) return;
+      var form = root.closest('form') || document;
+      var body = root.querySelector('[data-role="picker-body"]');
+      var params = root.querySelector('[data-role="picker-params"]');
+      var countEl = root.querySelector('[data-role="picker-count"]');
+      var activeEl = root.querySelector('[data-role="picker-active"]');
+      var noticeEl = root.querySelector('[data-role="picker-notice"]');
+      var slots = Array.prototype.slice.call(form.querySelectorAll('[data-picker-slot]')).map(function (el, index) {
+        return {
+          el: el,
+          select: document.getElementById(el.dataset.selectId),
+          button: el.querySelector('[data-role="slot-button"]'),
+          label: el.querySelector('[data-role="slot-label"]'),
+          clear: el.querySelector('[data-role="slot-clear"]'),
+          warn: el.querySelector('[data-role="slot-type-warning"]'),
+          card: el.closest('[data-role="assignment-slot"]'),
+          index: index
+        };
+      }).filter(function (slot) { return slot.select && slot.button; });
+      if (!body || !slots.length) return;
+      root.dataset.pickerReady = '1';
+
+      var multi = slots.length > 1;
+      var active = 0;
+      var collapsed = {}; // กลุ่มที่ผู้ใช้พับ/ขยายเอง (คงไว้ข้ามการโหลดตารางใหม่)
+      var carTypes = {};  // id รถ -> ประเภท (จากแถวที่เคยโหลดมา ไว้เทียบกับประเภทที่ขอ)
+
+      function field(name) { return name ? form.elements[name] : null; }
+      function fieldValue(name) { var el = field(name); return el && el.value ? String(el.value).trim() : ''; }
+      function rows() { return Array.prototype.slice.call(body.querySelectorAll('[data-role="car-row"]')); }
+      function rowFor(id) {
+        return ID_PATTERN.test(id || '') ? body.querySelector('[data-role="car-row"][data-car-id="' + id + '"]') : null;
+      }
+      function valueOf(slot) { return slot.select.value || ''; }
+      function plateOf(slot) {
+        var option = slot.select.options[slot.select.selectedIndex];
+        return option && option.value ? option.textContent.trim().split(' (')[0] : '';
+      }
+      function slotName(slot) { return multi ? ' (คันที่ ' + (slot.index + 1) + ')' : ''; }
+      function currentKind() { return root.dataset.kindInput ? fieldValue(root.dataset.kindInput) : (root.dataset.kind || ''); }
+      function requestedCount() {
+        var raw = root.dataset.requestedInput ? fieldValue(root.dataset.requestedInput) : (root.dataset.requested || '');
+        var count = parseInt(raw, 10);
+        return count > 0 ? count : 0;
+      }
+      // ช่องที่ "ต้องจัด": เท่าจำนวนที่ขอ (ถ้ารู้) ไม่เกินจำนวนช่องที่มี
+      function usableSlots() { var n = requestedCount(); return n ? Math.min(n, slots.length) : slots.length; }
+      function indexOfCar(id) {
+        for (var i = 0; i < slots.length; i++) { if (id && valueOf(slots[i]) === id) return i; }
+        return -1;
+      }
+
+      function setValue(slot, id) {
+        if (id) {
+          var exists = Array.prototype.some.call(slot.select.options, function (option) { return option.value === id; });
+          if (!exists) return false;
+        }
+        slot.select.value = id;
+        slot.select.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+      }
+
+      function activate(index) {
+        active = index;
+        var details = slots[index].el.closest('details');
+        if (details) details.open = true;
+      }
+
+      function nextEmpty(from) {
+        var limit = usableSlots();
+        for (var step = 1; step < limit; step++) {
+          var index = (from + step) % limit;
+          if (!valueOf(slots[index])) return index;
+        }
+        return from;
+      }
+
+      function setNotice(text) {
+        if (!noticeEl) return;
+        noticeEl.textContent = text || '';
+        noticeEl.hidden = !text;
+      }
+
+      function collectTypes() {
+        rows().forEach(function (row) { carTypes[row.dataset.carId] = row.dataset.vehicleType || ''; });
+      }
+
+      function applyGroups() {
+        body.querySelectorAll('[data-role="group-head"]').forEach(function (head) {
+          var key = head.dataset.group;
+          var isCollapsed = key in collapsed ? collapsed[key] : head.dataset.defaultCollapsed === '1';
+          var toggle = head.querySelector('[data-pk-toggle]');
+          if (toggle) toggle.setAttribute('aria-expanded', String(!isCollapsed));
+          body.querySelectorAll('[data-role="car-row"]').forEach(function (row) {
+            if (row.dataset.group === key) row.hidden = isCollapsed;
+          });
+        });
+      }
+
+      function setParam(name, value) {
+        var input = params && params.querySelector('input[name="' + name + '"]');
+        if (!input || input.value === value) return false;
+        input.value = value;
+        return true;
+      }
+
+      function joinDateTime(dateName, timeName) {
+        var date = fieldValue(dateName);
+        var time = fieldValue(timeName);
+        return date && time ? date + 'T' + time : '';
+      }
+
+      // คัดลอกค่าที่มีผลต่อตารางไปใส่ input ซ่อน แล้วยิง change (ครั้งเดียว) ถ้าค่าเหล่านั้นเปลี่ยน
+      // selected/slot ส่งไปด้วยทุกครั้งแต่ไม่ทำให้โหลดใหม่ (เปลี่ยนตอนคลิกเลือกรถ)
+      function syncParams(fire) {
+        if (!params) return;
+        var names = (root.dataset.windowInputs || '').split(',');
+        var changed = false;
+        changed = setParam('start', joinDateTime(names[0], names[1])) || changed;
+        changed = setParam('end', joinDateTime(names[2], names[3])) || changed;
+        changed = setParam('kind', currentKind()) || changed;
+        changed = setParam('driver', fieldValue(root.dataset.driverInput)) || changed;
+        setParam('selected', slots.map(valueOf).join(','));
+        setParam('slot', String(active + 1));
+        if (fire && changed) params.querySelector('input[name="start"]').dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      function render() {
+        var kind = currentKind();
+        rows().forEach(function (row) {
+          var chosen = indexOfCar(row.dataset.carId);
+          var busy = row.dataset.selectable !== '1';
+          var state = busy ? 'busy' : chosen < 0 ? 'free' : chosen === active ? 'chosen' : 'elsewhere';
+          row.dataset.pickState = state;
+          row.dataset.chosenSlot = chosen < 0 ? '' : String(chosen + 1);
+          var cell = row.querySelector('[data-role="pick-cell"]');
+          if (cell) cell.setAttribute('aria-disabled', String(state === 'busy' || state === 'elsewhere'));
+          var status = row.querySelector('[data-role="pick-status"]');
+          if (status) {
+            status.textContent = chosen < 0 ? '' :
+              state === 'chosen' ? 'เลือกแล้ว' + slotName(slots[chosen]) : 'เลือกในคันที่ ' + (chosen + 1) + ' แล้ว';
+          }
+        });
+
+        var filled = 0;
+        slots.forEach(function (slot, index) {
+          var id = valueOf(slot);
+          if (id) filled++;
+          var plate = plateOf(slot);
+          slot.label.textContent = plate || 'เลือกรถ';
+          slot.el.dataset.active = index === active ? '1' : '0';
+          slot.button.setAttribute('aria-pressed', String(index === active));
+          if (slot.clear) slot.clear.hidden = !id;
+          if (slot.card) slot.card.classList.toggle('is-picking', index === active);
+          if (slot.warn) {
+            var type = carTypes[id];
+            slot.warn.hidden = !(id && kind && type && type !== kind);
+          }
+        });
+
+        var requested = requestedCount();
+        if (countEl) {
+          countEl.hidden = !requested;
+          countEl.textContent = requested ? 'ขอ ' + requested + ' คัน: เลือกแล้ว ' + filled : '';
+          countEl.classList.toggle('text-success', !!requested && filled === requested);
+          countEl.classList.toggle('text-warning', !!requested && filled !== requested);
+        }
+        if (activeEl && rows().length) {
+          activeEl.textContent = (multi ? 'กำลังเลือกให้รถคันที่ ' + (active + 1) + ': ' : '') +
+            'กดแถวรถที่ว่างในตารางเพื่อเลือก (กดแถวที่เลือกแล้วซ้ำเพื่อยกเลิก)';
+        }
+        syncParams(false);
+      }
+
+      function pick(row) {
+        if (!row || row.dataset.selectable !== '1') return;
+        var id = row.dataset.carId;
+        var owner = indexOfCar(id);
+        if (owner === active) {
+          setValue(slots[active], '');
+        } else if (owner >= 0) {
+          return; // เลือกในช่องอื่นแล้ว: ล้างที่ช่องนั้นก่อน
+        } else {
+          if (!setValue(slots[active], id)) return;
+          activate(nextEmpty(active));
+        }
+        setNotice('');
+        render();
+      }
+
+      // หลังโหลดตารางใหม่: ใส่การเลือกกลับ รถที่กลายเป็นไม่ว่างถูกล้างพร้อมแจ้ง
+      function afterBodySwap() {
+        collectTypes();
+        applyGroups();
+        var cleared = [];
+        if (rows().length) {
+          slots.forEach(function (slot) {
+            var id = valueOf(slot);
+            if (!id) return;
+            var row = rowFor(id);
+            if (!row || row.dataset.selectable !== '1') {
+              cleared.push('รถ ' + plateOf(slot) + slotName(slot));
+              setValue(slot, '');
+              if (cleared.length === 1) activate(slot.index);
+            }
+          });
+        }
+        setNotice(cleared.length ? cleared.join(', ') + ' ไม่ว่างในช่วงเวลาใหม่ จึงล้างการเลือก กรุณาเลือกรถคันอื่น' : '');
+        render();
+      }
+
+      // ซ่อน <select> เดิมและเปิดส่วนของตัวเลือก (ไม่มี JS ฟอร์มยังใช้ <select> ได้เหมือนเดิม)
+      slots.forEach(function (slot) {
+        var wrapper = document.getElementById('field-' + slot.select.id) || slot.select;
+        wrapper.classList.add('pk-select-hidden');
+        slot.el.hidden = false;
+        slot.button.addEventListener('click', function () {
+          activate(slot.index);
+          render();
+          if (root.scrollIntoView) root.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        });
+        if (slot.clear) {
+          slot.clear.addEventListener('click', function () {
+            setValue(slot, '');
+            activate(slot.index);
+            setNotice('');
+            render();
+          });
+        }
+        // ช่องบังคับที่ยังว่างตอนกดส่ง: ชี้ช่องนั้นให้ผู้ใช้เห็นว่าต้องเลือกรถ
+        slot.select.addEventListener('invalid', function () { activate(slot.index); render(); });
+      });
+
+      root.addEventListener('click', function (event) {
+        var toggle = event.target.closest('[data-pk-toggle]');
+        if (toggle) {
+          var head = toggle.closest('[data-role="group-head"]');
+          var key = toggle.dataset.pkToggle;
+          var current = key in collapsed ? collapsed[key] : head.dataset.defaultCollapsed === '1';
+          collapsed[key] = !current;
+          applyGroups();
+          return;
+        }
+        // แท่งงานและ popover ของมันมีหน้าที่ของตัวเอง ไม่นับเป็นการเลือกแถว
+        if (event.target.closest('a, .tl-bar, .tl-pop')) return;
+        var row = event.target.closest('[data-role="car-row"]');
+        if (row) pick(row);
+      });
+      root.addEventListener('keydown', function (event) {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        var cell = event.target.closest('[data-role="pick-cell"]');
+        if (!cell || event.target !== cell) return;
+        event.preventDefault();
+        pick(cell.closest('[data-role="car-row"]'));
+      });
+
+      root.addEventListener('htmx:afterSwap', function (event) {
+        if (body.contains(event.target) || event.target === body) afterBodySwap();
+      });
+      root.addEventListener('htmx:responseError', function () { setNotice('โหลดตารางรถไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'); });
+      root.addEventListener('htmx:sendError', function () { setNotice('โหลดตารางรถไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'); });
+
+      // เวลา/ประเภท/พขร./จำนวนรถในฟอร์มเปลี่ยน (ตัวเลือกวันที่/เวลาส่ง change ผ่าน bubble ขึ้นมา): คัดลอกค่าไปใส่ input ซ่อน
+      function onFormChange() {
+        syncParams(true);
+        render();
+      }
+      form.addEventListener('change', onFormChange);
+      form.addEventListener('input', onFormChange);
+      window.addEventListener('pageshow', render);
+
+      var firstEmpty = slots.findIndex(function (slot) { return !valueOf(slot); });
+      active = firstEmpty >= 0 && firstEmpty < usableSlots() ? firstEmpty : 0;
+      root.hidden = false;
+      collectTypes();
+      applyGroups();
+      render();
+    }
+
+    function initAll() {
+      document.querySelectorAll('[data-role="car-picker"]').forEach(initPicker);
+    }
+    initAll();
+    document.addEventListener('DOMContentLoaded', initAll);
+  })();
+</script>

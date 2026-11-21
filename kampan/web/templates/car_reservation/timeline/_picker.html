@@ -1,0 +1,17 @@
+{# ตัวเลือกรถ (เนื้อใน): ตารางรถของช่วงเวลาของคำขอ ใช้เป็นคำตอบของ endpoint timeline.picker (htmx สลับเข้า #car-picker-body)
+   และ include ตอน render ฟอร์มจัดรถครั้งแรก
+
+   context: organization, timeline (จาก build_picker ไม่มีเมื่อช่วงเวลาใช้ไม่ได้), picker_error (คำใบ้แทนตาราง ว่าง = ใช้ได้)
+   แถวรถ/แถบไฮไลต์มาจาก _grid.html (timeline.picker) การคลิกเลือกรถเป็นหน้าที่ของ _picker_scripts.html #}
+{% if picker_error %}
+<p class="tl-pick-hint" data-role="picker-hint"><i class="ph ph-info" aria-hidden="true"></i> {{ picker_error }}</p>
+{% else %}
+{% set pick = timeline.picker %}
+<p class="tl-pick-window" data-role="picker-window">
+  <span class="tl-pick-window-chip" aria-hidden="true"></span>
+  ช่วงเวลาของคำขอ {{ pick.window_start | format_thai_datetime_short_month }} – {{ pick.window_end | format_thai_datetime_short_month }}
+  <span class="text-base-content/60">(แถบสีบนตาราง แสดงก่อน-หลัง 2 วัน)</span>
+</p>
+{% set id_prefix = 'pk' %}
+{% include "/car_reservation/timeline/_grid.html" %}
+{% endif %}

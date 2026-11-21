@@ -24,6 +24,7 @@ module = Blueprint("requests", __name__, url_prefix="/requests")
 
 ANY_ORGANIZATION_ROLE = [role for role, _ in models.organizations.ORGANIZATION_ROLES]
 flow = utils.car_reservation_flow
+car_timeline = utils.car_timeline
 finance = utils.car_reservation_finance
 
 
@@ -372,6 +373,51 @@ def notify_drivers(reservation):
     utils.car_reservation_email.notify_in_app(reservation, "driver_assigned")
 
 
+def requested_kind_of(reservation):
+    """ประเภทรถที่ผู้ขอขอในใบขอ (ใบขอที่ไม่มีช่องนี้ เช่น งานแทรก คืน "")"""
+    return getattr(reservation.details, "vehicle_kind", "") or ""
+
+
+def warn_if_vehicle_type_differs(reservation):
+    """flash เตือน (ไม่บล็อก) เมื่อรถที่จัดมีประเภทต่างจากที่ผู้ขอขอ รถที่ไม่ระบุประเภทไม่นับว่าต่าง"""
+    kind = requested_kind_of(reservation)
+    if not kind:
+        return
+    different = [
+        f"{car.license_plate} ({car.vehicle_type})"
+        for car in reservation.cars
+        if car.vehicle_type and car.vehicle_type != kind
+    ]
+    if different:
+        flash(
+            f"รถที่จัดไม่ตรงกับประเภทที่ผู้ขอขอ (ขอ {kind}): {', '.join(different)}",
+            "warning",
+        )
+
+
+def picker_window(form):
+    """(เวลาออก, เวลากลับ) จากช่องวัน/เวลาของฟอร์ม ช่องไหนยังว่างหรือผิดรูปแบบคืน None ทั้งคู่"""
+    parts = (
+        form.departure_date.data,
+        form.departure_time.data,
+        form.return_date.data,
+        form.return_time.data,
+    )
+    if any(part is None for part in parts):
+        return None, None
+    return (
+        datetime.datetime.combine(parts[0], parts[1]),
+        datetime.datetime.combine(parts[2], parts[3]),
+    )
+
+
+def picker_selection(values):
+    """(selected, active_slot) ของตัวเลือกรถจาก id รถของแต่ละช่อง: ช่องที่กำลังเลือกคือช่องว่างช่องแรก"""
+    selected = [value if ObjectId.is_valid(value or "") else "" for value in values]
+    active = next((n for n, value in enumerate(selected, start=1) if not value), 1)
+    return selected, active
+
+
 URGENT_ASSIGNMENT_MISMATCH = (
     "กรุณาเลือกรถและพนักงานขับรถให้ครบ {count} คัน (ทุกคันต้องเลือกทั้งรถและพนักงานขับรถ)"
 )
@@ -432,6 +478,7 @@ def create_urgent():
             utils.car_reservation_email.notify(reservation, "approved")
             notify_drivers(reservation)
             flash("สร้างคำขอเร่งด่วนเรียบร้อยแล้ว รอผู้อำนวยการกองกายภาพอนุมัติ", "success")
+            warn_if_vehicle_type_differs(reservation)
             return redirect(
                 url_for(
                     "car_reservation.requests.detail",
@@ -440,6 +487,15 @@ def create_urgent():
                 )
             )
 
+    # ตัวเลือกรถแบบตาราง: ครั้งแรกยังไม่มีเวลาจึงเป็นคำใบ้ ส่งกลับมาแก้หลังฟอร์มไม่ผ่านก็แสดงตารางตามเวลาที่กรอก
+    selected, active_slot = picker_selection(entry.form.car.data for entry in form.assignments)
+    timeline, picker_error = car_timeline.picker_or_hint(
+        organization,
+        *picker_window(form),
+        kind=form.vehicle_kind.data or "",
+        selected=selected,
+        active_slot=active_slot,
+    )
     return render_template(
         "/car_reservation/requests/form.html",
         organization=organization,
@@ -448,6 +504,7 @@ def create_urgent():
         request_type=request_type,
         request_type_label="ขอใช้รถเร่งด่วน (ผู้จัดรถสร้างแทนผู้ใช้รถ)",
         urgent_by_dispatcher=True,
+        car_picker={"timeline": timeline, "picker_error": picker_error},
     )
 
 
@@ -508,10 +565,19 @@ def create_insert():
                 )
             )
 
+    selected, active_slot = picker_selection([form.car.data])
+    timeline, picker_error = car_timeline.picker_or_hint(
+        organization,
+        *picker_window(form),
+        driver_id=object_id_or_none(form.driver.data),
+        selected=selected,
+        active_slot=active_slot,
+    )
     return render_template(
         "/car_reservation/requests/insert.html",
         organization=organization,
         form=form,
+        car_picker={"timeline": timeline, "picker_error": picker_error},
     )
 
 
@@ -560,6 +626,7 @@ def detail(request_id):
     user = current_user._get_current_object()
     current_key = flow.current_step_key(reservation)
     required_count = models.car_reservations.required_vehicle_count(reservation)
+    car_picker = None
     if current_key == "dispatcher":
         form = forms.car_reservation.DispatchDecisionForm()
         workload = flow.driver_workload(
@@ -574,6 +641,16 @@ def detail(request_id):
             car_choices_for(g.organization),
             [(str(row.driver.id), workload_label(row)) for row in workload],
         )
+        if flow.can_act(reservation, user):
+            # ตัวเลือกรถแบบตาราง: ช่วงของคำขอคงที่ ไม่นับคำขอนี้เองว่าชน
+            picker_timeline, picker_error = car_timeline.picker_or_hint(
+                g.organization,
+                reservation.departure_datetime,
+                reservation.return_datetime,
+                kind=requested_kind_of(reservation),
+                exclude_id=reservation.id,
+            )
+            car_picker = {"timeline": picker_timeline, "picker_error": picker_error}
     else:
         form = forms.car_reservation.ApprovalDecisionForm()
         workload = []
@@ -594,9 +671,11 @@ def detail(request_id):
         cancel_form=forms.car_reservation.CancelRequestForm(),
         assignment_cards=assignment_cards(reservation, user),
         required_vehicle_count=required_count,
+        requested_vehicle_kind=requested_kind_of(reservation),
         off_campus=any(a.closed_off_campus for a in reservation.assignments),
         form=form,
         workload=workload,
+        **({"car_picker": car_picker} if car_picker else {}),
         deny_form=forms.car_reservation.DenyDecisionForm(),
         close_confirmation_days=models.car_reservations.CLOSE_CONFIRMATION_DAYS,
         finance_documents=finance.documents_for_reservation(reservation)
@@ -814,6 +893,8 @@ def approve(request_id):
             # จัดรถน้อยกว่าที่ขอ (flow ลงประวัติ vehicle_count_reduced แล้ว): แจ้งผู้ขอพร้อมเหตุผล
             utils.car_reservation_email.notify(reservation, "vehicle_count_reduced")
     flash("บันทึกการอนุมัติเรียบร้อยแล้ว", "success")
+    if dispatching:
+        warn_if_vehicle_type_differs(reservation)
     return redirect(
         inbox_url_if_requested(form)
         or url_for(

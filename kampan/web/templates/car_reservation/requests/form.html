@@ -1,5 +1,6 @@
 {% extends '/car_reservation/base/default-page.html' %}
 {% from '/car_reservation/components/form_section.html' import FormSection %}
+{% from '/car_reservation/timeline/_picker_widget.html' import CarPicker, PickerSlot %}
 
 {% block title %}{{ request_type_label }}{% endblock %}
 
@@ -41,13 +42,22 @@
     <p class="text-sm text-base-content/70" data-role="urgent-assignment-hint">
       จัดให้ครบตามจำนวนรถที่ขอ (ช่อง "จำนวนรถ") ได้สูงสุด {{ form.assignments | length }} คัน คันแรกบังคับ คันถัดไปกดเพิ่มได้ ทุกคันต้องเลือกทั้งรถและพนักงานขับรถ
     </p>
+    {# ตัวเลือกรถแบบตาราง: โหลดใหม่ด้วย htmx เมื่อแก้เวลาออก-กลับ/ประเภทรถ <select> รถของแต่ละคันยังอยู่เป็นช่องที่ฟอร์มส่งจริง #}
+    {% if car_picker is defined %}
+    {{ CarPicker(organization, car_picker.timeline, car_picker.picker_error, kind=form.vehicle_kind.data or '',
+                 requested_input='vehicle_count', reload=true, kind_input='vehicle_kind',
+                 window_inputs=['departure_date', 'departure_time', 'return_date', 'return_time']) }}
+    {% endif %}
     {% for slot in form.assignments %}
     {% set filled = slot.form.car.data or slot.form.driver.data %}
     {% if loop.first %}
     <div class="flex flex-col gap-2 rounded-box border border-base-300 p-3" data-role="assignment-slot">
       <p class="font-semibold">รถคันที่ 1 <span class="text-error">*</span></p>
       <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
-        {{ renderer.render_select_field(slot.form.car, required=True, optionals={'required': True}) }}
+        <div class="relative">
+          {{ renderer.render_select_field(slot.form.car, required=True, optionals={'required': True}) }}
+          {% if car_picker is defined %}{{ PickerSlot(slot.form.car, loop.index) }}{% endif %}
+        </div>
         {{ renderer.render_select_field(slot.form.driver, required=True, optionals={'required': True}) }}
       </div>
       {{ renderer.render_checkbox(slot.form.is_overtime) }}
@@ -58,7 +68,10 @@
       <summary class="collapse-title font-semibold">เพิ่มรถคันที่ {{ loop.index }}</summary>
       <div class="collapse-content flex flex-col gap-2">
         <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
-          {{ renderer.render_select_field(slot.form.car) }}
+          <div class="relative">
+            {{ renderer.render_select_field(slot.form.car) }}
+            {% if car_picker is defined %}{{ PickerSlot(slot.form.car, loop.index) }}{% endif %}
+          </div>
           {{ renderer.render_select_field(slot.form.driver) }}
         </div>
         {{ renderer.render_checkbox(slot.form.is_overtime) }}
@@ -157,4 +170,8 @@
     </div>
   </div>
 </form>
+{% if car_picker is defined %}
+{% include "/car_reservation/timeline/_picker_styles.html" %}
+{% include "/car_reservation/timeline/_picker_scripts.html" %}
+{% endif %}
 {% endblock %}

@@ -3,11 +3,15 @@
    context: timeline (จาก utils.car_timeline.build_timeline) และ organization เท่านั้น ไม่พึ่งฟอร์ม/ลิงก์ของหน้า
      id_prefix  คำนำหน้า id ของ popover (ค่าเริ่มต้น "tl") ใส่ต่างกันถ้าวางหลายตารางในหน้าเดียว
      nav_oob    ตอบกลับ htmx: ส่งแถบนำทางตามไปแทนที่ด้วย hx-swap-oob (ดู _nav.html)
+   ตัวเลือกรถในฟอร์มจัดรถ (#79 ส่วน B): timeline จาก build_picker มี timeline.picker ตารางจะเพิ่มแถบไฮไลต์ช่วงของคำขอ
+   กลุ่มประเภทที่พับได้ของตัวเลือกรถ (data-pk-toggle) ป้ายไม่ว่าง/ยืมผ่านระบบเดิมและช่องสถานะการเลือกในแถวรถ (ดู _picker.html)
+   หน้าตารางรถปกติ (timeline.picker เป็น None) ไม่เปลี่ยน
    ต้อง include timeline/_styles.html หนึ่งครั้งในหน้า และมีสคริปต์พับกลุ่ม (ดู index.html) #}
 {% from "/car_reservation/components/car_photo.html" import CarPhoto %}
 {% from '/base/components/empty_state.html' import EmptyState %}
 {% set id_prefix = id_prefix | default("tl") %}
-<div class="tl" data-role="timeline" data-tl-grid style="--tl-days: {{ timeline.day_count }}">
+{% set pick = timeline.picker %}
+<div class="tl {{ 'tl-pick' if pick }}" data-role="timeline" data-tl-grid style="--tl-days: {{ timeline.day_count }}">
   {% if timeline.groups %}
   <div class="tl-scroll">
     <div class="tl-inner">
@@ -45,6 +49,10 @@
                style="left: {{ day.left_pct }}%; width: {{ day.width_pct }}%"></div>
           {% endif %}
           {% endfor %}
+          {% if pick %}
+          <div class="tl-window" data-role="request-window" style="left: {{ pick.left_pct }}%; width: {{ pick.width_pct }}%"
+               title="ช่วงเวลาของคำขอ {{ pick.window_start | format_thai_datetime_short_month }} – {{ pick.window_end | format_thai_datetime_short_month }}"></div>
+          {% endif %}
           {% if timeline.now_pct is not none %}
           <div class="tl-now" data-role="now-line" style="left: {{ timeline.now_pct }}%"></div>
           {% endif %}
@@ -52,24 +60,50 @@
 
         {% for group in timeline.groups %}
         {% set group_key = group.key or '_none' %}
-        <div class="tl-group-head" data-role="group-head" data-group="{{ group_key }}">
-          <button type="button" class="tl-group-toggle" aria-expanded="true" data-tl-toggle="{{ group_key }}">
+        <div class="tl-group-head" data-role="group-head" data-group="{{ group_key }}"
+             {% if pick %}data-requested="{{ '1' if group.is_requested else '0' }}" data-default-collapsed="{{ '1' if group.collapsed else '0' }}"{% endif %}>
+          <button type="button" class="tl-group-toggle" aria-expanded="{{ 'false' if group.collapsed else 'true' }}"
+                  {% if pick %}data-pk-toggle{% else %}data-tl-toggle{% endif %}="{{ group_key }}">
             <i class="ph ph-caret-down" aria-hidden="true"></i>
             {{ group.label }}
             <span class="badge badge-sm badge-neutral badge-soft" data-role="group-count">{{ group.car_count }}</span>
+            {% if pick and group.is_requested %}<span class="badge badge-sm badge-primary badge-soft" data-role="requested-kind">ประเภทที่ขอ</span>{% endif %}
           </button>
         </div>
         {% for row in group.rows %}
         {% set car = row.car %}
-        <div class="tl-row" data-role="car-row" data-group="{{ group_key }}" data-car-id="{{ car.id }}"
+        {% if pick %}
+        {% set pick_state = 'busy' if not row.selectable else ('elsewhere' if (row.chosen_slot and pick.active_slot and row.chosen_slot != pick.active_slot) else ('chosen' if row.chosen_slot else 'free')) %}
+        {% endif %}
+        <div class="tl-row {{ 'is-busy' if pick and not row.selectable }}" data-role="car-row" data-group="{{ group_key }}" data-car-id="{{ car.id }}"
+             {% if pick %}data-plate="{{ car.license_plate }}" data-vehicle-type="{{ car.vehicle_type or '' }}"
+             data-selectable="{{ '1' if row.selectable else '0' }}" data-chosen-slot="{{ row.chosen_slot or '' }}" data-pick-state="{{ pick_state }}"
+             {% if group.collapsed %}hidden{% endif %}{% endif %}
              style="--tl-lanes: {{ row.lane_count }}">
-          <div class="tl-car">
+          <div class="tl-car"
+               {% if pick %}data-role="pick-cell" role="button" tabindex="0" aria-disabled="{{ 'false' if pick_state in ('free', 'chosen') else 'true' }}"{% endif %}>
             <span class="tl-photo">{{ CarPhoto(car, organization, size="size-10") }}</span>
             <div class="tl-car-text">
               <div class="tl-car-plate" title="{{ car.license_plate }}">{{ car.license_plate }}</div>
               <div class="tl-car-sub">
                 {% if car.seat_count %}<i class="ph ph-armchair" aria-hidden="true"></i> {{ car.seat_count }} ที่นั่ง{% else %}&nbsp;{% endif %}
               </div>
+              {% if pick %}
+              {% set clash = row.conflict %}
+              <div class="tl-car-pick">
+                {% if clash and clash.is_reservation %}
+                <span class="badge badge-sm badge-error badge-soft" data-role="car-busy-badge">ไม่ว่าง</span>
+                <span class="tl-car-clash" data-role="conflict">
+                  ผู้ขอ {{ clash.requester_name or '-' }} · {{ clash.departure | format_thai_datetime_short_month }} – {{ clash.return_ | format_thai_datetime_short_month }}
+                  <a class="link link-primary font-semibold" data-role="conflict-link" target="_blank" rel="noopener"
+                     href="{{ url_for('car_reservation.requests.detail', request_id=clash.reservation_id, organization_id=organization.id) }}">ดูคำขอ</a>
+                </span>
+                {% elif clash %}
+                <span class="badge badge-sm badge-warning badge-soft" data-role="diis-badge">ยืมผ่านระบบเดิม</span>
+                {% endif %}
+                <span class="tl-pick-status" data-role="pick-status">{% if pick_state == 'elsewhere' %}เลือกในคันที่ {{ row.chosen_slot }} แล้ว{% elif pick_state == 'chosen' %}เลือกแล้ว{% endif %}</span>
+              </div>
+              {% endif %}
             </div>
           </div>
           <div class="tl-track">
