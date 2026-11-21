@@ -301,8 +301,10 @@ fieldset {
   border-radius: 50%;
   animation: step-current-pulse 1.6s ease-out infinite;
 }
-/* .steps ของ daisyUI ตัด overflow: เผื่อที่ให้วงกระพริบ (กว้างสุด 10px) ไม่โดนตัด */
+/* .steps ของ daisyUI ตัด overflow (hidden) ทำให้วงกระพริบโดนตัดเป็นเหลี่ยม
+   โดยเฉพาะแบบแนวตั้งที่วงกลมชิดขอบซ้าย: ปล่อยให้ล้นได้ และเผื่อที่บนล่าง (กว้างสุด 10px) */
 .steps:has(.step-current) {
+  overflow: visible;
   padding-block: 12px;
 }
 @keyframes step-current-pulse {
