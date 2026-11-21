@@ -245,6 +245,8 @@ CAR_RESERVATION_TYPES = [
 
 def test_create_form_lists_car_reservation_types_in_their_own_group(app, login_as, email_setup):
     s = email_setup
+    s.org.update(set__enabled_modules=["inventory", "car", "car_reservation"])
+    s.org.reload()
     with app.test_client() as client:
         login_as(client, s.admin)
         html = _get(app, client, "email_templates.create_or_edit", organization_id=str(s.org.id)).get_data(as_text=True)
@@ -257,6 +259,8 @@ def test_create_form_lists_car_reservation_types_in_their_own_group(app, login_a
 
 def test_index_filters_templates_by_car_reservation_system(app, login_as, email_setup):
     s = email_setup
+    s.org.update(set__enabled_modules=["inventory", "car", "car_reservation"])
+    s.org.reload()
     models.EmailTemplate(
         name="ใบจองรถรอพิจารณา", subject="s", body="b",
         type="car_reservation_submitted", organization=s.org,
@@ -329,3 +333,15 @@ def test_car_reservation_variables_carry_trip_details_as_text():
 def test_car_reservation_feedback_url_is_empty_until_a_car_is_assigned():
     sent = car_reservation_email.template_variables(_reservation(), "http://x")
     assert sent["feedback_url"] == ""
+
+
+def test_org_sees_only_email_systems_of_its_enabled_modules():
+    from kampan.models.email_templates import get_email_systems, get_email_types_by_system
+
+    org = models.Organization(enabled_modules=["car_reservation"])
+    assert get_email_systems(org) == [("car_reservation", "ระบบจองรถ")]
+    assert [system for system, _, _ in get_email_types_by_system(org)] == ["car_reservation"]
+
+    legacy = models.Organization(enabled_modules=None)
+    assert "car_reservation" not in dict(get_email_systems(legacy))
+    assert {"inventory", "vehicle_lending", "procurement"} <= set(dict(get_email_systems(legacy)))

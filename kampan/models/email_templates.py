@@ -36,6 +36,25 @@ EMAIL_SYSTEMS = [
     ("procurement", "ระบบ MA"),
 ]
 
+# ระบบของอีเมล -> module ของ org (Organization.has_module) org เห็นเฉพาะระบบที่เปิดใช้
+EMAIL_SYSTEM_ORG_MODULE = {
+    "inventory": "inventory",
+    "vehicle_lending": "car",
+    "car_reservation": "car_reservation",
+    "procurement": "procurement",
+}
+
+
+def get_email_systems(organization=None):
+    if organization is None:
+        return list(EMAIL_SYSTEMS)
+    return [
+        (system, label)
+        for system, label in EMAIL_SYSTEMS
+        if organization.has_module(EMAIL_SYSTEM_ORG_MODULE[system])
+    ]
+
+
 # ระบบ -> class สีประจำ module ใน setup.css (.module-<name>)
 EMAIL_SYSTEM_MODULE = {
     "inventory": "module-inventory",
@@ -139,7 +158,7 @@ EMAIL_TYPE_INFO = {
 }
 
 
-def get_email_types_by_system():
+def get_email_types_by_system(organization=None):
     """[(system, system_label, [(type, type_label), ...]), ...] สำหรับ optgroup และ filter"""
     return [
         (
@@ -151,7 +170,7 @@ def get_email_types_by_system():
                 if EMAIL_TYPE_INFO[value]["system"] == system
             ],
         )
-        for system, system_label in EMAIL_SYSTEMS
+        for system, system_label in get_email_systems(organization)
     ]
 
 # ตัวแปรที่ใช้ใน {{ ... }} ของหัวข้อและเนื้อหาได้ แยกตามประเภทอีเมล

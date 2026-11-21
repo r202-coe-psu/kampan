@@ -23,8 +23,10 @@
 
   {# filter ตามระบบ: ไม่ได้เก็บใน DB แต่กรองจากประเภทอีเมลของระบบนั้น #}
   <div role="tablist" class="tabs tabs-box mt-4 w-fit">
+    {% if email_systems | length > 1 %}
     <a role="tab" class="tab {{ 'tab-active' if not selected_system }}"
       href="{{ url_for('email_templates.index', organization_id=organization.id) }}">ทั้งหมด</a>
+    {% endif %}
     {% for system_value, system_label in email_systems %}
     <a role="tab" class="tab {{ 'tab-active' if selected_system == system_value }}"
       href="{{ url_for('email_templates.index', organization_id=organization.id, system=system_value) }}">{{ system_label }}</a>

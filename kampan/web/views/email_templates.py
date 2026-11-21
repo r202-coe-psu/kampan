@@ -29,11 +29,11 @@ module = Blueprint("email_templates", __name__, url_prefix="/email_templates")
 subviews = []
 
 
-def email_template_context():
+def email_template_context(organization):
     return dict(
         email_types=models.email_templates.EMAIL_TYPE,
         email_variables=models.email_templates.EMAIL_TEMPLATE_VARIABLES,
-        email_types_by_system=models.email_templates.get_email_types_by_system(),
+        email_types_by_system=models.email_templates.get_email_types_by_system(organization),
         email_type_info=models.email_templates.EMAIL_TYPE_INFO,
     )
 
@@ -54,17 +54,20 @@ def index():
     organization = models.Organization.objects.get(id=organization_id)
     email_templates = models.EmailTemplate.objects(organization=organization)
 
-    email_systems = models.email_templates.EMAIL_SYSTEMS
+    email_systems = models.email_templates.get_email_systems(organization)
+    system_keys = [system for system, _ in email_systems]
     selected_system = request.args.get("system", "")
-    if selected_system in dict(email_systems):
-        types = [
-            value
-            for value, info in models.email_templates.EMAIL_TYPE_INFO.items()
-            if info["system"] == selected_system
-        ]
-        email_templates = email_templates.filter(type__in=types)
-    else:
+    if len(system_keys) == 1:
+        selected_system = system_keys[0]
+    if selected_system not in system_keys:
         selected_system = ""
+    shown_systems = [selected_system] if selected_system else system_keys
+    types = [
+        value
+        for value, info in models.email_templates.EMAIL_TYPE_INFO.items()
+        if info["system"] in shown_systems
+    ]
+    email_templates = email_templates.filter(type__in=types)
 
     form = forms.email_templates.EmailTemplateFileForm()
 
@@ -111,7 +114,7 @@ def create_or_edit(email_template_id):
             upload_form=upload_form,
             email_template=email_template,
             organization=organization,
-            **email_template_context(),
+            **email_template_context(organization),
         )
 
     if not email_template_id:
@@ -190,7 +193,7 @@ def detail(email_template_id):
         "/email_templates/detail.html",
         email_template=email_template,
         organization=organization,
-        **email_template_context(),
+        **email_template_context(organization),
     )
 
 
