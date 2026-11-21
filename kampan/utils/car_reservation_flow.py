@@ -82,9 +82,17 @@ DEFAULT_MIN_BUSINESS_DAYS = 3
 
 
 CAR_AND_DRIVER_REQUIRED = "กรุณาเลือกรถและพนักงานขับรถ"
+DUPLICATE_CAR = "เลือกรถคันเดียวกันซ้ำในคำขอเดียวไม่ได้"
+DUPLICATE_DRIVER = "เลือกพนักงานขับรถคนเดียวกันซ้ำในคำขอเดียวไม่ได้"
+REDUCE_REASON_REQUIRED = "จัดรถน้อยกว่าที่ผู้ขอขอ ต้องระบุเหตุผลที่ลดจำนวนรถ"
+REDUCE_FIELD_LABEL = "จำนวนรถ (คัน)"
 
 
 CAR_OR_DRIVER_NOT_ASSIGNABLE = "รถหรือพนักงานขับรถที่เลือกไม่พร้อมใช้งาน"
+
+
+def too_many_vehicles_error(limit):
+    return f"จัดรถได้ไม่เกิน {limit} คัน ตามจำนวนรถที่ผู้ขอขอ"
 
 
 def asks_extra_travelers(app):
@@ -223,42 +231,93 @@ def _amount_or_dash(value):
     return NO_VALUE_TEXT if value is None else format_amount(value)
 
 
-def _assignment_snapshot(app):
-    """ค่าที่ขั้นผู้จัดรถกำหนด (รถ พขร. OT ผู้ร่วมเดินทาง) เป็นข้อความแสดงผล"""
-    return {
-        "car": app.car.license_plate if app.car else NO_VALUE_TEXT,
-        "driver": app.driver.get_name() if app.driver else NO_VALUE_TEXT,
-        "is_overtime": _yes_no(app.is_overtime),
-        "extra_travelers": _text_or_dash(app.extra_travelers),
-    }
+def _plate(assignment):
+    car = assignment.car
+    return car.license_plate if car else NO_VALUE_TEXT
 
 
-def _trip_report_snapshot(app):
-    """รายงานท้ายใบที่ พขร. กรอกตอนปิดงาน เป็นข้อความแสดงผล"""
+def _is_multi(app):
+    return len(app.assignments) > 1
+
+
+def _assignment_note(app, assignment):
+    """ข้อความระบุรถของชุดนี้ใน log: ใบขอรถคันเดียวไม่ต้องระบุ (ชัดอยู่แล้ว)"""
+    return f"รถ {_plate(assignment)}" if _is_multi(app) else ""
+
+
+def _assignment_snapshot(app, slots=None):
+    """ค่าที่ขั้นผู้จัดรถกำหนด (รถ พขร. OT รายชุด และผู้ร่วมเดินทาง) เป็นข้อความแสดงผล
+
+    ชุดที่ n เก็บที่ car_n / driver_n / is_overtime_n (นับจาก 1) slots = จำนวนช่องอย่างน้อยที่ต้องมี
+    ช่องที่ยังไม่มีชุดเป็น "-" เพื่อเทียบก่อน/หลังจัดรถได้
+    """
+    slots = max(slots or 0, len(app.assignments), 1)
+    values = {}
+    for number in range(1, slots + 1):
+        assignment = app.assignments[number - 1] if number <= len(app.assignments) else None
+        values[f"car_{number}"] = _plate(assignment) if assignment else NO_VALUE_TEXT
+        values[f"driver_{number}"] = (
+            assignment.driver.get_name()
+            if assignment and assignment.driver
+            else NO_VALUE_TEXT
+        )
+        # ช่องที่ยังไม่มีชุดนับเป็นงานในเวลา (ค่าตั้งต้น) ไม่งั้นการจัดรถครั้งแรกจะลง log ว่า OT เปลี่ยนจาก "-"
+        values[f"is_overtime_{number}"] = _yes_no(
+            assignment.is_overtime if assignment else False
+        )
+    values["extra_travelers"] = _text_or_dash(app.extra_travelers)
+    return values
+
+
+def _assignment_labels(slots):
+    """ป้ายของ _assignment_snapshot: มีหลายชุดจะต่อท้ายว่า "คันที่ n" ให้รู้ว่าแก้ของชุดไหน"""
+    labels = {}
+    for number in range(1, max(slots, 1) + 1):
+        suffix = f" คันที่ {number}" if slots > 1 else ""
+        for name in ("car", "driver", "is_overtime"):
+            labels[f"{name}_{number}"] = ASSIGNMENT_LABELS[name] + suffix
+    labels["extra_travelers"] = ASSIGNMENT_LABELS["extra_travelers"]
+    return labels
+
+
+def _trip_report_snapshot(assignment):
+    """รายงานท้ายใบที่ พขร. กรอกตอนปิดงานของชุดนี้ เป็นข้อความแสดงผล"""
     return {
-        "mileage_out": _text_or_dash(app.last_mileage_before),
-        "mileage_in": _text_or_dash(app.last_mileage),
-        "fuel_liters": _amount_or_dash(app.fuel_liters),
+        "mileage_out": _text_or_dash(assignment.last_mileage_before),
+        "mileage_in": _text_or_dash(assignment.last_mileage),
+        "fuel_liters": _amount_or_dash(assignment.fuel_liters),
         "expense_case": _text_or_dash(
             dict(models.car_reservations.EXPENSE_CASES).get(
-                app.expense_case, app.expense_case
+                assignment.expense_case, assignment.expense_case
             )
         ),
-        "cost_baht": _amount_or_dash(app.cost_baht),
+        "cost_baht": _amount_or_dash(assignment.cost_baht),
     }
+
+
+def _trip_report_labels(app, assignment):
+    """ป้ายของ _trip_report_snapshot: มีหลายชุดจะต่อท้ายด้วยทะเบียนรถของชุดนั้น"""
+    if not _is_multi(app):
+        return dict(TRIP_REPORT_LABELS)
+    return {
+        name: f"{label} ({_plate(assignment)})"
+        for name, label in TRIP_REPORT_LABELS.items()
+    }
+
+
+def _new_log(action, actor, step_key="", comment="", changes=()):
+    return models.car_reservations.ReservationAuditLog(
+        action=action,
+        actor=actor,
+        step_key=step_key,
+        step_label=step_label(step_key) if step_key else "",
+        comment=comment,
+        changes=list(changes),
+    )
 
 
 def _log(app, action, actor, step_key="", comment="", changes=()):
-    app.audit_logs.append(
-        models.car_reservations.ReservationAuditLog(
-            action=action,
-            actor=actor,
-            step_key=step_key,
-            step_label=step_label(step_key) if step_key else "",
-            comment=comment,
-            changes=list(changes),
-        )
-    )
+    app.audit_logs.append(_new_log(action, actor, step_key, comment, changes))
 
 
 def signature_snapshot(user):
@@ -284,9 +343,19 @@ def can_create_urgent(organization, user):
     return has_role(organization, user, "dispatcher")
 
 
-def submit_urgent(app, dispatcher, car, driver, is_overtime=False):
+def submit_urgent(
+    app,
+    dispatcher,
+    car=None,
+    driver=None,
+    is_overtime=False,
+    *,
+    assignments=None,
+    reduce_reason="",
+):
     """ผู้จัดรถสร้างคำขอเร่งด่วน: ตรึงเส้นทางสั้นแล้วอนุมัติขั้นผู้จัดรถพร้อมรถ/พขร. ในทีเดียว
 
+    จัดหลายคันส่ง `assignments` (รายการ {car, driver, is_overtime}) หรือจัดคันเดียวด้วย car/driver
     ถ้าจัดรถไม่ผ่าน (รถชน ไม่พร้อมใช้) FlowError จะถูกยกก่อนบันทึกอะไรลงฐานข้อมูล
     """
     if app.request_type != URGENT_REQUEST_TYPE or not can_create_urgent(
@@ -298,7 +367,15 @@ def submit_urgent(app, dispatcher, car, driver, is_overtime=False):
     app.current_step = 0
     app.status = "pending"
     _log(app, "submitted", dispatcher)
-    approve(app, dispatcher, car=car, driver=driver, is_overtime=is_overtime)
+    approve(
+        app,
+        dispatcher,
+        car=car,
+        driver=driver,
+        is_overtime=is_overtime,
+        assignments=assignments,
+        reduce_reason=reduce_reason,
+    )
 
 
 def can_create_insert(organization, user):
@@ -327,9 +404,11 @@ def submit_insert(app, dispatcher, car, driver, is_overtime=False):
     app.is_insert = True
     app.request_type = INSERT_REQUEST_TYPE
     app.province_scope = INSERT_PROVINCE_SCOPE
-    app.car = car
-    app.driver = driver
-    app.is_overtime = bool(is_overtime)
+    app.assignments = [
+        models.car_reservations.CarAssignment(
+            car=car, driver=driver, is_overtime=bool(is_overtime)
+        )
+    ]
     app.route_snapshot = list(INSERT_ROUTE)
     app.current_step = len(app.route_snapshot)
     app.status = "active"
@@ -355,7 +434,7 @@ def _has_active_job_that_day(app, driver):
     return (
         models.CarReservation.objects(
             organization=app.organization,
-            driver=driver,
+            assignments__driver=driver,
             status="active",
             id__ne=app.id,
             departure_datetime__lt=day_start + datetime.timedelta(days=1),
@@ -596,37 +675,108 @@ class DriverWorkload:
     busy: bool = False
 
 
-def worked_hours(job):
-    """ชั่วโมงทำงานของงานที่เกิดแล้ว: เวลาเริ่ม/ปิดงานจริง ถ้าไม่มีใช้เวลาออก/กลับตามใบขอ"""
-    started = job.started_at or job.departure_datetime
-    finished = job.completed_at or job.return_datetime or started
+class DriverJob:
+    """งานหนึ่งชุด (assignment) ของ พขร. หนึ่งคนในคำขอหนึ่งใบ
+
+    คำขอที่มีหลายชุดกลายเป็นหลายงาน ตามชุดของแต่ละ พขร. ช่องของชุด (รถ พขร. OT ระยะทาง เวลาเริ่ม/ปิด)
+    มาจาก assignment ส่วนช่องอื่น (วันออก-กลับ สถานที่ ผู้ขอ ฯลฯ) อ่านผ่านไปที่คำขอ
+    จึงใช้แทนคำขอใน template ที่เคยวนงานของ พขร. ได้
+    """
+
+    def __init__(self, reservation, assignment):
+        self.reservation = reservation
+        self.assignment = assignment
+
+    @property
+    def id(self):
+        return self.reservation.id
+
+    @property
+    def car(self):
+        return self.assignment.car
+
+    @property
+    def feedback_key(self):
+        """(id คำขอ, id รถ): แบบประเมินผูกกับคู่นี้ ไม่ใช่คำขออย่างเดียว"""
+        return (self.reservation.id, self.assignment.car.id if self.assignment.car else None)
+
+    @property
+    def driver(self):
+        return self.assignment.driver
+
+    @property
+    def is_overtime(self):
+        return self.assignment.is_overtime
+
+    @property
+    def distance_km(self):
+        return self.assignment.distance_km
+
+    @property
+    def started_at(self):
+        return self.assignment.started_at
+
+    @property
+    def completed_at(self):
+        return self.assignment.completed_at
+
+    def __getattr__(self, name):
+        # เรียกเฉพาะเมื่อหา attribute ปกติไม่เจอ: อ่านต่อจากคำขอ (กัน recursion ตอนยังไม่มี reservation)
+        if name == "reservation" or name.startswith("__"):
+            raise AttributeError(name)
+        return getattr(self.reservation, name)
+
+
+def worked_hours(job, reservation=None):
+    """ชั่วโมงทำงานของงานที่เกิดแล้ว: เวลาเริ่ม/ปิดงานจริง ถ้าไม่มีใช้เวลาออก/กลับตามใบขอ
+
+    job = DriverJob หรือ assignment (ส่งคำขอที่ assignment นั้นอยู่เป็น reservation)
+    """
+    reservation = reservation or job
+    started = job.started_at or reservation.departure_datetime
+    finished = job.completed_at or reservation.return_datetime or started
     return (finished - started).total_seconds() / 3600
 
 
-def booked_hours(job):
+def booked_hours(job, reservation=None):
     """ชั่วโมงที่จองไว้ของงานที่ยังไม่เกิด ตามเวลาออก-กลับในใบขอ"""
-    return (job.return_datetime - job.departure_datetime).total_seconds() / 3600
+    reservation = reservation or job
+    return (
+        reservation.return_datetime - reservation.departure_datetime
+    ).total_seconds() / 3600
+
+
+def _jobs_of(reservations, drivers):
+    """DriverJob ของทุกชุดที่ พขร. อยู่ในรายการ drivers (เรียงตามคำขอที่ส่งมา)"""
+    ids = {driver.id for driver in drivers}
+    return [
+        DriverJob(reservation, assignment)
+        for reservation in reservations
+        for assignment in reservation.assignments
+        if assignment.driver is not None and assignment.driver.id in ids
+    ]
 
 
 def driver_jobs(organization, driver, *, now, since):
     """(งานที่ออกเดินทางแล้วช่วง since..now ใหม่ก่อน, งาน active ที่ยังไม่ออก เรียงตามวันออก)
 
     ใช้เงื่อนไขเดียวกับ driver_workload ตัวเลขในหน้ารายคนจึงตรงกับตารางรวม
+    คำขอที่มีหลายชุดนับเฉพาะชุดของ driver (เป็น DriverJob หนึ่งงานต่อชุด)
     """
     done = models.CarReservation.objects(
         organization=organization,
-        driver=driver,
+        assignments__driver=driver,
         status__in=["completed", "active"],
         departure_datetime__gte=since,
         departure_datetime__lte=now,
     ).order_by("-departure_datetime")
     upcoming = models.CarReservation.objects(
         organization=organization,
-        driver=driver,
+        assignments__driver=driver,
         status="active",
         departure_datetime__gt=now,
     ).order_by("departure_datetime")
-    return list(done), list(upcoming)
+    return _jobs_of(done, [driver]), _jobs_of(upcoming, [driver])
 
 
 def driver_workload(
@@ -634,7 +784,8 @@ def driver_workload(
 ):
     """แถวภาระงานของ พขร. ที่จัดได้ทุกคน เรียงงานล่าสุดน้อยไปมาก แล้วชั่วโมงน้อยไปมาก
 
-    นับงานที่ออกเดินทางตั้งแต่ `since` (ไม่ระบุ = ย้อนหลัง `days` วัน) ถึง `now`
+    นับงานรายชุด (assignment) ที่ออกเดินทางตั้งแต่ `since` (ไม่ระบุ = ย้อนหลัง `days` วัน) ถึง `now`
+    คำขอที่มีสองชุดนับให้ พขร. แต่ละคนแยกกัน ด้วย OT และเวลาของชุดนั้น
     km = ผลรวมระยะทาง (เลข กม. กลับ - ออก) ของงานที่ปิดแล้ว
     upcoming / upcoming_hours = งาน active ที่ยังไม่ออกเดินทาง และชั่วโมงที่จองไว้ตามใบขอ
     """
@@ -642,15 +793,16 @@ def driver_workload(
         driver.id: DriverWorkload(driver=driver)
         for driver in assignable_drivers(organization)
     }
+    drivers = [row.driver for row in rows.values()]
     since = since or now - datetime.timedelta(days=days)
     jobs = models.CarReservation.objects(
         organization=organization,
-        driver__in=[row.driver for row in rows.values()],
+        assignments__driver__in=drivers,
         status__in=["completed", "active"],
         departure_datetime__gte=since,
         departure_datetime__lte=now,
     )
-    for job in jobs:
+    for job in _jobs_of(jobs, drivers):
         row = rows[job.driver.id]
         if job.is_overtime:
             row.ot_jobs += 1
@@ -660,18 +812,21 @@ def driver_workload(
         row.km += job.distance_km or 0
     ahead = models.CarReservation.objects(
         organization=organization,
-        driver__in=[row.driver for row in rows.values()],
+        assignments__driver__in=drivers,
         status__in=["pending", "active", "cancel_requested"],
         return_datetime__gt=window_start,
         departure_datetime__lt=window_end,
     )
-    for job in ahead:
+    for job in _jobs_of(ahead, drivers):
         rows[job.driver.id].busy = True
-    for job in models.CarReservation.objects(
-        organization=organization,
-        driver__in=[row.driver for row in rows.values()],
-        status="active",
-        departure_datetime__gt=now,
+    for job in _jobs_of(
+        models.CarReservation.objects(
+            organization=organization,
+            assignments__driver__in=drivers,
+            status="active",
+            departure_datetime__gt=now,
+        ),
+        drivers,
     ):
         row = rows[job.driver.id]
         row.upcoming += 1
@@ -709,14 +864,10 @@ def _car_is_taken(app, car, except_driver=None):
     """คำขอที่จองรถคันนี้ทับเวลา (CarReservation) หรือใบยืมรถ DIIS ที่ทับเวลา ไม่มีเป็น None
 
     except_driver = ไม่นับคำขอที่ใช้รถคันนี้กับ พขร. คนนี้ (งานหลักของ พขร. ที่งานแทรกใช้รถร่วม)
-    ตอนนี้คำขอมี car/driver ช่องเดียว ถ้าย้ายไป assignments ให้แก้ query ที่นี่ที่เดียว
     """
-    resource = {"car": car}
-    if except_driver is not None:
-        resource["driver__ne"] = except_driver
-    return _overlapping_bookings(app, **resource).first() or _car_booked_by_diis(
-        app, car
-    )
+    return _overlapping_bookings(
+        app, car=car, except_driver=except_driver
+    ).first() or _car_booked_by_diis(app, car)
 
 
 def _car_conflict_error(car, taken):
@@ -728,16 +879,80 @@ def _car_conflict_error(car, taken):
     )
 
 
-def _overlapping_bookings(app, **resource):
-    """คำขออื่นของ org ที่จองรถ/คนขับคนเดียวกัน (ผ่านขั้นจัดรถแล้วและยังไม่จบ) เวลาทับกัน"""
+def _overlapping_bookings(app, car=None, driver=None, except_driver=None):
+    """คำขออื่นของ org ที่จองรถ/คนขับคนเดียวกัน (ผ่านขั้นจัดรถแล้วและยังไม่จบ) เวลาทับกัน
+
+    car/driver เป็นเงื่อนไขของชุดเดียวกัน (ชุดที่ใช้รถคันนั้นกับ พขร. คนนั้น)
+    except_driver = ข้ามชุดที่ พขร. คนนี้ขับ (ใช้กับ car เพื่อไม่นับงานหลักของ พขร. ที่งานแทรกใช้รถร่วม)
+    """
+    match = {}
+    if car is not None:
+        match["car"] = car
+    if driver is not None:
+        match["driver"] = driver
+    if except_driver is not None:
+        match["driver__ne"] = except_driver
     return models.CarReservation.objects(
         organization=app.organization,
         status__in=["pending", "active", "cancel_requested"],
         id__ne=app.id,
         departure_datetime__lt=app.return_datetime,
         return_datetime__gt=app.departure_datetime,
-        **resource,
+        assignments__match=match,
     )
+
+
+def _assignment_inputs(assignments, car, driver, is_overtime):
+    """[(รถ, พขร., OT)] จากรายการชุด (dict หรือ object ที่มี car/driver/is_overtime) หรือ car/driver เดี่ยวแบบเดิม"""
+    if assignments is None:
+        if car is None and driver is None:
+            return []
+        return [(car, driver, bool(is_overtime))]
+    return [
+        (
+            _field_of(item, "car"),
+            _field_of(item, "driver"),
+            bool(_field_of(item, "is_overtime", False)),
+        )
+        for item in assignments
+    ]
+
+
+def _field_of(item, name, default=None):
+    if isinstance(item, dict):
+        return item.get(name, default)
+    return getattr(item, name, default)
+
+
+def _validate_dispatch(app, inputs, reduce_reason):
+    """ตรวจชุดรถ+พขร. ที่ผู้จัดรถเลือก (ครบตามจำนวน หรือน้อยกว่าพร้อมเหตุผล ไม่ซ้ำ พร้อมใช้ และไม่ชนเวลา)
+
+    คืนจำนวนรถที่ผู้ขอขอ ยก FlowError/CarConflictError ถ้าไม่ผ่าน
+    """
+    if not inputs or any(car is None or driver is None for car, driver, _ in inputs):
+        raise FlowError(CAR_AND_DRIVER_REQUIRED)
+    required = models.car_reservations.required_vehicle_count(app)
+    if len(inputs) > required:
+        raise FlowError(too_many_vehicles_error(required))
+    if len(inputs) < required and not (reduce_reason or "").strip():
+        raise FlowError(REDUCE_REASON_REQUIRED)
+    cars = [car for car, _, _ in inputs]
+    drivers = [driver for _, driver, _ in inputs]
+    if len({car.id for car in cars}) < len(cars):
+        raise FlowError(DUPLICATE_CAR)
+    if len({driver.id for driver in drivers}) < len(drivers):
+        raise FlowError(DUPLICATE_DRIVER)
+    assignable_car_ids = {car.id for car in assignable_cars(app.organization)}
+    assignable_driver_ids = {d.id for d in assignable_drivers(app.organization)}
+    if any(car.id not in assignable_car_ids for car in cars) or any(
+        driver.id not in assignable_driver_ids for driver in drivers
+    ):
+        raise FlowError(CAR_OR_DRIVER_NOT_ASSIGNABLE)
+    for car in cars:
+        taken = _car_is_taken(app, car)
+        if taken:
+            raise _car_conflict_error(car, taken)
+    return required
 
 
 def approve(
@@ -748,33 +963,61 @@ def approve(
     driver=None,
     extra_travelers="",
     is_overtime=False,
+    *,
+    assignments=None,
+    reduce_reason="",
 ):
+    """อนุมัติขั้นปัจจุบัน
+
+    ขั้นผู้จัดรถต้องจัดรถให้ครบ: `assignments` = รายการ {car, driver, is_overtime} (หรือ car/driver เดี่ยว
+    แบบเดิมเป็นชุดเดียว) ครบตามจำนวนรถที่ผู้ขอขอ หรือน้อยกว่าพร้อม `reduce_reason` (ลด details.vehicle_count
+    และลง log vehicle_count_reduced) ถ้ารถคันใดชนเวลาหลัง save ทั้งการจัดรถถูกถอยกลับ
+    """
     if not can_act(app, user):
         raise FlowError("ไม่มีสิทธิ์อนุมัติขั้นนี้")
 
     key = current_step_key(app)
     step = app.current_step
-    previous_assignment = (app.car, app.driver, app.is_overtime, app.extra_travelers)
+    previous = _DispatchState(app)
     audit_comment = comment
     changes = []
     if key == "dispatcher":
-        if car is None or driver is None:
-            raise FlowError(CAR_AND_DRIVER_REQUIRED)
-        if car not in assignable_cars(app.organization) or driver not in (
-            assignable_drivers(app.organization)
-        ):
-            raise FlowError(CAR_OR_DRIVER_NOT_ASSIGNABLE)
-        taken = _car_is_taken(app, car)
-        if taken:
-            raise _car_conflict_error(car, taken)
-        before = _assignment_snapshot(app)
-        app.car = car
-        app.driver = driver
-        app.is_overtime = bool(is_overtime)
+        inputs = _assignment_inputs(assignments, car, driver, is_overtime)
+        required = _validate_dispatch(app, inputs, reduce_reason)
+        slots = max(len(inputs), len(app.assignments))
+        before = _assignment_snapshot(app, slots)
+        app.assignments = [
+            models.car_reservations.CarAssignment(
+                car=car_, driver=driver_, is_overtime=is_overtime_
+            )
+            for car_, driver_, is_overtime_ in inputs
+        ]
         if asks_extra_travelers(app):
             app.extra_travelers = extra_travelers
-        changes = diff_fields(before, _assignment_snapshot(app), ASSIGNMENT_LABELS)
-        audit_comment = f"จัดรถ {car.license_plate} พนักงานขับรถ {driver.get_name()}"
+        changes = diff_fields(
+            before, _assignment_snapshot(app, slots), _assignment_labels(slots)
+        )
+        if len(inputs) < required:
+            app.details.vehicle_count = len(inputs)
+            _log(
+                app,
+                "vehicle_count_reduced",
+                user,
+                step_key=key,
+                comment=reduce_reason.strip(),
+                changes=[
+                    models.car_reservations.FieldChange(
+                        field="vehicle_count",
+                        label=REDUCE_FIELD_LABEL,
+                        old=str(required),
+                        new=str(len(inputs)),
+                    )
+                ],
+            )
+        audit_comment = "จัดรถ " + ", ".join(
+            f"{car_.license_plate} พนักงานขับรถ {driver_.get_name()}"
+            for car_, driver_, _ in inputs
+        )
         if comment:
             audit_comment += f" ({comment})"
     app.step_approvals.append(
@@ -795,24 +1038,46 @@ def approve(
     if app.current_step >= len(app.route_snapshot):
         app.status = "active"
     _save_if(app, status="pending", current_step=step)
-    taken = _car_is_taken(app, car) if key == "dispatcher" else None
-    if taken:
-        # ผู้จัดรถอีกคนจัดรถคันเดียวกันช่วงเวลาเดียวกันในจังหวะเดียวกัน: ถอยของเรากลับ ไม่ให้รถถูกจองซ้อน
-        _undo_dispatch(app, step, previous_assignment)
-        raise _car_conflict_error(car, taken)
+    if key == "dispatcher":
+        # ผู้จัดรถอีกคนจัดรถคันเดียวกันช่วงเวลาเดียวกันในจังหวะเดียวกัน: ถอยการจัดรถทั้งหมดของเรา ไม่ให้รถถูกจองซ้อน
+        for assigned_car in app.cars:
+            taken = _car_is_taken(app, assigned_car)
+            if taken:
+                _undo_dispatch(app, step, previous)
+                raise _car_conflict_error(assigned_car, taken)
 
 
-def _undo_dispatch(app, step, previous_assignment):
-    car, driver, is_overtime, extra_travelers = previous_assignment
-    models.CarReservation.objects(id=app.id, current_step=step + 1).update_one(
-        set__current_step=step,
-        set__status="pending",
-        set__car=car,
-        set__driver=driver,
-        set__is_overtime=is_overtime,
-        set__extra_travelers=extra_travelers,
-        pop__step_approvals=1,
-        pop__audit_logs=1,
+class _DispatchState:
+    """สถานะของคำขอก่อนขั้นอนุมัติหนึ่งขั้น ไว้ถอยกลับถ้ารถชนหลัง save"""
+
+    def __init__(self, app):
+        self.assignments = list(app.assignments)
+        self.extra_travelers = app.extra_travelers
+        self.vehicle_count = getattr(app.details, "vehicle_count", None)
+        self.log_count = len(app.audit_logs)
+
+
+def _undo_dispatch(app, step, previous):
+    """ถอยทั้งขั้นผู้จัดรถ: ชุดรถ จำนวนรถ ขั้น/สถานะ รายการอนุมัติ และ log ที่ขั้นนี้เพิ่ม (รวม log ลดจำนวนรถ)
+
+    ทำใน update เดียวและมีเงื่อนไขว่าคำขอยังอยู่ที่ขั้นถัดไป
+    """
+    values = {
+        "current_step": step,
+        "status": "pending",
+        "assignments": [a.to_mongo() for a in previous.assignments],
+        "extra_travelers": previous.extra_travelers,
+    }
+    if previous.vehicle_count is not None:
+        values["details.vehicle_count"] = previous.vehicle_count
+    models.CarReservation._get_collection().update_one(
+        {"_id": app.id, "current_step": step + 1},
+        {
+            "$set": values,
+            "$pop": {"step_approvals": 1},
+            # $slice ตัดกลับเหลือจำนวน log ก่อนอนุมัติ (ขั้นนี้อาจเพิ่มสองรายการ)
+            "$push": {"audit_logs": {"$each": [], "$slice": previous.log_count}},
+        },
     )
     app.reload()
 
@@ -848,7 +1113,7 @@ def cancel(app, user, reason=""):
     if not can_cancel(app, user):
         raise FlowError("ไม่มีสิทธิ์ยกเลิกคำขอนี้")
     status = app.status
-    if app.car is None:
+    if not app.assignments:
         app.status = "cancelled"
         _log(app, "cancelled", user, comment=reason)
     else:
@@ -865,76 +1130,141 @@ def confirm_cancel(app, user):
     _save_if(app, status="cancel_requested")
 
 
-def can_set_overtime(app, user):
-    """ผู้จัดรถแก้สถานะ OT ได้หลังจัดรถแล้ว ระหว่างรอผู้อนุมัติขั้นถัดไป เมื่ออนุมัติครบแล้วล็อก"""
+def _owns(app, assignment):
+    """assignment เป็นชุดของคำขอนี้จริง (กันส่งชุดของคำขออื่นเข้ามา)"""
+    return (
+        assignment is not None
+        and app.get_assignment(assignment.assignment_id) is not None
+    )
+
+
+def can_set_overtime(app, user, assignment):
+    """ผู้จัดรถแก้สถานะ OT ของชุดนี้ได้หลังจัดรถแล้ว ระหว่างรอผู้อนุมัติขั้นถัดไป เมื่ออนุมัติครบแล้วล็อก (ทุกชุด)"""
     return (
         app.status == "pending"
-        and app.car is not None
+        and _owns(app, assignment)
         and has_role(app.organization, user, "dispatcher")
     )
 
 
-def set_overtime(app, user, is_overtime):
-    if not can_set_overtime(app, user):
+def _update_assignment(app, assignment, *, status, guard=None, values=(), log=None):
+    """แก้เฉพาะช่องของชุดนี้ในคำขอแบบ atomic (ไม่ save ทั้งเอกสาร) คืน True ถ้าเงื่อนไขผ่านและแก้แล้ว
+
+    ถ้า พขร. สองคนปิดงานของชุดตัวเองพร้อมกัน การ save ทั้งเอกสารจะให้คนหลังเขียนทับชุดของคนแรก
+    จึงอัปเดตเฉพาะ element นี้ ($set assignments.$.<ช่อง>) เมื่อ element ที่มี assignment_id นี้ยังเข้าเงื่อนไข guard
+    และคำขออยู่ใน status ที่คาดไว้ แล้ว $push log ในคำสั่งเดียวกัน
+    ใช้ collection ตรง ๆ เพราะ update() ของ MongoEngine ไม่แปลง FileField ในตำแหน่ง $ (รูปเลขไมล์)
+    values = {ชื่อช่อง: ค่า Python} แปลงเป็นค่าของ Mongo ผ่าน field ของ CarAssignment
+    """
+    fields = models.car_reservations.CarAssignment._fields
+    update = {
+        "$set": {
+            f"assignments.$.{name}": None if value is None else fields[name].to_mongo(value)
+            for name, value in dict(values).items()
+        }
+    }
+    if log is not None:
+        update["$push"] = {"audit_logs": log.to_mongo()}
+    result = models.CarReservation._get_collection().update_one(
+        {
+            "_id": app.id,
+            "status": {"$in": [status] if isinstance(status, str) else list(status)},
+            "assignments": {
+                "$elemMatch": {"assignment_id": assignment.assignment_id, **(guard or {})}
+            },
+        },
+        update,
+    )
+    return result.matched_count == 1
+
+
+def set_overtime(app, user, assignment, is_overtime):
+    if not can_set_overtime(app, user, assignment):
         raise FlowError("ไม่มีสิทธิ์แก้สถานะงานนอกเวลา")
-    before = _assignment_snapshot(app)
-    app.is_overtime = bool(is_overtime)
-    _log(
-        app,
+    is_overtime = bool(is_overtime)
+    note = _assignment_note(app, assignment)
+    comment = "ตั้งเป็นงานนอกเวลา (OT)" if is_overtime else "ตั้งเป็นงานในเวลา"
+    label = ASSIGNMENT_LABELS["is_overtime"]
+    log = _new_log(
         "overtime_changed",
         user,
         step_key="dispatcher",
-        comment="ตั้งเป็นงานนอกเวลา (OT)" if app.is_overtime else "ตั้งเป็นงานในเวลา",
+        comment=f"{comment} ({note})" if note else comment,
         changes=diff_fields(
-            before,
-            _assignment_snapshot(app),
-            {"is_overtime": ASSIGNMENT_LABELS["is_overtime"]},
+            {"is_overtime": _yes_no(assignment.is_overtime)},
+            {"is_overtime": _yes_no(is_overtime)},
+            {"is_overtime": f"{label} ({_plate(assignment)})" if note else label},
         ),
     )
-    _save_if(app, status="pending")
+    if not _update_assignment(
+        app,
+        assignment,
+        status="pending",
+        values={"is_overtime": is_overtime},
+        log=log,
+    ):
+        raise ConcurrentChangeError(ALREADY_HANDLED)
+    app.reload()
 
 
-def can_close(app, user):
-    """พขร. ของงานนี้เท่านั้นที่ปิดงานได้ และต้องเป็นงานที่ active"""
+def can_close(app, user, assignment):
+    """พขร. ของชุดนี้เท่านั้นที่ปิดงานได้ และต้องเป็นคำขอที่ active และชุดนี้ยังไม่ปิด"""
     return (
         app.status == "active"
-        and app.driver is not None
-        and app.driver == user
+        and _owns(app, assignment)
+        and not assignment.is_closed
+        and assignment.driver is not None
+        and assignment.driver == user
         and has_role(app.organization, user, "driver")
     )
 
 
 def can_view_mileage_photos(app, user):
-    """รูปเลขไมล์: ผู้ขอ พขร. ของงาน ผู้จัดรถ/ผู้อนุมัติ และ admin ขององค์กร"""
+    """รูปเลขไมล์: ผู้ขอ พขร. ของชุดใดก็ได้ในคำขอ ผู้จัดรถ/ผู้อนุมัติ และ admin ขององค์กร"""
     if user is None:
         return False
     return (
         app.creator == user
-        or app.driver == user
+        or any(assignment.driver == user for assignment in app.assignments)
         or has_role(app.organization, user, "admin")
         or is_approver(app.organization, user)
     )
 
 
-def can_start(app, user):
-    """พขร. ของงานนี้กดเริ่มงานได้ (เงื่อนไขเดียวกับการปิดงาน)"""
-    return can_close(app, user)
+def can_start(app, user, assignment):
+    """พขร. ของชุดนี้กดเริ่มงานได้ (เงื่อนไขเดียวกับการปิดงาน)"""
+    return can_close(app, user, assignment)
 
 
-def start_trip(app, user):
-    """บันทึกเวลาเริ่มงานครั้งแรกเท่านั้น: กดซ้ำไม่เปลี่ยนเวลาและไม่ลงประวัติซ้ำ"""
-    if not can_start(app, user):
+def start_trip(app, user, assignment):
+    """บันทึกเวลาเริ่มงานของชุดนี้ครั้งแรกเท่านั้น: กดซ้ำไม่เปลี่ยนเวลาและไม่ลงประวัติซ้ำ"""
+    if not can_start(app, user, assignment):
         raise FlowError("ไม่มีสิทธิ์เริ่มงานนี้")
-    if app.started_at is not None:
+    if assignment.started_at is not None:
         return
-    app.started_at = datetime.datetime.now()
-    _log(app, "started", user)
-    app.save()
+    note = _assignment_note(app, assignment)
+    if _update_assignment(
+        app,
+        assignment,
+        status="active",
+        guard={"started_at": None, "completed_at": None},
+        values={"started_at": datetime.datetime.now()},
+        log=_new_log("started", user, comment=note),
+    ):
+        app.reload()
+        return
+    # ไม่ผ่านเงื่อนไข: กดซ้ำจากอีกแท็บ (เริ่มไปแล้ว ไม่ต้องทำอะไร) หรือคำขอ/ชุดเปลี่ยนสถานะไปแล้ว
+    app.reload()
+    fresh = app.get_assignment(assignment.assignment_id)
+    if fresh is not None and fresh.started_at is not None:
+        return
+    raise ConcurrentChangeError(ALREADY_HANDLED)
 
 
 def close_trip(
     app,
     user,
+    assignment,
     mileage_out,
     mileage_in,
     expense_case,
@@ -943,62 +1273,104 @@ def close_trip(
     client_ip=None,
     photo_in=None,
 ):
-    """ปิดงาน: บันทึกรายงานท้ายใบ (กม. ออก/กลับ น้ำมัน กรณีค่าใช้จ่าย เป็นเงิน) และอัปเดตเลขไมล์รถ
+    """ปิดงานของชุดนี้: บันทึกรายงานท้ายใบ (กม. ออก/กลับ น้ำมัน กรณีค่าใช้จ่าย เป็นเงิน) และอัปเดตเลขไมล์รถ
 
     ปิดงานได้ไม่ต้องเรียงตามวันเดินทาง (คนขับอีกคนลืมปิดก็ไม่ติด) เลขไมล์รถจึงเก็บค่าสูงสุดที่เคยกรอก
     งานเก่าที่มาปิดทีหลังด้วยเลขที่ต่ำกว่าจะไม่ทำให้เลขไมล์รถถอยหลัง
+
+    เขียนเฉพาะชุดนี้แบบ atomic (ปิดซ้ำชุดเดิมได้ ConcurrentChangeError ชุดอื่นของคำขอไม่ถูกแตะ)
+    เมื่อทุกชุดปิดครบจึงเปลี่ยนคำขอเป็น completed ครั้งเดียว คืน True ถ้าการเรียกนี้เป็นตัวที่ปิดคำขอ
+    หลังเรียก app ถูก reload แล้ว: ถ้าจะอ่านชุดนี้ต่อให้เรียก app.get_assignment(assignment_id) ใหม่
     """
-    if not can_close(app, user):
+    if not can_close(app, user, assignment):
         raise FlowError("ไม่มีสิทธิ์ปิดงานนี้")
     if mileage_in < mileage_out:
         raise MileageError(MILEAGE_IN_BELOW_OUT)
 
-    before = _trip_report_snapshot(app)
-    app.last_mileage_before = mileage_out
-    app.last_mileage = mileage_in
-    app.fuel_liters = fuel_liters
-    app.expense_case = expense_case
-    app.cost_baht = cost_baht
-    app.completed_at = datetime.datetime.now()
-    # ถ่ายเฉพาะเลขไมล์ขากลับ (mileage_photo_out เก็บไว้ให้งานเก่าที่เคยถ่ายสองรูป)
-    app.mileage_photo_in.replace(
-        photo_in, filename=photo_in.filename, content_type=photo_in.content_type
+    car = assignment.car
+    report = models.car_reservations.CarAssignment(
+        last_mileage_before=mileage_out,
+        last_mileage=mileage_in,
+        fuel_liters=fuel_liters,
+        expense_case=expense_case,
+        cost_baht=cost_baht,
     )
-    app.mileage_photos_at = app.completed_at
+    completed_at = datetime.datetime.now()
     networks = app.organization.car_reservation_campus_networks
-    app.closed_ip = client_ip
-    app.closed_off_campus = (
+    closed_off_campus = (
         not utils.campus_network.ip_in_networks(client_ip, networks)
         if networks
         else None
     )
-    app.status = "completed"
-    _log(
-        app,
+    labels = _trip_report_labels(app, assignment)
+    log = _new_log(
         "completed",
         user,
-        changes=diff_fields(before, _trip_report_snapshot(app), TRIP_REPORT_LABELS),
+        comment=_assignment_note(app, assignment),
+        changes=diff_fields(
+            _trip_report_snapshot(assignment), _trip_report_snapshot(report), labels
+        ),
     )
-    _save_if(app, status="active")
-    if app.car is not None:
-        app.car.update(max__last_mileage=mileage_in)
-        app.car.reload("last_mileage")
+    # ถ่ายเฉพาะเลขไมล์ขากลับ (mileage_photo_out เก็บไว้ให้งานเก่าที่เคยถ่ายสองรูป)
+    photo = assignment.mileage_photo_in
+    photo.replace(
+        photo_in, filename=photo_in.filename, content_type=photo_in.content_type
+    )
+    closed = False
+    try:
+        closed = _update_assignment(
+            app,
+            assignment,
+            status="active",
+            guard={"completed_at": None},
+            values={
+                "last_mileage_before": mileage_out,
+                "last_mileage": mileage_in,
+                "fuel_liters": fuel_liters,
+                "expense_case": expense_case,
+                "cost_baht": cost_baht,
+                "completed_at": completed_at,
+                "mileage_photo_in": photo,
+                "mileage_photos_at": completed_at,
+                "closed_ip": client_ip,
+                "closed_off_campus": closed_off_campus,
+            },
+            log=log,
+        )
+    finally:
+        if not closed:
+            photo.delete()  # ไม่ได้ปิด (ปิดซ้ำ/สถานะเปลี่ยน) ไม่ทิ้งรูปค้างใน GridFS
+    if not closed:
+        raise ConcurrentChangeError(ALREADY_HANDLED)
+    if car is not None:
+        car.update(max__last_mileage=mileage_in)
+        car.reload("last_mileage")
+    app.reload()
+    if not app.all_closed:
+        return False
+    # ชุดสุดท้ายที่ปิดเป็นคนพลิก: เงื่อนไข status=active ทำให้สองคนปิดพร้อมกันพลิกได้ครั้งเดียว
+    flipped = models.CarReservation.objects(id=app.id, status="active").update_one(
+        set__status="completed"
+    )
+    app.reload()
+    return flipped == 1
 
 
 def _is_admin(organization, user):
     return "admin" in user.roles or has_role(organization, user, "admin")
 
 
-def can_confirm_close(app, user, now=None):
-    """ผู้ขอยืนยันเวลาปิดงานได้ครั้งเดียว ภายใน 3 วันหลังปิดงาน
+def can_confirm_close(app, user, assignment, now=None):
+    """ผู้ขอยืนยันเวลาปิดงานของชุดนี้ได้ครั้งเดียว ภายใน 3 วันหลังที่ พขร. ของชุดนั้นปิดงาน
 
     ผู้ขอคือผู้สร้างคำขอ แต่ถ้าผู้สร้างเป็นผู้จัดรถ (คำขอเร่งด่วน/งานแทรก) ไม่มีผู้ขอตัวจริงในระบบ
     จึงให้เฉพาะ admin (ของระบบหรือของ org) ตอบแทน
     """
     if (
         user is None
-        or app.status != "completed"
-        or app.close_confirmation_status(now) != "pending"
+        or app.status not in ("active", "completed")
+        or not _owns(app, assignment)
+        or assignment.close_confirmation_status(now) != "pending"
     ):
         return False
     if has_role(app.organization, app.creator, "dispatcher"):
@@ -1006,22 +1378,40 @@ def can_confirm_close(app, user, now=None):
     return user == app.creator
 
 
-def confirm_close(app, user, correct, reported_end=None, note="", now=None):
-    """ผู้ขอตอบว่าเวลาเริ่ม/ปิดงานที่ พขร. บันทึกถูกต้อง หรือไม่ถูกต้อง (ต้องแจ้งเวลาสิ้นสุดจริง)"""
-    if not can_confirm_close(app, user, now):
+def confirm_close(
+    app, user, assignment, correct, reported_end=None, note="", now=None
+):
+    """ผู้ขอตอบว่าเวลาเริ่ม/ปิดงานที่ พขร. ของชุดนี้บันทึกถูกต้อง หรือไม่ถูกต้อง (ต้องแจ้งเวลาสิ้นสุดจริง)"""
+    if not can_confirm_close(app, user, assignment, now):
         raise FlowError("ไม่มีสิทธิ์ยืนยันเวลาปิดงานนี้")
     if not correct and reported_end is None:
         raise FlowError(CLOSE_REPORTED_END_REQUIRED)
-    app.close_confirmed_by = user
-    app.close_confirmed_at = now or datetime.datetime.now()
+    values = {"close_confirmed_by": user, "close_confirmed_at": now or datetime.datetime.now()}
+    note_of_car = _assignment_note(app, assignment)
     if correct:
-        app.close_confirmation = "confirmed"
-        _log(app, "close_confirmed", user)
+        values["close_confirmation"] = "confirmed"
+        log = _new_log("close_confirmed", user, comment=note_of_car)
     else:
         note = (note or "").strip()
-        app.close_confirmation = "disputed"
-        app.close_reported_end = reported_end
-        app.close_dispute_note = note
+        values.update(
+            close_confirmation="disputed",
+            close_reported_end=reported_end,
+            close_dispute_note=note,
+        )
         comment = f"เวลาสิ้นสุดจริง {reported_end.strftime('%d/%m/%Y %H:%M')} น."
-        _log(app, "close_disputed", user, comment=f"{comment} ({note})" if note else comment)
-    app.save()
+        if note:
+            comment = f"{comment} ({note})"
+        if note_of_car:
+            comment = f"{note_of_car}: {comment}"
+        log = _new_log("close_disputed", user, comment=comment)
+    # ตอบได้ครั้งเดียว: ผู้ขอสองแท็บกดพร้อมกัน คนที่สองไม่ผ่านเงื่อนไข close_confirmation ว่าง
+    if not _update_assignment(
+        app,
+        assignment,
+        status=["active", "completed"],
+        guard={"completed_at": {"$ne": None}, "close_confirmation": None},
+        values=values,
+        log=log,
+    ):
+        raise ConcurrentChangeError(ALREADY_HANDLED)
+    app.reload()

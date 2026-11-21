@@ -704,12 +704,12 @@ def test_view_responses_filters_by_driver(
             data = two_orgs()
             apichat = create_user("Apichat", "Driver")
             somsak = create_user("Somsak", "Driver")
-            mine = create_car_reservation(data["org_a"], data["car_a"], location="สนามบินหาดใหญ่")
-            mine.driver = apichat
-            mine.save()
-            other = create_car_reservation(data["org_a"], data["car_a"], location="ศาลากลางสงขลา")
-            other.driver = somsak
-            other.save()
+            mine = create_car_reservation(
+                data["org_a"], data["car_a"], location="สนามบินหาดใหญ่", driver=apichat
+            )
+            other = create_car_reservation(
+                data["org_a"], data["car_a"], location="ศาลากลางสงขลา", driver=somsak
+            )
             for trip in (mine, other):
                 create_feedback_response(
                     data["template_a"], data["car_a"], car_reservation=trip,

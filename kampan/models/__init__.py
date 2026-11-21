@@ -67,7 +67,7 @@ from .requisition_timeline import (
 )
 from .export_file import ExportFile
 from .car_holidays import CarHoliday
-from .car_reservations import CarReservation
+from .car_reservations import CarAssignment, CarReservation
 from .car_reservation_finance import CarReservationFinanceDocument
 from .notifications import Notification
 

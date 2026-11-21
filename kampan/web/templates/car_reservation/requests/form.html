@@ -38,11 +38,34 @@
 
     {% if urgent_by_dispatcher is defined %}
     {% call FormSection('จัดรถและพนักงานขับรถ', icon='ph-user') %}
-    <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
-      {{ renderer.render_select_field(form.car) }}
-      {{ renderer.render_select_field(form.driver) }}
+    <p class="text-sm text-base-content/70" data-role="urgent-assignment-hint">
+      จัดให้ครบตามจำนวนรถที่ขอ (ช่อง "จำนวนรถ") ได้สูงสุด {{ form.assignments | length }} คัน คันแรกบังคับ คันถัดไปกดเพิ่มได้ ทุกคันต้องเลือกทั้งรถและพนักงานขับรถ
+    </p>
+    {% for slot in form.assignments %}
+    {% set filled = slot.form.car.data or slot.form.driver.data %}
+    {% if loop.first %}
+    <div class="flex flex-col gap-2 rounded-box border border-base-300 p-3" data-role="assignment-slot">
+      <p class="font-semibold">รถคันที่ 1 <span class="text-error">*</span></p>
+      <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
+        {{ renderer.render_select_field(slot.form.car, required=True, optionals={'required': True}) }}
+        {{ renderer.render_select_field(slot.form.driver, required=True, optionals={'required': True}) }}
+      </div>
+      {{ renderer.render_checkbox(slot.form.is_overtime) }}
     </div>
-    {{ renderer.render_checkbox(form.is_overtime) }}
+    {% else %}
+    {# ช่องที่ 2 เป็นต้นไปพับไว้ เปิดเองเมื่อมีข้อมูล (เช่นส่งกลับมาแก้หลังฟอร์มไม่ผ่าน) #}
+    <details class="collapse collapse-arrow rounded-box border border-base-300" data-role="assignment-slot" {% if filled %}open{% endif %}>
+      <summary class="collapse-title font-semibold">เพิ่มรถคันที่ {{ loop.index }}</summary>
+      <div class="collapse-content flex flex-col gap-2">
+        <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
+          {{ renderer.render_select_field(slot.form.car) }}
+          {{ renderer.render_select_field(slot.form.driver) }}
+        </div>
+        {{ renderer.render_checkbox(slot.form.is_overtime) }}
+      </div>
+    </details>
+    {% endif %}
+    {% endfor %}
     {% endcall %}
     {% endif %}
 

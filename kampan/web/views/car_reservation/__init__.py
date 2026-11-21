@@ -101,7 +101,11 @@ def inject_feedback_link():
     return {
         "feedback_link": lambda reservation: feedback_view.get_requester_feedback_url(
             reservation, user
-        )
+        ),
+        # หนึ่งลิงก์ต่อรถหนึ่งคัน (คำขอหลายคันประเมินแยกทีละคัน)
+        "feedback_links": lambda reservation: feedback_view.get_requester_feedback_links(
+            reservation, user
+        ),
     }
 
 

@@ -1,19 +1,20 @@
-{# ผู้ขอยืนยันเวลาเริ่ม/ปิดงานที่ พขร. บันทึก: แสดงเมื่อปิดงานแล้ว (close_status ไม่ใช่ none) #}
+{# ผู้ขอยืนยันเวลาเริ่ม/ปิดงานที่ พขร. ของชุดนี้บันทึก: แสดงเมื่อชุดนี้ปิดงานแล้ว (card.close_status ไม่ใช่ none) #}
+{% set close_status = card.close_status %}
 {% if close_status %}
 <section class="card bg-base-100 border border-base-300 shadow-sm" data-role="close-confirmation" data-status="{{ close_status }}">
   <div class="card-body gap-3">
-    <h2 class="card-title text-lg">ยืนยันเวลาปิดงาน</h2>
+    <h2 class="card-title text-lg">ยืนยันเวลาปิดงาน{% if multiple %} (รถคันที่ {{ card.index }}){% endif %}</h2>
     <dl class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-      <div><dt class="font-semibold">เวลาเริ่มงานที่บันทึก</dt><dd>{{ reservation.started_at.strftime('%d/%m/%Y %H:%M') + ' น.' if reservation.started_at else '-' }}</dd></div>
-      <div><dt class="font-semibold">เวลาปิดงานที่บันทึก</dt><dd>{{ reservation.completed_at.strftime('%d/%m/%Y %H:%M') }} น.</dd></div>
+      <div><dt class="font-semibold">เวลาเริ่มงานที่บันทึก</dt><dd>{{ assignment.started_at.strftime('%d/%m/%Y %H:%M') + ' น.' if assignment.started_at else '-' }}</dd></div>
+      <div><dt class="font-semibold">เวลาปิดงานที่บันทึก</dt><dd>{{ assignment.completed_at.strftime('%d/%m/%Y %H:%M') }} น.</dd></div>
     </dl>
     {% if close_status == 'confirmed' %}
     <p class="text-success" data-role="close-confirmation-result">ผู้ขอยืนยันว่าเวลาถูกต้อง</p>
     {% elif close_status == 'disputed' %}
     <div class="alert alert-warning" role="alert" data-role="close-confirmation-result">
       <div>
-        <p>ผู้ขอแจ้งว่าเวลาไม่ถูกต้อง เวลาสิ้นสุดจริง {{ reservation.close_reported_end.strftime('%d/%m/%Y %H:%M') }} น.</p>
-        {% if reservation.close_dispute_note %}<p>{{ reservation.close_dispute_note }}</p>{% endif %}
+        <p>ผู้ขอแจ้งว่าเวลาไม่ถูกต้อง เวลาสิ้นสุดจริง {{ assignment.close_reported_end.strftime('%d/%m/%Y %H:%M') }} น.</p>
+        {% if assignment.close_dispute_note %}<p>{{ assignment.close_dispute_note }}</p>{% endif %}
       </div>
     </div>
     {% elif close_status == 'auto_confirmed' %}
@@ -21,9 +22,10 @@
     {% elif close_status == 'pending' %}
     <p class="text-base-content/70" data-role="close-confirmation-result">รอผู้ขอยืนยัน (ไม่ตอบภายใน {{ close_confirmation_days }} วันหลังปิดงานถือว่ายืนยันอัตโนมัติ)</p>
     {% endif %}
-    {% if can_confirm_close %}
+    {% if card.can_confirm_close %}
     <form method="post" class="flex flex-col gap-2" data-role="close-confirmation-form"
-          action="{{ url_for('car_reservation.requests.close_confirmation', request_id=reservation.id, organization_id=organization.id) }}">
+          action="{{ url_for('car_reservation.requests.close_confirmation', request_id=reservation.id, assignment_id=assignment.assignment_id, organization_id=organization.id) }}">
+      {% set close_form = card.close_form %}
       {{ close_form.csrf_token }}
       <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
         {{ renderer.date_field(close_form.actual_end_date) }}

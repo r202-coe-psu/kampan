@@ -164,15 +164,24 @@ def create_car_reservation():
 
     def _create_car_reservation(
         organization,
-        car,
+        car=None,
         location="สนามบินหาดใหญ่",
         status="active",
         departure_datetime=None,
+        driver=None,
+        assignments=None,
     ):
+        """car/driver สร้างชุดเดียว (ไม่ระบุทั้งคู่และไม่มี assignments = ยังไม่จัดรถ) หรือส่ง assignments เอง"""
         departure = departure_datetime or datetime.datetime(2026, 1, 15, 8, 0)
+        if assignments is None:
+            assignments = (
+                [models.CarAssignment(car=car, driver=driver)]
+                if car is not None or driver is not None
+                else []
+            )
         reservation = models.CarReservation(
             organization=organization,
-            car=car,
+            assignments=list(assignments),
             location=location,
             status=status,
             request_type="domestic",

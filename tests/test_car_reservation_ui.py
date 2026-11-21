@@ -374,8 +374,7 @@ def test_detail_groups_the_information_into_titled_cards(world):
 def test_detail_adds_cards_for_the_assigned_car_and_the_form_details(world):
     reservation = world.reservation(
         status="active",
-        car=world.car,
-        driver=world.dispatcher,
+        assignments=[models.CarAssignment(car=world.car, driver=world.dispatcher)],
         details=models.car_reservations.DomesticDetails(
             vehicle_kind="ตู้", vehicle_count=1, district="หาดใหญ่", province="สงขลา"
         ),
@@ -503,7 +502,9 @@ def test_detail_header_offers_the_requester_only_the_cancel_action(world):
 
 
 def test_detail_header_offers_the_dispatcher_to_acknowledge_a_cancel_request(world):
-    reservation = world.reservation(status="cancel_requested", car=world.car)
+    reservation = world.reservation(
+        status="cancel_requested", assignments=[models.CarAssignment(car=world.car)]
+    )
 
     bar = action_bar(detail(world, world.dispatcher, reservation))
 

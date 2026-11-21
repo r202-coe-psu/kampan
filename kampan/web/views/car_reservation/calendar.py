@@ -21,11 +21,16 @@ EVENT_TONES = {
 }
 
 
+PLATE_SEPARATOR = ", "
+
+
 def event_title(reservation):
     time = reservation.departure_datetime.strftime("%H:%M")
     title = f"{time} น. {reservation.location or '-'}"
-    if reservation.car:
-        title += f" ({reservation.car.license_plate})"
+    plates = [car.license_plate for car in reservation.cars]
+    if plates:
+        # คำขอหลายคันแสดงทะเบียนทุกคัน คันเดียวหน้าตาเดิม
+        title += f" ({PLATE_SEPARATOR.join(plates)})"
     return title
 
 

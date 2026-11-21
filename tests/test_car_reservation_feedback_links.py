@@ -104,8 +104,9 @@ def world(
             status=status,
             route_snapshot=["supervisor", "dispatcher"],
             current_step=2,
-            car=car or s.car,
-            driver=s.driver,
+            assignments=[
+                models.CarAssignment(car=car or s.car, driver=s.driver)
+            ],
         ).save()
 
     s.reservation = reservation
@@ -187,7 +188,8 @@ def test_driver_closing_the_trip_emails_the_requester_the_survey_link_job(world,
     reservation = world.reservation(status="active")
 
     response = world.client_for(world.driver).post(
-        f"/car_reservation/tasks/{reservation.id}/close?organization_id={world.org.id}",
+        f"/car_reservation/tasks/{reservation.id}/close/{reservation.first_assignment.assignment_id}"
+        f"?organization_id={world.org.id}",
         data={
             "mileage_out": "0",
             "mileage_in": "120",
@@ -209,7 +211,8 @@ def test_a_refused_close_sends_no_completed_email(world, mock_redis_queue):
     reservation = world.reservation(status="active")
 
     world.client_for(world.driver).post(
-        f"/car_reservation/tasks/{reservation.id}/close?organization_id={world.org.id}",
+        f"/car_reservation/tasks/{reservation.id}/close/{reservation.first_assignment.assignment_id}"
+        f"?organization_id={world.org.id}",
         data={"mileage_out": "500", "mileage_in": "100", "expense_case": "fleet_card"},
     )
 

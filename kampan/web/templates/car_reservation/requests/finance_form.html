@@ -2,7 +2,7 @@
 
 {% block title %}{{ doc_label }}{% endblock %}
 
-{% block page_subtitle %}{{ reservation.driver.get_name() if reservation.driver else '' }} · {{ reservation.location }}{% endblock %}
+{% block page_subtitle %}{{ reservation.first_assignment.driver.get_name() if reservation.first_assignment and reservation.first_assignment.driver else '' }} · {{ reservation.location }}{% endblock %}
 
 {% block content %}
 <div class="card bg-base-100 border border-base-300 shadow-sm max-w-3xl">

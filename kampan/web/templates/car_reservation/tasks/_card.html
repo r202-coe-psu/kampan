@@ -1,4 +1,5 @@
-{# การ์ดงานของพนักงานขับรถ: การ์ดเดียวใช้ได้ทั้งมือถือและเดสก์ท็อป #}
+{# การ์ดงานของพนักงานขับรถ: การ์ดเดียวใช้ได้ทั้งมือถือและเดสก์ท็อป
+   task = DriverJob (คำขอ + ชุดรถของ พขร. คนนี้) แสดงเฉพาะรถ/เวลาเริ่ม-ปิดของชุดตัวเอง #}
 {% import '/car_reservation/components/status_badge.html' as status_badge %}
 <div class="card bg-base-100 border border-base-300 shadow-sm" data-role="task-card">
   <div class="card-body gap-3">
@@ -6,8 +7,12 @@
       <h3 class="card-title">{{ task.location }}</h3>
       <span class="flex flex-wrap items-center gap-1">
         {% if task.is_insert %}{{ status_badge.insert() }}{% endif %}
-        {{ status_badge.render(task) }}
-        {% if task.closed_off_campus %}{{ status_badge.off_campus() }}{% endif %}
+        {% if task.assignment.is_closed and task.reservation.status != 'completed' %}
+        <span class="badge badge-neutral badge-soft badge-sm whitespace-nowrap font-medium align-middle" data-role="assignment-closed-badge">ปิดงานแล้ว</span>
+        {% else %}
+        {{ status_badge.render(task.reservation) }}
+        {% endif %}
+        {% if task.assignment.closed_off_campus %}{{ status_badge.off_campus() }}{% endif %}
       </span>
     </div>
     <p class="text-sm text-base-content/70">{{ task.get_request_type_display() }}</p>
@@ -16,22 +21,22 @@
       <div><dt class="font-semibold">กลับถึง</dt><dd>{{ task.return_datetime.strftime('%d/%m/%Y %H:%M') }} น.</dd></div>
       <div><dt class="font-semibold">จุดรับ</dt><dd>{{ task.pickup_place }} เวลา {{ task.pickup_time }} น.</dd></div>
       <div><dt class="font-semibold">ผู้ขอใช้รถ</dt><dd>{{ task.creator.get_name() if task.creator else '-' }} <a class="link" href="tel:{{ task.phone }}">{{ task.phone }}</a></dd></div>
-      <div><dt class="font-semibold">รถ</dt><dd>{{ task.car.license_plate if task.car else '-' }}</dd></div>
+      <div><dt class="font-semibold">รถ</dt><dd>{{ task.assignment.car.license_plate if task.assignment.car else '-' }}</dd></div>
     </dl>
-    {% if task.status == 'active' %}
+    {% if task.status == 'active' and not task.assignment.is_closed %}
     <div class="card-actions justify-end">
-      {% if not task.started_at %}
+      {% if not task.assignment.started_at %}
       <form method="post" class="w-full sm:w-auto"
-            action="{{ url_for('car_reservation.tasks.start', task_id=task.id, organization_id=organization.id) }}">
+            action="{{ url_for('car_reservation.tasks.start', task_id=task.id, assignment_id=task.assignment.assignment_id, organization_id=organization.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-primary btn-lg w-full sm:w-auto">
           เริ่มงาน
         </button>
       </form>
       {% else %}
-      <p class="w-full text-sm text-base-content/70">เริ่มงานเมื่อ {{ task.started_at.strftime('%d/%m/%Y %H:%M') }} น.</p>
+      <p class="w-full text-sm text-base-content/70">เริ่มงานเมื่อ {{ task.assignment.started_at.strftime('%d/%m/%Y %H:%M') }} น.</p>
       <a class="btn btn-primary btn-lg w-full sm:w-auto"
-         href="{{ url_for('car_reservation.tasks.close', task_id=task.id, organization_id=organization.id) }}">
+         href="{{ url_for('car_reservation.tasks.close', task_id=task.id, assignment_id=task.assignment.assignment_id, organization_id=organization.id) }}">
         ปิดงาน
       </a>
       {% endif %}

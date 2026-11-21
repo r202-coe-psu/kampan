@@ -1,0 +1,36 @@
+{# การ์ดของรถหนึ่งชุด (รถ + พนักงานขับรถ) ของคำขอ: OT, รายงานปิดงาน และการยืนยันเวลาปิดงานของชุดนี้
+   ตัวแปร: card (จาก assignment_cards ใน view), assignment = card.assignment #}
+{% set multiple = assignment_cards | length > 1 %}
+<div class="flex flex-col gap-4" data-role="assignment" data-assignment-id="{{ assignment.assignment_id }}">
+<div class="card bg-base-100 border border-base-300 shadow-sm" data-role="info-section">
+  <div class="card-body gap-4">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h2 class="card-title text-lg">{% if multiple %}รถคันที่ {{ card.index }}{% else %}รถและพนักงานขับรถ{% endif %}</h2>
+      {% if assignment.is_overtime %}{{ status_badge.overtime() }}{% endif %}
+    </div>
+    <dl class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2">
+      {% if assignment.car %}
+      {% call Item('รถ', role='assigned-car') %}{{ assignment.car.license_plate }}{% if assignment.car.vehicle_type %} ({{ assignment.car.vehicle_type }}){% endif %}{% endcall %}
+      {% endif %}
+      {% if assignment.driver %}
+      {% call Item('พนักงานขับรถ', role='assigned-driver') %}{{ assignment.driver.get_name() }}{% endcall %}
+      {% endif %}
+      {% call Item('งานนอกเวลา (OT)', role='overtime-status') %}{{ 'ใช่' if assignment.is_overtime else 'ไม่ใช่' }}{% endcall %}
+    </dl>
+    {% if card.can_set_overtime %}
+    {% set ot = card.overtime_form %}
+    <form method="post" class="flex flex-wrap items-center gap-2" data-role="overtime-form"
+          action="{{ url_for('car_reservation.requests.overtime', request_id=reservation.id, assignment_id=assignment.assignment_id, organization_id=organization.id) }}">
+      {{ ot.csrf_token }}
+      <label class="label cursor-pointer gap-2" for="{{ ot.is_overtime.id }}-{{ assignment.assignment_id }}">
+        {{ ot.is_overtime(class_="checkbox checkbox-sm", id=ot.is_overtime.id ~ '-' ~ assignment.assignment_id) }}
+        <span>{{ ot.is_overtime.label.text }}</span>
+      </label>
+      <button type="submit" class="btn btn-primary btn-sm">บันทึก OT</button>
+    </form>
+    {% endif %}
+    {% include '/car_reservation/requests/_trip_report.html' %}
+  </div>
+</div>
+{% include '/car_reservation/requests/_close_confirmation.html' %}
+</div>

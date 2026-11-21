@@ -277,10 +277,13 @@ def get_feedback_template_for_car(car, template_id=None):
 
 
 def get_car_trips(car, organization):
-    """เที่ยวรถของรถคันนี้ที่เกิดการใช้งานจริง เรียงจากเที่ยวล่าสุด"""
+    """เที่ยวรถของรถคันนี้ที่เกิดการใช้งานจริง เรียงจากเที่ยวล่าสุด
+
+    คำขอที่จัดรถหลายคันนับเป็นเที่ยวของรถแต่ละคัน (ผลประเมินผูกกับคู่คำขอ + รถ)
+    """
     return list(
         models.CarReservation.objects(
-            car=car,
+            assignments__car=car,
             organization=organization,
             status__in=FEEDBACK_TRIP_STATUS,
         ).order_by("-departure_datetime")
@@ -305,32 +308,48 @@ def get_public_car_trips(car, organization, now, requested_trip_id=None):
     ]
 
 
-def get_requester_feedback_url(reservation, user):
-    """ลิงก์ไปหน้าประเมินสาธารณะของรถที่ใช้ในเที่ยวนี้ โดยเลือกเที่ยวนี้เป็นค่าตั้งต้น
+def get_requester_feedback_links(reservation, user):
+    """ลิงก์ไปหน้าประเมินสาธารณะของรถแต่ละคันที่ใช้ในเที่ยวนี้ โดยเลือกเที่ยวนี้เป็นค่าตั้งต้น
 
-    คืน ``None`` เมื่อไม่ควรเสนอลิงก์: ไม่ใช่ผู้ขอของใบขอ, พขร. ยังไม่ปิดงาน หรือรถคันนั้นยังไม่มีแบบประเมิน
+    คืนรายการ ``{"assignment", "car", "url"}`` หนึ่งรายการต่อชุดที่รถมีแบบประเมิน
+    รายการว่างเมื่อไม่ควรเสนอลิงก์: ไม่ใช่ผู้ขอของใบขอ หรือ พขร. ยังปิดงานไม่ครบ
     """
-    if reservation.status != "completed" or reservation.creator != user or not reservation.car:
-        return None
+    if reservation.status != "completed" or reservation.creator != user:
+        return []
 
-    if get_feedback_template_for_car(reservation.car) is None:
-        return None
+    links = []
+    for assignment in reservation.assignments:
+        car = assignment.car
+        if not car or get_feedback_template_for_car(car) is None:
+            continue
+        links.append(
+            {
+                "assignment": assignment,
+                "car": car,
+                "url": url_for(
+                    "car_reservation.cars.feedback",
+                    car_id=car.id,
+                    reservation_id=reservation.id,
+                ),
+            }
+        )
+    return links
 
-    return url_for(
-        "car_reservation.cars.feedback",
-        car_id=reservation.car.id,
-        reservation_id=reservation.id,
-    )
+
+def get_requester_feedback_url(reservation, user):
+    """ลิงก์ประเมินของรถคันแรกที่มีแบบประเมิน หรือ ``None`` (ไว้ใช้กับโค้ดที่ยังรับลิงก์เดียว)"""
+    links = get_requester_feedback_links(reservation, user)
+    return links[0]["url"] if links else None
 
 
 def get_filter_trips(cars, organization):
-    """เที่ยวรถที่ใช้เป็นตัวกรองในหน้าสถิติ = เฉพาะเที่ยวที่รถเหล่านี้ถูกจัดไว้"""
+    """เที่ยวรถที่ใช้เป็นตัวกรองในหน้าสถิติ = เฉพาะเที่ยวที่รถเหล่านี้ถูกจัดไว้ (ชุดใดชุดหนึ่งของคำขอ)"""
     if not cars:
         return []
 
     return list(
         models.CarReservation.objects(
-            car__in=list(cars),
+            assignments__car__in=list(cars),
             organization=organization,
             status__in=FEEDBACK_TRIP_STATUS,
         )
@@ -373,6 +392,30 @@ def get_response_choice_counts(template):
     trip_counts = {reference_key(row["_id"]): row["count"] for row in facets.get("by_trip", []) if row["_id"]}
 
     return car_counts, trip_counts
+
+
+def get_response_pair_counts(template):
+    """นับผลตอบรับต่อคู่ (เที่ยวรถ, รถ) {(trip_id, car_id): จำนวน}
+
+    คำขอที่จัดรถหลายคันได้ผลประเมินแยกคันกัน จึงต้องนับตามคู่ ไม่ใช่ตามเที่ยวอย่างเดียว
+    """
+    rows = models.CarFeedbackResponse.objects(
+        feedback_template=template, car_reservation__ne=None
+    ).aggregate(
+        [
+            {
+                "$group": {
+                    "_id": {"trip": "$car_reservation", "car": "$car"},
+                    "count": {"$sum": 1},
+                }
+            }
+        ]
+    )
+    return {
+        (reference_key(row["_id"]["trip"]), reference_key(row["_id"]["car"])): row["count"]
+        for row in rows
+        if row["_id"].get("trip") and row["_id"].get("car")
+    }
 
 
 def build_stats_pipeline(questions):
@@ -536,7 +579,8 @@ def build_response_filter(
     """เงื่อนไข query ของผลตอบรับตามตัวกรองที่ผู้ใช้เลือก
 
     ไม่มีตัวกรองรถ = จำกัดไว้แค่รถของหน่วยงานนี้ ไม่ใช่ทุกผลตอบรับของแบบประเมิน
-    driver_trips = เที่ยวของพนักงานขับรถที่เลือก (None = ไม่กรองตามคนขับ)
+    driver_trips = คู่ (เที่ยว, รถ) ที่พนักงานขับรถที่เลือกขับ (None = ไม่กรองตามคนขับ)
+    ผลตอบรับของ พขร. คือผลของชุดที่รถตรงกัน ไม่ใช่ทุกคันของคำขอเดียวกัน
     """
     filter_kwargs = {"feedback_template": template}
     if selected_car:
@@ -545,8 +589,18 @@ def build_response_filter(
         filter_kwargs["car__in"] = list(cars)
     if selected_trip:
         filter_kwargs["car_reservation"] = selected_trip
-    elif driver_trips is not None:
-        filter_kwargs["car_reservation__in"] = [trip.id for trip in driver_trips]
+    if driver_trips is not None and not driver_trips:
+        filter_kwargs["car_reservation__in"] = []
+    if driver_trips:
+        filter_kwargs["__raw__"] = {
+            "$or": [
+                {
+                    "car_reservation": reference_id(trip),
+                    "car": reference_id(car),
+                }
+                for trip, car in driver_trips
+            ]
+        }
 
     return filter_kwargs
 
@@ -642,9 +696,27 @@ def build_summary(stats, aggregated):
     }
 
 
-def get_trip_drivers(trips):
-    """พนักงานขับรถของเที่ยวเหล่านี้ เรียงตามชื่อ (เที่ยวที่ยังไม่จัดคนขับไม่นับ)"""
-    driver_ids = {reference_id(trip.driver) for trip in trips if trip.driver}
+def matching_assignments(trip, cars):
+    """ชุดของเที่ยวนี้ที่รถอยู่ในรายการ cars (Document หรือ id) คือชุดที่ผลประเมินของรถเหล่านั้นอ้างถึง"""
+    car_ids = {reference_key(car) for car in cars}
+    return [
+        assignment
+        for assignment in trip.assignments
+        if assignment.car is not None and reference_key(assignment.car) in car_ids
+    ]
+
+
+def get_trip_drivers(trips, cars):
+    """พนักงานขับรถของชุดที่รถตรงกับ cars ในเที่ยวเหล่านี้ เรียงตามชื่อ (ชุดที่ยังไม่จัดคนขับไม่นับ)
+
+    ผลประเมินผูกกับรถ จึงนับเฉพาะ พขร. ของชุดที่รถตรงกัน ไม่รวม พขร. ของรถคันอื่นในคำขอเดียวกัน
+    """
+    driver_ids = {
+        reference_id(assignment.driver)
+        for trip in trips
+        for assignment in matching_assignments(trip, cars)
+        if assignment.driver
+    }
     if not driver_ids:
         return []
     return sorted(models.User.objects(id__in=list(driver_ids)), key=lambda user: user.get_name())
@@ -846,34 +918,60 @@ def view_responses(template_id):
     car_id = str(selected_car.id) if selected_car else None
 
     trips = get_filter_trips([selected_car] if selected_car else cars, organization)
-    car_response_counts, trip_response_counts = get_response_choice_counts(template)
+    car_response_counts, _trip_response_counts = get_response_choice_counts(template)
 
-    drivers = get_trip_drivers(trips)
+    # ผลประเมินผูกกับคู่ (เที่ยว, รถ): คำขอหลายคันมีผลแยกต่อคัน และ พขร. ของผลคือ พขร. ของชุดที่รถตรงกัน
+    shown_cars = [selected_car] if selected_car else cars
+    pair_counts = get_response_pair_counts(template)
+
+    drivers = get_trip_drivers(trips, shown_cars)
     driver_id = request.args.get("driver_id")
     if driver_id not in {str(driver.id) for driver in drivers}:
         driver_id = None
     driver_trip_counts = {}
     for trip in trips:
-        key = reference_key(trip.driver)
-        driver_trip_counts[key] = driver_trip_counts.get(key, 0) + trip_response_counts.get(str(trip.id), 0)
+        for assignment in matching_assignments(trip, shown_cars):
+            key = reference_key(assignment.driver)
+            driver_trip_counts[key] = driver_trip_counts.get(key, 0) + pair_counts.get(
+                (str(trip.id), reference_key(assignment.car)), 0
+            )
     driver_trips = None
     if driver_id:
-        trips = [trip for trip in trips if reference_key(trip.driver) == driver_id]
-        driver_trips = trips
+        driver_trips = [
+            (trip, assignment.car)
+            for trip in trips
+            for assignment in matching_assignments(trip, shown_cars)
+            if reference_key(assignment.driver) == driver_id
+        ]
+        keep = {str(trip.id) for trip, _car in driver_trips}
+        trips = [trip for trip in trips if str(trip.id) in keep]
     trip_by_id = {str(trip.id): trip for trip in trips}
 
     trip_choices = []
     for trip in trips:
-        trip_car = car_by_id.get(reference_key(trip.car)) if trip.car else None
+        # ชุดที่รถอยู่ในตัวกรอง (และเป็นของ พขร. ที่เลือกถ้ามี): ป้ายทะเบียนและจำนวนผลตอบรับนับตามชุดเหล่านี้
+        assignments = [
+            assignment
+            for assignment in matching_assignments(trip, shown_cars)
+            if not driver_id or reference_key(assignment.driver) == driver_id
+        ]
+        plates = [
+            car_by_id[reference_key(assignment.car)].license_plate
+            for assignment in assignments
+            if reference_key(assignment.car) in car_by_id
+        ]
         trip_choices.append(
             {
                 "id": str(trip.id),
                 "departure": get_trip_departure_text(trip),
                 "location": trip.location,
-                "license_plate": trip_car.license_plate if trip_car else "",
+                "license_plate": " / ".join(plates),
                 "status": trip.status,
                 "status_display": trip.get_status_display(),
-                "response_count": trip_response_counts.get(str(trip.id), 0),
+                "response_count": sum(
+                    pair_counts.get((str(trip.id), reference_key(assignment.car)), 0)
+                    for assignment in assignments
+                ),
             }
         )
 

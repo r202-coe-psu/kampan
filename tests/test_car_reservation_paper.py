@@ -270,11 +270,12 @@ def test_each_request_type_fills_its_own_form_with_its_type_specific_details(
 
 
 def complete_trip(reservation, km_out=1000, km_in=1250, cost="1500"):
-    reservation.last_mileage_before = km_out
-    reservation.last_mileage = km_in
-    reservation.cost_baht = decimal.Decimal(cost)
-    reservation.started_at = datetime.datetime(2026, 12, 3, 8, 45)
-    reservation.completed_at = datetime.datetime(2026, 12, 4, 17, 10)
+    assignment = reservation.assignments[0]
+    assignment.last_mileage_before = km_out
+    assignment.last_mileage = km_in
+    assignment.cost_baht = decimal.Decimal(cost)
+    assignment.started_at = datetime.datetime(2026, 12, 3, 8, 45)
+    assignment.completed_at = datetime.datetime(2026, 12, 4, 17, 10)
     reservation.save()
     return reservation
 
@@ -367,3 +368,100 @@ def test_steps_without_a_signature_box_on_the_official_form_are_not_printed(
 
     for name in unprinted:
         assert name not in text
+
+
+def two_car_trip(world, create_car, create_user, assign_user_to_org):
+    """คำขอที่จัด 2 ชุด: ชุดแรกรถ/พขร. ในห้อง world ชุดสองรถและ พขร. อีกคู่ ปิดงานแยกกันคนละเลขไมล์"""
+    reservation = complete_trip(world.reservation("domestic"), km_out=1000, km_in=1250, cost="1500")
+    second_driver = create_user("สมหมาย", "ขับเก่ง")
+    assign_user_to_org(second_driver, world.org, roles=["driver"])
+    second = models.CarAssignment(
+        car=create_car(world.org, "ขข 9999", vehicle_type="เก๋ง"),
+        driver=second_driver,
+        last_mileage_before=40,
+        last_mileage=90,
+        cost_baht=decimal.Decimal("300"),
+        started_at=datetime.datetime(2026, 12, 3, 9, 0),
+        completed_at=datetime.datetime(2026, 12, 3, 12, 30),
+    )
+    reservation.assignments.append(second)
+    reservation.save()
+    return reservation
+
+
+def test_context_of_each_assignment_carries_its_own_car_driver_and_trip_report(
+    world, create_car, create_user, assign_user_to_org
+):
+    from kampan.utils import car_reservation_paper as paper
+
+    reservation = two_car_trip(world, create_car, create_user, assign_user_to_org)
+    first, second = reservation.assignments
+
+    first_context = paper.build_context(reservation, first)
+    second_context = paper.build_context(reservation, second)
+
+    assert (first_context["car_plate"], first_context["driver_name"]) == ("กก 1234", "สมศักดิ์ ขับดี")
+    assert (first_context["km_out"], first_context["km_in"], first_context["km_total"]) == (1000, 1250, 250)
+    assert first_context["trip_cost"] == "1,500"
+    assert (second_context["car_plate"], second_context["driver_name"]) == ("ขข 9999", "สมหมาย ขับเก่ง")
+    assert second_context["car_type"] == "เก๋ง"
+    assert (second_context["km_out"], second_context["km_in"], second_context["km_total"]) == (40, 90, 50)
+    assert second_context["trip_cost"] == "300"
+    assert (second_context["trip_start_time"], second_context["trip_end_time"]) == ("09:00", "12:30")
+    assert (second_context["trip_hours"], second_context["trip_minutes"]) == (3, 30)
+    # ส่วนที่เหลือมาจากคำขอเหมือนกันทุกใบ
+    assert first_context["location"] == second_context["location"]
+    assert first_context["requester_name"] == second_context["requester_name"]
+
+
+def test_context_without_an_assignment_uses_the_first_one(
+    world, create_car, create_user, assign_user_to_org
+):
+    from kampan.utils import car_reservation_paper as paper
+
+    reservation = two_car_trip(world, create_car, create_user, assign_user_to_org)
+
+    assert paper.build_context(reservation)["car_plate"] == "กก 1234"
+
+
+def test_context_of_a_request_without_assignments_leaves_car_and_driver_blank(world):
+    from kampan.utils import car_reservation_paper as paper
+
+    reservation = world.reservation("domestic", approved_steps=1)
+
+    context = paper.build_context(reservation)
+
+    assert context["car_plate"] == "" and context["driver_name"] == ""
+    assert "km_total" not in context
+
+
+def test_each_assignment_prints_its_own_pdf_with_its_own_car(
+    world, create_car, create_user, assign_user_to_org
+):
+    reservation = two_car_trip(world, create_car, create_user, assign_user_to_org)
+    first, second = reservation.assignments
+
+    def paper_of(assignment=None):
+        suffix = f"/{assignment.assignment_id}" if assignment else ""
+        return world.client_for(world.requester).get(
+            f"{BASE}/{reservation.id}/paper{suffix}?organization_id={world.org.id}"
+        )
+
+    bare, first_pdf, second_pdf = paper_of(), paper_of(first), paper_of(second)
+
+    for response in (bare, first_pdf, second_pdf):
+        assert response.status_code == 200 and response.mimetype == "application/pdf"
+    assert "กก 1234" in pdf_text(bare) and "กก 1234" in pdf_text(first_pdf)
+    second_text = pdf_text(second_pdf)
+    assert "ขข 9999" in second_text and "กก 1234" not in second_text
+    assert "สมหมาย ขับเก่ง" in second_text
+    assert f"car_request_{reservation.id}_2.pdf" in second_pdf.headers["Content-Disposition"]
+    assert f"car_request_{reservation.id}_1.pdf" in bare.headers["Content-Disposition"]
+
+
+def test_a_single_car_request_keeps_the_original_download_name(world):
+    reservation = world.reservation("domestic")
+
+    response = world.paper(world.requester, reservation)
+
+    assert f"car_request_{reservation.id}.pdf" in response.headers["Content-Disposition"]

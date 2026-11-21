@@ -5,9 +5,10 @@
 {% block content %}
 <div class="mt-4 card bg-base-100 border border-base-300 shadow-sm max-w-2xl">
   <form method="post" enctype="multipart/form-data" id="close-form" class="card-body gap-2"
-        action="{{ url_for('car_reservation.tasks.close', task_id=task.id, organization_id=organization.id) }}">
+        action="{{ url_for('car_reservation.tasks.close', task_id=task.id, assignment_id=assignment.assignment_id, organization_id=organization.id) }}">
     {{ form.csrf_token }}
     <h3 class="card-title">{{ task.location }}</h3>
+    {% if assignment.car %}<p class="text-sm text-base-content/70" data-role="close-car">รถ {{ assignment.car.license_plate }}</p>{% endif %}
     <div class="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
       {{ renderer.render_number_field(form.mileage_out) }}
       {{ renderer.render_number_field(form.mileage_in) }}

@@ -3,6 +3,13 @@
 
 {% include "car_reservation/_details.html" %}
 
+{% if feedback_links | length > 1 %}
+ประเมินความพึงพอใจ (แยกตามรถ):
+{% for link in feedback_links %}
+{{ link.car_plate }}: {{ link.url }}
+{% endfor %}
+{% else %}
 ประเมินความพึงพอใจ: {{ feedback_url }}
+{% endif %}
 
 ข้อความนี้ถูกส่งโดยอัตโนมัติจากระบบจองรถออนไลน์

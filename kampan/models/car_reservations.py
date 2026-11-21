@@ -1,6 +1,7 @@
 import datetime
 import decimal
 
+import bson
 import mongoengine as me
 
 RESERVATION_TYPES = [
@@ -79,6 +80,7 @@ AUDIT_ACTIONS = [
     ("started", "เริ่มงาน"),
     ("completed", "ปิดงาน"),
     ("overtime_changed", "เปลี่ยนสถานะงานนอกเวลา"),
+    ("vehicle_count_reduced", "ลดจำนวนรถ"),
     ("close_confirmed", "ผู้ขอยืนยันเวลาปิดงาน"),
     ("close_disputed", "ผู้ขอแจ้งเวลาปิดงานไม่ถูกต้อง"),
 ]
@@ -203,14 +205,77 @@ class AbroadDetails(me.EmbeddedDocument):
     requester_position = me.StringField(required=True, max_length=256)
 
 
+class CarAssignment(me.EmbeddedDocument):
+    """รถหนึ่งคันกับ พขร. หนึ่งคนของคำขอ พร้อมรายงานปิดงานและการยืนยันเวลาปิดงานของชุดนั้น
+
+    คำขอหนึ่งใบมีได้หลายชุด (ตามจำนวนรถที่ขอ) แต่ละ พขร. ปิดงานของชุดตัวเอง
+    """
+
+    assignment_id = me.ObjectIdField(required=True, default=bson.ObjectId)  # ใช้ใน URL
+    car = me.ReferenceField("Car", dbref=True)
+    driver = me.ReferenceField("User", dbref=True)
+    is_overtime = me.BooleanField(default=False)  # งานนอกเวลา (OT) ผู้จัดรถเป็นผู้ติ๊ก
+
+    last_mileage = me.IntField(min_value=0)
+    last_mileage_before = me.IntField(min_value=0)
+
+    # รายงานท้ายใบที่ พขร. กรอกตอนปิดงาน (last_mileage_before = เลข กม. ออก, last_mileage = เลข กม. กลับ)
+    fuel_liters = me.DecimalField(min_value=0, precision=2)
+    expense_case = me.StringField(choices=EXPENSE_CASES)
+    cost_baht = me.DecimalField(
+        min_value=0, max_value=1e12, precision=2, rounding=decimal.ROUND_HALF_EVEN
+    )
+    started_at = me.DateTimeField()
+    completed_at = me.DateTimeField()
+    # IP ที่ พขร. ปิดงาน และผลเทียบกับช่วง IP ของมหาวิทยาลัย (None = ไม่ได้ตั้งช่วงไว้ ไม่มีผลตรวจ)
+    closed_ip = me.StringField()
+    # รูปเลขไมล์ก่อนออก/หลังกลับ ถ่ายด้วยกล้องในหน้าปิดงาน และเวลาที่เซิร์ฟเวอร์รับรูป
+    mileage_photo_out = me.FileField(collection_name="car_reservation_mileage_photo_out")
+    mileage_photo_in = me.FileField(collection_name="car_reservation_mileage_photo_in")
+    mileage_photos_at = me.DateTimeField()
+    closed_off_campus = me.BooleanField(default=None)
+
+    # ผู้ขอยืนยันเวลาเริ่ม/ปิดงานที่ พขร. บันทึก (ตอบได้ครั้งเดียว ภายใน 3 วันหลังปิดงาน)
+    close_confirmation = me.StringField(choices=CLOSE_CONFIRMATIONS)
+    close_confirmed_by = me.ReferenceField("User", dbref=True)
+    close_confirmed_at = me.DateTimeField()
+    close_reported_end = me.DateTimeField()  # เวลาสิ้นสุดจริงที่ผู้ขอแจ้งตอนตอบ "ไม่ถูกต้อง"
+    close_dispute_note = me.StringField(default="", max_length=516)
+
+    @property
+    def is_closed(self):
+        return self.completed_at is not None
+
+    def close_confirmation_status(self, now=None):
+        """สถานะการยืนยันเวลาปิดงาน: None (ยังไม่ปิดงาน), pending, confirmed, disputed, auto_confirmed
+
+        ไม่มีใครตอบภายใน 3 วันหลัง completed_at ถือว่า auto_confirmed (ไม่มี scheduler จึงคำนวณตอนอ่าน)
+        """
+        if self.completed_at is None:
+            return None
+        if self.close_confirmation:
+            return self.close_confirmation
+        now = now or datetime.datetime.now()
+        if now - self.completed_at > datetime.timedelta(days=CLOSE_CONFIRMATION_DAYS):
+            return "auto_confirmed"
+        return "pending"
+
+    @property
+    def distance_km(self):
+        """ระยะทางรวมของทริป (เลข กม. กลับ - เลข กม. ออก) ยังไม่ปิดงานคือ None"""
+        if self.last_mileage is None or self.last_mileage_before is None:
+            return None
+        return self.last_mileage - self.last_mileage_before
+
+
 class CarReservation(me.Document):
     meta = {
         "collection": "car_reservations",
         # ทุก query กรอง org + status แล้วตามด้วยช่วงเวลา รถ คนขับ หรือผู้ขอ
         "indexes": [
             ("organization", "status", "departure_datetime"),
-            ("organization", "car", "status", "departure_datetime"),
-            ("organization", "driver", "status", "departure_datetime"),
+            ("organization", "assignments.car", "status", "departure_datetime"),
+            ("organization", "assignments.driver", "status", "departure_datetime"),
             ("organization", "creator", "-created_date"),
         ],
     }
@@ -250,7 +315,6 @@ class CarReservation(me.Document):
     project_file = me.FileField(collection_name="car_reservation_project_files")
 
     is_urgent = me.BooleanField(default=False)  # ยื่นล่วงหน้าน้อยกว่าที่กำหนดและผู้ขอยืนยันแล้ว
-    is_overtime = me.BooleanField(default=False)  # งานนอกเวลา (OT) ผู้จัดรถเป็นผู้ติ๊ก
 
     # งานแทรก: ผู้จัดรถเพิ่มให้ พขร. ที่มีงานอยู่แล้วในวันนั้น ไม่ผ่านการอนุมัติ
     is_insert = me.BooleanField(default=False)
@@ -265,51 +329,42 @@ class CarReservation(me.Document):
     # ผู้จัดรถขออนุมัติให้ผู้ร่วมเดินทางไปปฏิบัติงานต่างจังหวัด (เฉพาะ domestic ต่างจังหวัด และ abroad)
     extra_travelers = me.StringField(default="", max_length=516)
 
-    car = me.ReferenceField("Car", dbref=True)
-    driver = me.ReferenceField("User", dbref=True)
-    last_mileage = me.IntField(min_value=0)
-    last_mileage_before = me.IntField(min_value=0)
+    # รถ+พขร. ที่ผู้จัดรถจัดให้ (หนึ่งชุดต่อรถหนึ่งคัน) ว่างจนกว่าจะถึงขั้นผู้จัดรถ
+    assignments = me.ListField(me.EmbeddedDocumentField(CarAssignment))
 
-    # รายงานท้ายใบที่ พขร. กรอกตอนปิดงาน (last_mileage_before = เลข กม. ออก, last_mileage = เลข กม. กลับ)
-    fuel_liters = me.DecimalField(min_value=0, precision=2)
-    expense_case = me.StringField(choices=EXPENSE_CASES)
-    cost_baht = me.DecimalField(
-        min_value=0, max_value=1e12, precision=2, rounding=decimal.ROUND_HALF_EVEN
-    )
-    started_at = me.DateTimeField()
-    completed_at = me.DateTimeField()
-    # IP ที่ พขร. ปิดงาน และผลเทียบกับช่วง IP ของมหาวิทยาลัย (None = ไม่ได้ตั้งช่วงไว้ ไม่มีผลตรวจ)
-    closed_ip = me.StringField()
-    # รูปเลขไมล์ก่อนออก/หลังกลับ ถ่ายด้วยกล้องในหน้าปิดงาน และเวลาที่เซิร์ฟเวอร์รับรูป
-    mileage_photo_out = me.FileField(collection_name="car_reservation_mileage_photo_out")
-    mileage_photo_in = me.FileField(collection_name="car_reservation_mileage_photo_in")
-    mileage_photos_at = me.DateTimeField()
-    closed_off_campus = me.BooleanField(default=None)
-
-    # ผู้ขอยืนยันเวลาเริ่ม/ปิดงานที่ พขร. บันทึก (ตอบได้ครั้งเดียว ภายใน 3 วันหลังปิดงาน)
-    close_confirmation = me.StringField(choices=CLOSE_CONFIRMATIONS)
-    close_confirmed_by = me.ReferenceField("User", dbref=True)
-    close_confirmed_at = me.DateTimeField()
-    close_reported_end = me.DateTimeField()  # เวลาสิ้นสุดจริงที่ผู้ขอแจ้งตอนตอบ "ไม่ถูกต้อง"
-    close_dispute_note = me.StringField(default="", max_length=516)
-
-    def close_confirmation_status(self, now=None):
-        """สถานะการยืนยันเวลาปิดงาน: None (ยังไม่ปิดงาน), pending, confirmed, disputed, auto_confirmed
-
-        ไม่มีใครตอบภายใน 3 วันหลัง completed_at ถือว่า auto_confirmed (ไม่มี scheduler จึงคำนวณตอนอ่าน)
-        """
-        if self.completed_at is None:
+    def get_assignment(self, assignment_id):
+        """ชุดที่ assignment_id ตรงกัน (รับ str หรือ ObjectId) ไม่มีหรือ id ผิดรูปแบบคืน None"""
+        try:
+            assignment_id = bson.ObjectId(str(assignment_id))
+        except (bson.errors.InvalidId, TypeError):
             return None
-        if self.close_confirmation:
-            return self.close_confirmation
-        now = now or datetime.datetime.now()
-        if now - self.completed_at > datetime.timedelta(days=CLOSE_CONFIRMATION_DAYS):
-            return "auto_confirmed"
-        return "pending"
+        for assignment in self.assignments:
+            if assignment.assignment_id == assignment_id:
+                return assignment
+        return None
 
     @property
-    def distance_km(self):
-        """ระยะทางรวมของทริป (เลข กม. กลับ - เลข กม. ออก) ยังไม่ปิดงานคือ None"""
-        if self.last_mileage is None or self.last_mileage_before is None:
-            return None
-        return self.last_mileage - self.last_mileage_before
+    def first_assignment(self):
+        return self.assignments[0] if self.assignments else None
+
+    @property
+    def cars(self):
+        return [a.car for a in self.assignments if a.car is not None]
+
+    @property
+    def drivers(self):
+        return [a.driver for a in self.assignments if a.driver is not None]
+
+    @property
+    def has_overtime(self):
+        return any(a.is_overtime for a in self.assignments)
+
+    @property
+    def all_closed(self):
+        """ทุกชุดปิดงานแล้ว (คำขอที่ยังไม่มีชุดไม่นับ)"""
+        return bool(self.assignments) and all(a.is_closed for a in self.assignments)
+
+
+def required_vehicle_count(reservation):
+    """จำนวนรถที่ผู้จัดรถต้องจัด: ตามช่องจำนวนรถของใบขอ (ในประเทศ ต่างประเทศ) ประเภทอื่นและงานแทรกคันเดียว"""
+    return getattr(reservation.details, "vehicle_count", None) or 1

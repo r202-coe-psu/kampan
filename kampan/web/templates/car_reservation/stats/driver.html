@@ -70,7 +70,7 @@
         </thead>
         <tbody>
           {% for job in done %}
-          {% set rated = feedback.get(job.id) %}
+          {% set rated = feedback.get(job.feedback_key) %}
           <tr class="hover:bg-base-200/50" data-role="done-job">
             <td class="whitespace-nowrap tabular-nums">{{ job.departure_datetime.strftime('%d/%m/%Y %H:%M') }}</td>
             <td>
@@ -88,7 +88,7 @@
                 {% if can_open_feedback %}
                 {% for template_id in rated.template_ids %}
                 <a class="link link-primary text-xs" data-role="open-feedback"
-                   href="{{ url_for('car_reservation.feedback.view_responses', template_id=template_id, organization_id=organization.id, driver_id=driver.id, car_reservation_id=job.id) }}">ดูผลประเมิน</a>
+                   href="{{ url_for('car_reservation.feedback.view_responses', template_id=template_id, organization_id=organization.id, driver_id=driver.id, car_id=job.car.id if job.car else None, car_reservation_id=job.id) }}">ดูผลประเมิน</a>
                 {% endfor %}
                 {% endif %}
               </span>

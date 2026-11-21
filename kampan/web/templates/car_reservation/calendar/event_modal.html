@@ -29,13 +29,23 @@
       {% call row('ph-map-pin', 'สถานที่ปฏิบัติงาน') %}{{ reservation.location or '-' }}{% endcall %}
       {% call row('ph-calendar-plus', 'วัน-เวลา เริ่ม') %}{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M น.') }}{% endcall %}
       {% call row('ph-calendar-check', 'วัน-เวลา กลับ') %}{{ reservation.return_datetime.strftime('%d/%m/%Y %H:%M น.') if reservation.return_datetime else '-' }}{% endcall %}
-      {% if reservation.car %}
-      {% call row('ph-identification-card', 'รถ') %}<span data-role="assigned-car">{{ reservation.car.license_plate }}{% if reservation.car.vehicle_type %} ({{ reservation.car.vehicle_type }}){% endif %}</span>{% endcall %}
-      {% endif %}
-      {% if reservation.driver %}
-      {% call row('ph-user', 'พนักงานขับรถ') %}<span data-role="assigned-driver">{{ reservation.driver.get_name() }}</span>{% endcall %}
-      {% endif %}
     </div>
+
+    {# หนึ่งชุด (รถ + พขร. + OT) ต่อรถหนึ่งคันที่ผู้จัดรถจัดให้ #}
+    {% if reservation.assignments %}
+    <div class="mt-3 grid grid-cols-1 gap-3" data-role="assignments">
+      {% for assignment in reservation.assignments %}
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2" data-role="assignment">
+        {% if assignment.car %}
+        {% call row('ph-identification-card', 'รถ' ~ (' คันที่ ' ~ loop.index if reservation.assignments | length > 1 else '')) %}<span data-role="assigned-car">{{ assignment.car.license_plate }}{% if assignment.car.vehicle_type %} ({{ assignment.car.vehicle_type }}){% endif %}</span>{% endcall %}
+        {% endif %}
+        {% if assignment.driver %}
+        {% call row('ph-user', 'พนักงานขับรถ') %}<span data-role="assigned-driver">{{ assignment.driver.get_name() }}</span>{% if assignment.is_overtime %} <span data-role="assigned-overtime">{{ status_badge.overtime() }}</span>{% endif %}{% endcall %}
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
 
     <h4 class="mt-4 font-semibold">สถานะการอนุมัติ</h4>
     {{ ApprovalSteps(steps, class_='steps-vertical mt-2 w-full') }}

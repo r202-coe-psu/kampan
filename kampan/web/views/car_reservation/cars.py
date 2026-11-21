@@ -195,7 +195,9 @@ def feedback(car_id):
     car_reservation = None
     if trip_choices:
         car_reservation = models.CarReservation.objects(
-            id=form.car_reservation.data, car=car, organization=organization
+            id=form.car_reservation.data,
+            assignments__car=car,
+            organization=organization,
         ).first()
 
     response = models.CarFeedbackResponse(
