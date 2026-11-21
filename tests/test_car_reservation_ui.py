@@ -168,6 +168,17 @@ def test_my_requests_filters_by_text_type_status_and_departure_range(world):
     assert "ไม่พบคำขอที่ตรงกับตัวกรอง" in words(find(empty, "div", role="status")[0])
 
 
+def test_my_requests_date_filter_uses_the_form_date_picker_and_keeps_the_chosen_dates(world):
+    doc = world.page(world.staff, "/requests/", date_from="2031-02-01")
+
+    pickers = find(doc, "*", data_date_picker="")
+    assert [p.get("data-input-id") for p in pickers] == ["date_from", "date_to"]
+    assert not find(doc, "input", type="date")
+    assert find(doc, "input", type="hidden", name="date_from")[0].get("value") == "2031-02-01"
+    assert words(find(doc, "span", id="cally-data-date_from")[0]) == "01/02/2031"
+    assert words(find(doc, "span", id="cally-data-date_to")[0]) == "ถึงวันที่"
+
+
 def test_inbox_lists_waiting_requests_as_table_rows_and_cards_with_a_count(world):
     world.reservation(request_reason="รอผู้จัดรถ")
     world.reservation(request_reason="เรื่องด่วน", is_urgent=True)
