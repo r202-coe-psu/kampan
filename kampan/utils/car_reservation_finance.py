@@ -8,7 +8,7 @@ import dataclasses
 import datetime
 import io
 import pathlib
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_HALF_EVEN, Decimal
 
 from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfbase import pdfmetrics
@@ -60,7 +60,7 @@ def _integer_words(number):
 
 def thai_baht_text(amount):
     """จำนวนเงินเป็นตัวอักษรไทย เช่น 21.50 -> ยี่สิบเอ็ดบาทห้าสิบสตางค์ (ไม่มีสตางค์ลงท้าย บาทถ้วน)"""
-    amount = Decimal(amount).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    amount = cents(amount)
     baht = int(amount)
     satang = int((amount - baht) * 100)
     text = _integer_words(baht) + "บาท"
@@ -196,6 +196,14 @@ def _decimal(value):
     return Decimal(value) if value is not None else Decimal(0)
 
 
+CENT = Decimal("0.01")
+
+
+def cents(value):
+    """ปัดเงินเป็นสตางค์แบบ half-even เหมือน DecimalField ทั้งแอป ตัวเลข ตัวอักษร และช่องสตางค์ใช้ค่าเดียวกันนี้"""
+    return _decimal(value).quantize(CENT, rounding=ROUND_HALF_EVEN)
+
+
 @dataclasses.dataclass
 class FinanceData:
     """ตัวเลขที่การเงินกรอก (ช่องว่าง = 0)"""
@@ -220,23 +228,28 @@ class FinanceData:
             (form.meal_rate_2.data, form.meal_days_2.data),
         ):
             if _decimal(rate) and _decimal(days):
-                meal_rows.append((_decimal(rate), _decimal(days)))
+                meal_rows.append((cents(rate), _decimal(days)))
         return cls(
             memo_number=form.memo_number.data or "",
             memo_date=form.memo_date.data,
             allowance_type=form.allowance_type.data or "",
             allowance_days=_decimal(form.allowance_days.data),
-            allowance_amount=_decimal(form.allowance_amount.data),
+            allowance_amount=cents(form.allowance_amount.data),
             lodging_days=_decimal(form.lodging_days.data),
-            lodging_amount=_decimal(form.lodging_amount.data),
-            vehicle_cost=_decimal(form.vehicle_cost.data),
+            lodging_amount=cents(form.lodging_amount.data),
+            vehicle_cost=cents(form.vehicle_cost.data),
             meal_rows=tuple(meal_rows),
             evidence_count=form.evidence_count.data or 0,
         )
 
     @property
+    def meal_amounts(self):
+        """จำนวนเงินของแต่ละแถวค่าอาหาร ปัดเป็นสตางค์แล้ว ผลรวมจึงเท่ายอดรวมที่พิมพ์"""
+        return tuple(cents(rate * days) for rate, days in self.meal_rows)
+
+    @property
     def meal_total(self):
-        return sum((rate * days for rate, days in self.meal_rows), Decimal(0))
+        return sum(self.meal_amounts, Decimal(0))
 
     @property
     def total(self):
@@ -483,19 +496,19 @@ def _reservation_page2(pdf, doc, reservation, data):
 
 def _receipt_page(pdf, reservation, data):
     put(pdf, reservation.driver.get_name() if reservation.driver else "", RECEIPT_NAME, RECEIPT_NAME_LINE)
-    for index, (rate, days) in enumerate(data.meal_rows):
+    for index, ((rate, days), amount) in enumerate(zip(data.meal_rows, data.meal_amounts)):
         line = RECEIPT_FIRST_ROW + LINE_STEP * index
         description = f"เงินช่วยเหลือค่าอาหาร พขร. ({money(rate)} บาท x {_count(days)} วัน)"
         pdf.setFont(FONT_NAME, FONT_SIZE)
         pdf.drawString(RECEIPT_ITEM_X, PAGE_HEIGHT - line + BASELINE_RAISE, description)
-        _amount_with_satang(pdf, rate * days, line)
+        _amount_with_satang(pdf, amount, line)
     _amount_with_satang(pdf, data.total, RECEIPT_TOTAL_LINE)
     put(pdf, f"{thai_baht_text(data.total)}", RECEIPT_WORDS, RECEIPT_WORDS_LINE)
 
 
 def _amount_with_satang(pdf, amount, line):
     """ช่องจำนวนเงินของใบสำคัญรับเงิน: บาทชิดขวา และช่องสตางค์ (ไม่มีสตางค์ใส่ -)"""
-    amount = amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    amount = cents(amount)
     baht = int(amount)
     satang = int((amount - baht) * 100)
     y = PAGE_HEIGHT - line + BASELINE_RAISE

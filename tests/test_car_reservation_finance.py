@@ -33,6 +33,23 @@ def test_thai_baht_text_spells_the_amount_in_thai_words(amount, expected):
     assert thai_baht_text(Decimal(str(amount))) == expected
 
 
+def test_half_satang_rounds_half_even_like_the_saved_money():
+    assert thai_baht_text(Decimal("37.625")) == "สามสิบเจ็ดบาทหกสิบสองสตางค์"
+    assert thai_baht_text(Decimal("2.675")) == "สองบาทหกสิบแปดสตางค์"
+
+
+def test_meal_rows_are_rounded_once_so_figures_words_and_total_agree():
+    from kampan.utils.template_filters import format_amount
+
+    data = utils.car_reservation_finance.FinanceData(
+        meal_rows=((Decimal("75.25"), Decimal("0.5")), (Decimal("100.01"), Decimal("0.5")))
+    )
+    assert data.meal_amounts == (Decimal("37.62"), Decimal("50.00"))
+    assert data.total == Decimal("87.62")
+    assert format_amount(data.total) == "87.62"
+    assert thai_baht_text(data.total) == "แปดสิบเจ็ดบาทหกสิบสองสตางค์"
+
+
 BASE = "/car_reservation/requests"
 
 
