@@ -17,6 +17,7 @@
     "cally": "^0.8.0",
     "htmx.org": "^1.9.12",
     "jquery": "^3.7.1",
+    "pdfjs-dist": "4.10.38",
     "tailwindcss": "^4.0.3"
   },
   "devDependencies": {

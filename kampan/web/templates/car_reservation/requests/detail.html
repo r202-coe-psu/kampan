@@ -349,7 +349,8 @@
 <script type="module">
   const modal = document.getElementById('paper-preview-modal');
   if (modal) {
-    const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/';
+    const PDFJS_LIB = "{{ 'node_modules/pdfjs-dist/build/pdf.min.mjs' | static_url }}";
+    const PDFJS_WORKER = "{{ 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs' | static_url }}";
     const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
     const $ = (sel) => modal.querySelector(sel);
     const viewport = $('[data-role="paper-viewport"]');
@@ -370,8 +371,8 @@
     async function load() {
       modal.dataset.loading = '1';
       try {
-        const pdfjs = await import(PDFJS + 'pdf.min.mjs');
-        pdfjs.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.mjs';
+        const pdfjs = await import(PDFJS_LIB);
+        pdfjs.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
         pdf = await pdfjs.getDocument(modal.dataset.src).promise;
         $('[data-role="page-count"]').textContent = pdf.numPages;
         pageInput.max = pdf.numPages;
