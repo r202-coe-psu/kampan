@@ -110,6 +110,8 @@ function initDropdownSelectsIn(root) {
       closeDropdownSelect(container, true);
     });
     menu.addEventListener("keydown", function (event) {
+      // ช่องค้นหาอยู่ในเมนู: ปุ่มที่พิมพ์ลงช่องค้นหา (รวมภาษาไทยและ IME) ต้องไม่ถูกดึงไปกระโดดหาตัวเลือก
+      if (event.target === searchInput || event.isComposing) return;
       const options = dropdownOptions(menu);
       const index = options.indexOf(document.activeElement);
       const move = function (target) { event.preventDefault(); options[(target + options.length) % options.length].focus(); };
