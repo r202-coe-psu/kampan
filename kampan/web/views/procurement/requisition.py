@@ -1,6 +1,7 @@
 import datetime
 from decimal import Decimal  # เพิ่ม
 from io import BytesIO
+from urllib.parse import urlparse
 
 from bson import ObjectId
 from flask import (
@@ -110,6 +111,15 @@ def _detail_url(procurement, organization):
     return url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id)
 
 
+def _back_to_list_url(organization):
+    """หน้ารายการ MA ที่กดมา (รวมตัวกรอง / หน้า) ไม่ใช่หน้ารายละเอียด · referrer ที่ไม่ใช่หน้ารายการของเว็บเราใช้หน้ารายการเริ่มต้น"""
+    list_path = url_for("procurement.products.index")
+    referrer = urlparse(request.referrer or "")
+    if referrer.netloc == request.host and referrer.path == list_path:
+        return referrer.path + (f"?{referrer.query}" if referrer.query else "")
+    return url_for("procurement.products.index", organization_id=organization.id)
+
+
 @module.route("/<requisition_procurement_id>/renewal-request", methods=["POST"])
 @login_required
 def request_renewal(requisition_procurement_id):
@@ -119,20 +129,20 @@ def request_renewal(requisition_procurement_id):
         abort(404)
 
     procurement = ma_permissions.get_visible_procurement_or_404(requisition_procurement_id, organization)
-    detail_url = _detail_url(procurement, organization)
+    list_url = _back_to_list_url(organization)
     request_value = request.form.get("request")
     if not forms.procurement.ConfirmActionForm().validate_on_submit() or request_value not in RENEWAL_REQUEST_LABELS:
         flash(INVALID_REQUEST_MESSAGE, "error")
-        return redirect(detail_url)
+        return redirect(list_url)
     if not ma_permissions.can_request_renewal(procurement, organization):
         flash(PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE, "error")
-        return redirect(detail_url)
+        return redirect(list_url)
 
     if not claim_for_renewal_request(procurement, organization, request_value):
         flash(PROCUREMENT_NOT_PENDING_MESSAGE, "error")
-        return redirect(detail_url)
+        return redirect(list_url)
     flash(f"{RENEWAL_REQUEST_LABELS[request_value]}เรียบร้อยแล้ว รอเจ้าหน้าที่พัสดุอนุมัติ (เปลี่ยนคำขอได้จนกว่าจะอนุมัติ)", "success")
-    return redirect(detail_url)
+    return redirect(list_url)
 
 
 @module.route("/<requisition_procurement_id>/non-renewal", methods=["POST"])

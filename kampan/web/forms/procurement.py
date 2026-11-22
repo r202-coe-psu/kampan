@@ -146,7 +146,6 @@ class ProcurementItemForm(Form):
     has_sub_item_asset = fields.BooleanField("ระบุรหัสครุภัณฑ์")
     # อ่านไม่เกิน MAX + 1 แถว แล้วให้ validate_sub_items ปฏิเสธ ไม่ตัดทิ้งเงียบ ๆ
     sub_items = fields.FieldList(fields.FormField(ItemDetailForm), min_entries=0, max_entries=MAX_SUB_ITEMS_PER_ITEM + 1)
-    winner = fields.StringField("ผู้ชนะ", validators=[validators.Optional(), validators.Length(max=200)])
     note = fields.TextAreaField("หมายเหตุ", validators=[validators.Optional()])
     responsible_divisions = DivisionMultipleField("ฝ่ายที่มองเห็น", choices=[], coerce=str)
     responsible_by = MemberMultipleField("ผู้รับผิดชอบ", choices=[], coerce=str)

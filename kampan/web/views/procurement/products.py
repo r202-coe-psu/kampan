@@ -299,7 +299,6 @@ def _item_form_data(item) -> dict:
         "has_sub_item_sn": item.has_sn(),
         "has_sub_item_asset": item.has_asset(),
         "sub_items": _sub_items_form_data(item),
-        "winner": item.winner,
         "unit_price": item.unit_price,
         "note": item.note,
         "responsible_divisions": [str(div.id) for div in item.responsible_divisions or [] if div],
@@ -335,7 +334,6 @@ def _renew_item_data(item, active_member_ids: set) -> dict:
         "has_sub_item_sn": item.has_sn(),
         "has_sub_item_asset": item.has_asset(),
         "sub_items": _sub_items_form_data(item),
-        "winner": item.winner,
         "unit_price": item.unit_price,
         "note": item.note,
         "responsible_divisions": [str(div.id) for div in item.responsible_divisions or [] if div],
@@ -550,7 +548,6 @@ def _build_items(form, organization, existing_items, user, is_draft=False, fallb
         item.has_sub_item_sn = bool(data.has_sub_item_sn.data)
         item.has_sub_item_asset = bool(data.has_sub_item_asset.data)
         item.sub_items = _build_sub_items(data.sub_items)
-        item.winner = (data.winner.data or "").strip() or None
         item.unit_price = data.unit_price.data
         item.note = data.note.data or ""
         item.responsible_divisions = []
@@ -648,7 +645,6 @@ def _clone_item_for_procurement(item: models.ProcurementItem, new_procurement: m
         sub_items=sub_items,
         has_sub_item_sn=item.has_sub_item_sn,
         has_sub_item_asset=item.has_sub_item_asset,
-        winner=item.winner,
         unit_price=item.unit_price,
         note=item.note,
         responsible_by=list(item.responsible_by or []),

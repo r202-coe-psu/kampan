@@ -719,18 +719,26 @@ def test_installment_table_shows_due_amount_column(world, client_for):
 
 
 
-def test_procurement_staff_cannot_request_even_if_responsible(world, client_for, existing_ma):
-    """เจ้าหน้าที่พัสดุ (admin) อนุมัติอย่างเดียว: แม้เป็นผู้รับผิดชอบก็ไม่เห็นปุ่มและขอผ่าน POST ไม่ได้"""
-    from kampan.web.views.procurement import ma_permissions
-
-    item = existing_ma.get_items()[0]
-    item.responsible_by = list(item.responsible_by) + [world.role_admin]
-    existing_ma.save()
-    models.Procurement.objects(id=existing_ma.id).update(set__status="review")
-    existing_ma.reload()
+def test_procurement_staff_can_request_only_when_responsible(world, client_for, existing_ma):
+    """admin ที่เป็นผู้รับผิดชอบรายการขอต่ออายุได้ (เห็นปุ่มและขอผ่าน POST ได้) ส่วน admin ที่ไม่ได้เป็นผู้รับผิดชอบยังขอไม่ได้
+    (ตัดสินใจ 2026-11-22 โดย Mhapong)"""
     admin = client_for(world.admin)
-    admin.post(f"/procurement/requisitions/{existing_ma.id}/renewal-request?{_q(world.org)}", data={"request": "renew"})
+    url = f"/procurement/requisitions/{existing_ma.id}/renewal-request?{_q(world.org)}"
+    listing = f"/procurement/products?usage_status=&renewal_status=&{_q(world.org)}"
+
+    # ยังไม่ได้เป็นผู้รับผิดชอบ: ขอไม่ได้ ไม่เห็นปุ่ม
+    models.Procurement.objects(id=existing_ma.id).update(set__status="review")
+    admin.post(url, data={"request": "renew"})
     existing_ma.reload()
     assert existing_ma.status != "renewal-requested"
-    html = admin.get(f"/procurement/products?usage_status=&renewal_status=&{_q(world.org)}").get_data(as_text=True)
-    assert "data-request-renewal-open" not in html
+    assert "data-request-renewal-open" not in admin.get(listing).get_data(as_text=True)
+
+    # เป็นผู้รับผิดชอบรายการ: เห็นปุ่มและขอได้
+    item = existing_ma.get_items()[0]
+    item.responsible_by = list(item.responsible_by) + [world.role_admin]
+    item.save()
+    models.Procurement.objects(id=existing_ma.id).update(set__status="review")
+    assert "data-request-renewal-open" in admin.get(listing).get_data(as_text=True)
+    admin.post(url, data={"request": "renew"})
+    existing_ma.reload()
+    assert existing_ma.status == "renewal-requested" and existing_ma.renewal_request == "renew"
