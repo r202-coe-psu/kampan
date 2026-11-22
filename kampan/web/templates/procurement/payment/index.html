@@ -374,10 +374,6 @@
             <dd class="font-medium text-base-content">{{ (item.unit_price | format_number) ~ " บาท" if item.unit_price is not none else "-" }}</dd>
           </div>
           <div class="space-y-1 pt-2 border-t border-base-200 sm:border-0 sm:pt-0">
-            <dt class="text-base-content/60 text-xs font-medium">ผู้ชนะ</dt>
-            <dd class="font-medium text-base-content">{{ item.winner or "-" }}</dd>
-          </div>
-          <div class="space-y-1 pt-2 border-t border-base-200 sm:border-0 sm:pt-0">
             <dt class="text-base-content/60 text-xs font-medium">ผู้รับผิดชอบ</dt>
             <dd class="font-medium text-base-content flex flex-wrap gap-1">
               {% for member in item.responsible_by %}

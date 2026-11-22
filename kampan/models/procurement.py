@@ -471,8 +471,7 @@ class ProcurementItem(me.Document):
     has_sub_item_sn = me.BooleanField(default=None)
     has_sub_item_asset = me.BooleanField(default=None)
 
-    # ช่องจากขั้นที่ 3 ของขอซื้อขอจ้างเดิม (#27) ผู้ชนะและราคาต่อหน่วยไม่บังคับ
-    winner = me.StringField(max_length=200)
+    # ช่องจากขั้นที่ 3 ของขอซื้อขอจ้างเดิม (#27) ราคาต่อหน่วยไม่บังคับ (ผู้ชนะถูกเอาออกแล้ว เอกสารเก่าที่มีค่า winner ยังโหลดได้เพราะ strict=False)
     unit_price = me.DecimalField(
         min_value=0,
         max_value=1e12,

@@ -102,9 +102,32 @@
             <span class="text-base-content/30 text-sm">-</span>
           {% endfor %}
           {% if members|length > 2 %}
-            <span class="badge badge-ghost font-medium" title="{% for m in members[2:] %}{{ m.display_user_fullname() }}{% if not loop.last %}, {% endif %}{% endfor %}">+{{ members|length - 2 }}</span>
+            <button type="button" class="badge badge-ghost font-medium cursor-pointer hover:badge-primary"
+                    data-responsible-more="{{ item.id }}"
+                    aria-label="ดูผู้รับผิดชอบทั้งหมด {{ members|length }} คน"
+                    onclick="document.getElementById('responsible_modal_{{ item.id }}').showModal()">+{{ members|length - 2 }} ดูทั้งหมด</button>
           {% endif %}
         </div>
+        {% if members|length > 2 %}
+        <dialog id="responsible_modal_{{ item.id }}" class="modal text-left">
+          <div class="modal-box">
+            <h3 class="font-bold text-lg">ผู้รับผิดชอบทั้งหมด ({{ members|length }} คน)</h3>
+            <p class="text-sm text-base-content/70 mt-1 break-words">{{ item.name }}</p>
+            <ul class="mt-4 flex flex-col gap-2 max-h-80 overflow-y-auto" data-responsible-list>
+              {% for member in members %}
+                <li class="flex items-center gap-2 rounded-lg border border-base-300 px-3 py-2">
+                  <i class="ph ph-user text-primary shrink-0"></i>
+                  <span class="font-medium break-words">{{ member.display_user_fullname() }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+            <div class="modal-action">
+              <form method="dialog"><button class="btn btn-outline">ปิด</button></form>
+            </div>
+          </div>
+          <form method="dialog" class="modal-backdrop"><button>close</button></form>
+        </dialog>
+        {% endif %}
         <div class="text-xs text-center text-base-content/60 mt-1">
           {% for division in item.get_responsible_divisions() %}{{ division.name }}{% if not loop.last %}, {% endif %}{% endfor %}
         </div>
@@ -134,7 +157,7 @@
             <span class="text-[11px] text-base-content/50">รายการแบบร่าง</span>
           </div>
         {% else %}
-          <div class="flex flex-col items-center gap-1 cursor-pointer select-none" onclick="toggleMaSubItems('{{ item.id }}')">
+          <div class="flex flex-col items-center gap-1 select-none{% if sub_items_list|length > 1 or split.any %} cursor-pointer{% endif %}"{% if sub_items_list|length > 1 or split.any %} onclick="toggleMaSubItems('{{ item.id }}')"{% endif %}>
             {% if installment_count == 0 %}
               <span class="badge badge-outline badge-success badge-md font-semibold whitespace-nowrap px-2 gap-1 shadow-xs" data-payment-status="paid-upfront">
                 <i class="ph ph-check-circle text-base"></i> จ่ายแล้ว
@@ -179,6 +202,8 @@
             {% endif %}
           </div>
         {% endif %}
+        {# จ่ายแบบไม่แบ่งงวด และมีรายการย่อยเดียว: ไม่มีอะไรให้ขยาย จึงไม่แสดงปุ่ม #}
+        {% if sub_items_list|length > 1 or split.any %}
         <div class="mt-2 flex justify-center">
           <button type="button"
                   onclick="toggleMaSubItems('{{ item.id }}', this)"
@@ -196,6 +221,7 @@
             </span>
           </button>
         </div>
+        {% endif %}
       </td>
       <td class="text-center">
         {% if is_draft %}
@@ -224,7 +250,9 @@
         {% endif %}
       </td>
       <td class="text-center">
-        <div class="flex flex-nowrap gap-1.5 justify-center items-center" data-row-actions>
+        <div class="flex flex-col gap-1.5 items-center" data-row-actions>
+          {# ปุ่มดูรายละเอียด / แก้ไข อยู่บรรทัดเดียวกัน ปุ่มอนุมัติต่ออายุอยู่ใต้ปุ่มเหล่านี้ #}
+          <div class="flex flex-nowrap gap-1.5 justify-center items-center">
           {% if is_draft %}
             {% if can_edit(item) %}
             <div class="tooltip tooltip-left" data-tip="แก้ไขต่อ (แบบร่าง)">
@@ -249,15 +277,6 @@
                 <i class="ph ph-magnifying-glass text-lg"></i>
               </a>
             </div>
-            {% if can_renew and can_renew(item) %}
-            <div class="tooltip tooltip-left" data-tip="ต่ออายุ MA">
-              <button type="button" class="btn btn-outline btn-success btn-sm btn-circle" aria-label="ต่ออายุ MA" data-action="renew-ma"
-                      data-renew-url="{{ url_for('procurement.products.renew', procurement_id=item.id, organization_id=organization.id) }}"
-                      data-renew-name="{{ item.name }}" onclick="openRenewConfirm(this)">
-                <i class="ph ph-arrows-clockwise text-lg"></i>
-              </button>
-            </div>
-            {% endif %}
             {% if can_edit(item) %}
             {# MA ที่มีรายการย่อยเดียว (เช่น สัญญาย่อย) กดแก้ไขแล้วไปแก้รายการย่อยนั้นโดยตรง · หลายรายการ (สัญญาหลัก) แก้เฉพาะหัว #}
             {% set sole_item = sub_items_list[0] if sub_items_list|length == 1 else none %}
@@ -268,6 +287,14 @@
               </a>
             </div>
             {% endif %}
+          {% endif %}
+          </div>
+          {% if not is_draft and can_renew and can_renew(item) %}
+          <button type="button" class="btn btn-success btn-sm gap-1 whitespace-nowrap text-white" aria-label="อนุมัติต่ออายุ MA" data-action="renew-ma"
+                  data-renew-url="{{ url_for('procurement.products.renew', procurement_id=item.id, organization_id=organization.id) }}"
+                  data-renew-name="{{ item.name }}" onclick="openRenewConfirm(this)">
+            <i class="ph ph-arrows-clockwise text-base"></i> อนุมัติต่ออายุ
+          </button>
           {% endif %}
         </div>
       </td>
