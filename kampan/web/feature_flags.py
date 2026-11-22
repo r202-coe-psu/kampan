@@ -7,6 +7,8 @@ from flask import abort, current_app
 PROCUREMENT_REQUISITION_ENABLED = "PROCUREMENT_REQUISITION_ENABLED"
 # ปิด/เปิดหน้าอัปโหลดไฟล์นำเข้า MA/MAS (/admin/upload_files) ค่าที่ไม่ได้ตั้งไว้หมายถึงปิด
 PROCUREMENT_UPLOAD_FILES_ENABLED = "PROCUREMENT_UPLOAD_FILES_ENABLED"
+# เปิดคู่มือเก่า (ครอบคลุม MAS / ขอซื้อขอจ้าง) แทนคู่มือ MA ใหม่ที่ /procurement/manuals ค่าที่ไม่ได้ตั้งไว้หมายถึงปิด
+PROCUREMENT_LEGACY_MANUAL_ENABLED = "PROCUREMENT_LEGACY_MANUAL_ENABLED"
 
 
 TRUE_VALUES = {"1", "true", "yes", "on"}
@@ -26,6 +28,10 @@ def is_requisition_enabled() -> bool:
 
 def is_upload_files_enabled() -> bool:
     return _flag_enabled(PROCUREMENT_UPLOAD_FILES_ENABLED)
+
+
+def is_legacy_manual_enabled() -> bool:
+    return _flag_enabled(PROCUREMENT_LEGACY_MANUAL_ENABLED)
 
 
 def abort_if_upload_files_disabled() -> None:
