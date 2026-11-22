@@ -5,7 +5,7 @@ import pathlib
 
 from flask import request, url_for
 
-from kampan.utils import template_filters
+from kampan.utils import template_filters, thailand_location
 from kampan.web import acl, feature_flags
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ MODULE_KEY_HOME_ENDPOINTS = {
     "car_reservation": CAR_RESERVATION_HOME_ENDPOINT,
     "motorcycle": MOTORCYCLE_HOME_ENDPOINT,
 }
-NON_MODULE_BLUEPRINTS = {"site", "accounts", "notifications", "users"}
+NON_MODULE_BLUEPRINTS = {"site", "accounts", "notifications", "users", "thailand_location"}
 
 
 def switch_organization_next_url(organization):
@@ -132,6 +132,7 @@ def register_blueprint(app):
     app.add_template_filter(add_date_url)
     app.add_template_global(switch_organization_next_url)
     app.add_template_global(feature_flags.is_requisition_enabled)
+    app.add_template_global(thailand_location.options, name="thai_location_options")
     app.add_template_global(generate_csrf, name="csrf_token")
     parent = pathlib.Path(__file__).parent
     blueprints = get_subblueprints(parent)
