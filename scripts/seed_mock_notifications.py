@@ -87,13 +87,17 @@ def seed(email):
     me = models.User.objects(email=email).first()
     if me is None:
         sys.exit(f"ไม่พบผู้ใช้ {email}")
-    org = models.Organization.objects(enabled_modules="car_reservation").first()
-    if org is None:
-        sys.exit("ยังไม่มี org ไหนเปิดระบบจองรถ")
-    my_role = models.OrganizationUserRole.objects(organization=org, user=me, status="active").first()
-    if my_role is None or my_role.division is None:
-        sys.exit(f"{email} ไม่ได้อยู่ในฝ่ายของ {org.name}")
-    division = my_role.division
+    my_role = next(
+        (
+            role
+            for role in models.OrganizationUserRole.objects(user=me, status="active")
+            if role.division and role.organization.has_module("car_reservation")
+        ),
+        None,
+    )
+    if my_role is None:
+        sys.exit(f"{email} ไม่ได้อยู่ในฝ่ายของ org ไหนที่เปิดระบบจองรถ")
+    org, division = my_role.organization, my_role.division
     requester = mock_requester(org, division, me)
     cars = list(flow.assignable_cars(org))
     drivers = [d for d in flow.assignable_drivers(org) if d != me] or list(flow.assignable_drivers(org))
