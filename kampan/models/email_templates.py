@@ -1,12 +1,16 @@
 import mongoengine as me
 import bson
 import datetime
+from typing import TYPE_CHECKING
 
 from jinja2 import Environment, PackageLoader, select_autoescape, Template
 
 import io
 import base64
 import markdown
+
+if TYPE_CHECKING:
+    from .organizations import Organization
 
 EMAIL_TYPE = [
     ("to endorser", "ส่งถึงผู้มีสิทธิ์อนุญาตในแผนก"),
@@ -36,6 +40,28 @@ EMAIL_SYSTEMS = [
     ("car_reservation", "ระบบจองรถ"),
     ("procurement", "ระบบ MA"),
 ]
+
+# ระบบของอีเมล -> module ของ org (Organization.has_module) org เห็นเฉพาะระบบที่เปิดใช้
+EMAIL_SYSTEM_ORG_MODULE = {
+    "inventory": "inventory",
+    "vehicle_lending": "car",
+    "car_reservation": "car_reservation",
+    "procurement": "procurement",
+}
+
+
+def get_email_systems(
+    organization: "Organization | None" = None, keep: str | None = None
+) -> list[tuple[str, str]]:
+    """keep: ระบบที่ต้องอยู่ในรายการเสมอ เช่นระบบของ template ที่กำลังแก้ แม้ org ปิด module ไปแล้ว"""
+    if organization is None:
+        return list(EMAIL_SYSTEMS)
+    return [
+        (system, label)
+        for system, label in EMAIL_SYSTEMS
+        if system == keep or organization.has_module(EMAIL_SYSTEM_ORG_MODULE[system])
+    ]
+
 
 # ระบบ -> class สีประจำ module ใน setup.css (.module-<name>)
 EMAIL_SYSTEM_MODULE = {
@@ -145,7 +171,9 @@ EMAIL_TYPE_INFO = {
 }
 
 
-def get_email_types_by_system():
+def get_email_types_by_system(
+    organization: "Organization | None" = None, keep: str | None = None
+) -> list[tuple[str, str, list[tuple[str, str]]]]:
     """[(system, system_label, [(type, type_label), ...]), ...] สำหรับ optgroup และ filter"""
     return [
         (
@@ -157,7 +185,7 @@ def get_email_types_by_system():
                 if EMAIL_TYPE_INFO[value]["system"] == system
             ],
         )
-        for system, system_label in EMAIL_SYSTEMS
+        for system, system_label in get_email_systems(organization, keep=keep)
     ]
 
 # ตัวแปรที่ใช้ใน {{ ... }} ของหัวข้อและเนื้อหาได้ แยกตามประเภทอีเมล

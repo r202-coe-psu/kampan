@@ -156,9 +156,32 @@ def _request(client, ma, world, value, org=None):
 def test_responsible_request_moves_review_to_renewal_requested(world, client_for, existing_ma, value):
     response = _request(client_for(world.responsible), existing_ma, world, value)
 
-    assert response.status_code == 302 and f"/procurement/payment/{existing_ma.id}" in response.headers["Location"]
+    assert response.status_code == 302 and response.headers["Location"].startswith("/procurement/products")
+    assert f"/procurement/payment/{existing_ma.id}" not in response.headers["Location"]
     assert _state(existing_ma) == ("renewal-requested", value)
     assert models.Procurement.objects.get(id=existing_ma.id).last_updated_by.id == world.responsible.id
+
+
+def test_request_goes_back_to_the_same_list_page_with_filters(world, client_for, existing_ma):
+    list_url = "/procurement/products?renewal_status=review&page=2&organization_id=" + str(world.org.id)
+    response = client_for(world.responsible).post(
+        _url(existing_ma, "renewal-request", world, None),
+        data={"request": "renew"},
+        headers={"Referer": "http://localhost" + list_url},
+    )
+
+    assert response.headers["Location"] == list_url
+
+
+def test_request_ignores_a_foreign_referrer(world, client_for, existing_ma):
+    response = client_for(world.responsible).post(
+        _url(existing_ma, "renewal-request", world, None),
+        data={"request": "renew"},
+        headers={"Referer": "http://evil.example/procurement/products?x=1"},
+    )
+
+    assert response.headers["Location"].startswith("/procurement/products?organization_id=")
+    assert "evil.example" not in response.headers["Location"]
 
 
 @pytest.mark.parametrize("who", ["admin", "creator", "head", "other_staff"])

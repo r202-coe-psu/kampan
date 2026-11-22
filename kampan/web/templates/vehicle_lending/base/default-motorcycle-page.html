@@ -3,6 +3,9 @@
 {% from "/base/components/dialogs.html" import ModalNegative, ModalPositive %}
 {% import '/base/html-renderer.html' as renderer %}
 
+{# badge ของระบบรถใช้หน้าตาแบบเดียวกับ badge ตำแหน่ง (role badge) ดู setup.css .vehicle-badges #}
+{% block body_class %}vehicle-badges{% endblock %}
+
 {% block body %}
   <div class="drawer 2xl:drawer-open">
     <input id="drawer-menu" type="checkbox" class="drawer-toggle" />

@@ -126,7 +126,6 @@ def _two_item_form(world):
                     {"brand": "ยี่ห้อ B", "model_name": "", "details": "S/N: ABC-002"},
                     {"brand": "", "model_name": "", "details": "รหัสครุภัณฑ์: CC/3"},
                 ],
-                winner="บริษัท ผู้ชนะ",
                 unit_price="30000.00",
                 note="หมายเหตุ A",
                 reminder_kind="license",
@@ -185,7 +184,7 @@ def test_create_ma_with_two_items_saves_header_items_and_installments(world, cli
         ("ยี่ห้อ B", None, "S/N: ABC-002"),
         (None, None, "รหัสครุภัณฑ์: CC/3"),
     ]
-    assert (first.winner, first.note) == ("บริษัท ผู้ชนะ", "หมายเหตุ A")
+    assert first.note == "หมายเหตุ A"
     assert second.sub_items == []
     assert first.unit_price == Decimal("30000.00")
     assert first.reminder_kind == "license"
@@ -197,7 +196,7 @@ def test_create_ma_with_two_items_saves_header_items_and_installments(world, cli
     assert all(installment.paid_date is None for installment in first.installments)
     assert first.installment_mode is True and second.installment_mode is False
     assert {member.id for member in first.responsible_by} == {world.role_admin.id, world.role_responsible.id}
-    assert second.winner is None and second.unit_price is None
+    assert second.unit_price is None
     assert len(second.installments) == 0  # ไม่แบ่งจ่ายเป็นงวด = จ่ายแล้วตอนสร้าง MA ไม่เก็บงวด
 
 
@@ -230,7 +229,7 @@ def test_detail_page_shows_every_item_with_details_line_breaks(world, client_for
 
     html = client.get(f"/procurement/payment/{procurement.id}?{_q(world.org)}").get_data(as_text=True)
 
-    for text in ("PSU-25/2569", "[TEST] License A", "[TEST] MA B", "1204010101 สินทรัพย์ไม่มีตัวตน", "ยี่ห้อ A", "ยี่ห้อ B", "รุ่น A", "S/N: ABC-002", "บริษัท ผู้ชนะ"):
+    for text in ("PSU-25/2569", "[TEST] License A", "[TEST] MA B", "1204010101 สินทรัพย์ไม่มีตัวตน", "ยี่ห้อ A", "ยี่ห้อ B", "รุ่น A", "S/N: ABC-002"):
         assert text in html
     assert "whitespace-pre-line" in html and "S/N: ABC-001\nรหัสครุภัณฑ์: CC/1" in html
     assert "[TEST] ฝ่ายไอที" in html and "[TEST] ฝ่ายการเงิน" in html
@@ -1827,3 +1826,67 @@ def test_create_page_has_visible_sn_and_asset_toggles(world, client_for):
         # ไม่อยู่ในบล็อกที่ซ่อน (aria-hidden) ของฟิลด์ที่นำออกจากหน้าจอ
         assert 'aria-hidden="true"' not in html[html.rfind("<div", 0, position) : position]
     assert 'data-sub-item-col="sn"' in html and 'data-sub-item-col="asset"' in html
+
+
+def test_list_responsible_overflow_opens_modal_with_everyone(world, client_for, create_user, assign_user_to_org):
+    members = []
+    for index in range(4):
+        user = create_user(f"Resp{index}", "Many")
+        members.append(assign_user_to_org(user, world.org, roles=["staff"]))
+    data = ma_form([_item(amount="100.00", responsible_by=[str(member.id) for member in members])], total_amount="100.00")
+    assert _create(client_for(world.admin), world, data).status_code == 302
+
+    html = client_for(world.admin).get(f"/procurement/products?{_q(world.org)}").get_data(as_text=True)
+
+    assert "data-responsible-more=" in html and "+2 ดูทั้งหมด" in html
+    modal = html.split("data-responsible-list>", 1)[1].split("</ul>", 1)[0]
+    for member in members:
+        assert member.display_user_fullname() in modal
+
+
+def test_list_hides_expand_button_for_single_item_without_installments(world, client_for):
+    client = client_for(world.admin)
+    one_shot = ma_form([_item(name="[TEST] จ่ายครั้งเดียว", amount="100.00")], total_amount="100.00", psu="PSU-1/2569")
+    split = ma_form(
+        [_item(name="[TEST] แบ่งงวด", amount="100.00", installment_mode="y", installments=[{"due_date": "2030-06-30"}])],
+        total_amount="100.00",
+        psu="PSU-2/2569",
+    )
+    assert _create(client, world, one_shot).status_code == 302
+    assert _create(client, world, split).status_code == 302
+    one_shot_id = models.Procurement.objects.get(psu_disbursement_number="PSU-1/2569").id
+    split_id = models.Procurement.objects.get(psu_disbursement_number="PSU-2/2569").id
+
+    html = client.get(f"/procurement/products?{_q(world.org)}").get_data(as_text=True)
+
+    assert f'id="btn_toggle_{split_id}"' in html
+    assert f'id="btn_toggle_{one_shot_id}"' not in html
+
+
+def test_winner_field_is_gone_from_form_and_detail(world, client_for):
+    client = client_for(world.admin)
+    data = ma_form([_item(amount="100.00")], total_amount="100.00")
+    assert _create(client, world, data).status_code == 302
+    procurement = models.Procurement.objects.get()
+
+    form_html = client.get(f"/procurement/products/create?{_q(world.org)}").get_data(as_text=True)
+    detail_html = client.get(f"/procurement/payment/{procurement.id}?{_q(world.org)}").get_data(as_text=True)
+
+    assert "-winner" not in form_html
+    assert "ผู้ชนะ" not in detail_html
+
+
+def test_list_approve_renewal_button_sits_below_detail_and_edit_buttons(world, client_for):
+    client = client_for(world.admin)
+    assert _create(client, world, ma_form([_item(amount="100000.00")])).status_code == 302
+    procurement = models.Procurement.objects.get()
+    models.Procurement.objects(id=procurement.id).update(set__status="renewal-requested", set__renewal_request="renew")
+
+    html = client.get(f"/procurement/products?usage_status=&renewal_status=&{_q(world.org)}").get_data(as_text=True)
+    actions = html.split("data-row-actions>", 1)[1].split("</td>", 1)[0]
+
+    assert actions.index('aria-label="ดูรายละเอียด MA"') < actions.index('aria-label="แก้ไขรายการ"') < actions.index('data-action="renew-ma"')
+    # ดูรายละเอียดกับแก้ไขอยู่ในแถวเดียวกัน (flex-nowrap) ปุ่มอนุมัติอยู่ถัดจากแถวนั้น ไม่อยู่ในแถว
+    assert actions.count('class="flex flex-nowrap') == 1
+    icon_row_end = actions.index('data-action="renew-ma"')
+    assert actions.rindex("</div>", 0, icon_row_end) > actions.index('aria-label="แก้ไขรายการ"')

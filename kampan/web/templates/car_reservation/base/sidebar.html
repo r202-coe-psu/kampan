@@ -45,7 +45,7 @@
     <li class="menu-title">การอนุมัติ</li>
     {% call MenuItem(['car_reservation.requests.inbox'], 'ph-tray', 'รายการรออนุมัติ',
                      url_for('car_reservation.requests.inbox', organization_id=organization.id)) %}
-      {% if inbox_count %}<span class="badge badge-error badge-sm ml-auto" data-testid="inbox-count">{{ inbox_count }}</span>{% endif %}
+      {% if inbox_count %}<span class="badge badge-solid badge-error badge-sm ml-auto" data-testid="inbox-count">{{ inbox_count }}</span>{% endif %}
     {% endcall %}
     {% endif %}
 

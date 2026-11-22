@@ -24,7 +24,7 @@
 {% endblock %}
 
 {% block content %}
-{% set selected_type = form.type.data or email_types[0][0] %}
+{% set selected_type = form.type.data %}
 <form class="grid grid-cols-1 gap-6 lg:grid-cols-3" method="POST" enctype="multipart/form-data">
   <div class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm lg:col-span-2">
     <div class="flex flex-wrap items-center justify-between gap-3">

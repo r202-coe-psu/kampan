@@ -168,6 +168,17 @@ def test_my_requests_filters_by_text_type_status_and_departure_range(world):
     assert "ไม่พบคำขอที่ตรงกับตัวกรอง" in words(find(empty, "div", role="status")[0])
 
 
+def test_my_requests_date_filter_uses_the_form_date_picker_and_keeps_the_chosen_dates(world):
+    doc = world.page(world.staff, "/requests/", date_from="2031-02-01")
+
+    pickers = find(doc, "*", data_date_picker="")
+    assert [p.get("data-input-id") for p in pickers] == ["date_from", "date_to"]
+    assert not find(doc, "input", type="date")
+    assert find(doc, "input", type="hidden", name="date_from")[0].get("value") == "2031-02-01"
+    assert words(find(doc, "span", id="cally-data-date_from")[0]) == "01/02/2031"
+    assert words(find(doc, "span", id="cally-data-date_to")[0]) == "ถึงวันที่"
+
+
 def test_inbox_lists_waiting_requests_as_table_rows_and_cards_with_a_count(world):
     world.reservation(request_reason="รอผู้จัดรถ")
     world.reservation(request_reason="เรื่องด่วน", is_urgent=True)
@@ -609,3 +620,18 @@ def test_every_request_row_has_an_eye_button_that_opens_the_detail(world, user_a
     assert f"/requests/{reservation.id}" in view[0].get("href")
     assert view[0].get("aria-label") == "ดูรายละเอียด"
     assert view[0].xpath(".//i[" + has_class("ph-eye") + "]")
+
+
+def test_unread_counters_opt_out_of_the_soft_vehicle_badge_style():
+    import pathlib
+
+    templates = pathlib.Path(__file__).parent.parent / "kampan/web/templates/car_reservation"
+    for name, marker in [
+        ("base/sidebar.html", 'data-testid="inbox-count"'),
+        ("notifications/_badge.html", 'data-role="notification-count"'),
+        ("notifications/index.html", 'data-role="unread-tab-count"'),
+    ]:
+        line = next(l for l in (templates / name).read_text().splitlines() if marker in l)
+        assert "badge-solid" in line, name
+    css = (templates.parent.parent / "static/css/setup.css").read_text()
+    assert ".vehicle-badges .badge:not(.role-badge, .module-badge, .badge-solid)" in css

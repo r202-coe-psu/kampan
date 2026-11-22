@@ -167,6 +167,13 @@ fieldset {
     font-weight: 600;
   }
 
+  .badge.role-badge.role-badge-wrap {
+    white-space: normal;
+    height: auto;
+    min-height: var(--size);
+    text-align: left;
+  }
+
   .role-staff {
     --role-color: var(--color-neutral);
   }
@@ -282,12 +289,45 @@ fieldset {
 }
 
 /* ขั้นอนุมัติของระบบจองรถ (car_reservation/components/approval_steps.html)
-   ผ่านแล้ว = เขียวเข้ม, ขั้นที่ค้างอยู่ = วงกลมเหลือง + นาฬิกาทราย + วงกระพริบสีเหลือง */
+   ผ่านแล้ว = เขียวเข้ม + ติ๊กถูก, ขั้นที่ค้างอยู่ = วงกลมเหลือง + นาฬิกาทราย + วงกระพริบสีเหลือง */
 .step-done::after,
 .step-done + .step-done::before,
 .step-done + .step-current::before {
   --step-bg: var(--color-green-700);
   --step-fg: var(--color-white);
+}
+/* badge ของระบบรถ (body.vehicle-badges ตั้งใน base ของ car_reservation และ vehicle_lending)
+   ใช้หน้าตาเดียวกับ .role-badge: พื้นสีอ่อน 16% ตัวอักษรเข้ม ขอบจาง ตัวหนา
+   สีมาจาก --badge-color ที่ badge-success/warning/error/... ของ daisyUI ตั้งไว้ ไม่มีสี = เทา
+   ทับทุกแบบ (soft/outline/ghost/ทึบ) จึงอยู่นอก layer
+   ตัวไหนตั้งใจให้ทึบ (เช่นตัวนับยังไม่อ่าน) ใส่ class badge-solid เพื่อยกเว้น */
+.vehicle-badges .badge:not(.role-badge, .module-badge, .badge-solid) {
+  --tone: var(--badge-color, var(--color-neutral));
+  --tone-fg: color-mix(in oklab, var(--tone) 60%, black);
+  background-color: color-mix(in oklab, var(--tone) 16%, var(--color-base-100));
+  background-image: none;
+  color: var(--tone-fg);
+  border-color: color-mix(in oklab, var(--tone-fg) 20%, transparent);
+  font-weight: 600;
+}
+
+/* stepper อนุมัติ: วงกลมใหญ่กว่า daisyUI (32px) เส้นเชื่อมบางกว่า (8px)
+   แนวตั้งเส้นใช้ width แนวนอนใช้ height และ md:steps-horizontal สลับกลับเป็นแนวนอน */
+.approval-steps .step::after {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+.approval-steps:not(.steps-vertical) .step::before {
+  height: 5px;
+}
+.approval-steps.steps-vertical .step::before {
+  width: 5px;
+}
+@media (min-width: 48rem) {
+  .approval-steps.md\:steps-horizontal .step::before {
+    width: 100%;
+    height: 5px;
+  }
 }
 .step-current::after {
   --step-bg: var(--color-amber-400);
