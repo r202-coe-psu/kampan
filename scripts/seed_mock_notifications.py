@@ -88,6 +88,8 @@ def seed(email):
     if me is None:
         sys.exit(f"ไม่พบผู้ใช้ {email}")
     org = models.Organization.objects(enabled_modules="car_reservation").first()
+    if org is None:
+        sys.exit("ยังไม่มี org ไหนเปิดระบบจองรถ")
     my_role = models.OrganizationUserRole.objects(organization=org, user=me, status="active").first()
     if my_role is None or my_role.division is None:
         sys.exit(f"{email} ไม่ได้อยู่ในฝ่ายของ {org.name}")
@@ -144,11 +146,9 @@ def seed(email):
 
 def clear():
     reservations = models.CarReservation.objects(request_reason__startswith=MARK)
-    ids = [r.id for r in reservations]
-    deleted = sum(
-        1 for n in models.Notification.objects(module="car_reservation")
-        if n.ref is not None and n.ref.id in ids and n.delete() is None
-    )
+    deleted = models.Notification.objects(
+        module="car_reservation", ref__in=list(reservations)
+    ).delete()
     print(f"ลบแจ้งเตือน {deleted} รายการ คำขอ {reservations.delete()} รายการ")
 
 
