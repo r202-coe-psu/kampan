@@ -3,7 +3,7 @@
 // ใช้ฟังก์ชันของ dropdown_select.js (setDropdownSelectValue)
 (function () {
   const NEXT = { province: "district", district: "subdistrict" };
-  const ENDPOINT = { district: "districts", subdistrict: "subdistricts" };
+  const URL_ATTR = { district: "districtsUrl", subdistrict: "subdistrictsUrl" };
 
   function levelOf(group, level) {
     const fieldset = group.querySelector('[data-level="' + level + '"]');
@@ -71,10 +71,10 @@
     if (!part) return;
     const params = new URLSearchParams({ province: levelOf(group, "province").input.value });
     if (next === "subdistrict") params.set("district", levelOf(group, "district").input.value);
-    const requestId = String(Date.now());
+    const requestId = String((Number(group.dataset.requestId) || 0) + 1);
     group.dataset.requestId = requestId;
     setLoading(part, true);
-    fetch(group.dataset.api + "/" + ENDPOINT[next] + "?" + params, { credentials: "same-origin" })
+    fetch(group.dataset[URL_ATTR[next]] + "?" + params, { credentials: "same-origin" })
       .then(function (response) {
         if (!response.ok) throw new Error(response.status);
         return response.json();

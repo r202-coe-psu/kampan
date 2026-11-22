@@ -3998,7 +3998,7 @@ def test_welfare_form_lists_province_then_district_then_subdistrict(world):
         html.index(f'data-level="{level}"') for level in ("province", "district", "subdistrict")
     )
     assert province < district < subdistrict
-    assert 'data-api="/api/thailand-location"' in html
+    assert 'data-districts-url="/api/thailand-location/districts"' in html
 
 
 def test_empty_location_shows_a_thai_pick_message(world):

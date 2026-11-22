@@ -318,7 +318,9 @@ file_input -->
 {% macro thai_location_fields(province, district, subdistrict=None) %}
   {% set levels = [("province", province, ""), ("district", district, "เลือกจังหวัดก่อน")] %}
   {% if subdistrict %}{% set levels = levels + [("subdistrict", subdistrict, "เลือกอำเภอก่อน")] %}{% endif %}
-  <div class="contents" data-thai-location data-api="{{ url_for('thailand_location.provinces') | replace('/provinces', '') }}">
+  <div class="contents" data-thai-location
+       data-districts-url="{{ url_for('thailand_location.districts') }}"
+       data-subdistricts-url="{{ url_for('thailand_location.subdistricts') }}">
     {% for level, field, waiting_text in levels %}
       {% set choices = thai_location_options(level, province.data or "", district.data or "", field.data or "") %}
       {% set waiting = level != "province" and not choices %}
