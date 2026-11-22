@@ -11,8 +11,7 @@
 <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
   {{ renderer.render_select_field(form.province_scope) }}
   {{ renderer.render_field(form.location) }}
-  {{ renderer.render_field(form.district) }}
-  {{ renderer.render_field(form.province) }}
+  {{ renderer.thai_location_fields(form.province, form.district) }}
 </div>
 {{ renderer.render_field(form.request_reason, placeholder="เช่น ประชุมวิชาการ, ศึกษาดูงาน, รับ-ส่งวิทยากร") }}
 {% endcall %}

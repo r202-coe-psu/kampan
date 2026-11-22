@@ -3946,3 +3946,39 @@ def test_inbox_lists_exactly_what_can_act_allows_for_every_user(world):
         assert flow.inbox_count(world.org, user) == len(expected)
     assert {str(pending.id)} <= {str(a.id) for a in flow.inbox_for(world.org, world.supervisor)}
     assert str(at_dispatcher.id) in {str(a.id) for a in flow.inbox_for(world.org, world.dispatcher)}
+
+
+@pytest.mark.parametrize(
+    "request_type, changes, error",
+    [
+        ("domestic", {"province": "จังหวัดสมมุติ"}, "กรุณาเลือกจังหวัดจากรายการ"),
+        ("domestic", {"district": "เมืองปัตตานี"}, "กรุณาเลือกอำเภอจากรายการ"),
+        ("welfare", {"district": "อ.หาดใหญ่"}, "กรุณาเลือกอำเภอจากรายการ"),
+        ("welfare", {"subdistrict": "รูสะมิแล"}, "กรุณาเลือกตำบลจากรายการ"),
+    ],
+)
+def test_location_must_be_picked_from_the_thai_location_list(
+    world, request_type, changes, error
+):
+    data = world.request_data(request_type)
+    data.update(changes)
+
+    response = post_new(world, data, request_type=request_type)
+
+    assert response.status_code == 200
+    assert error in response.get_data(as_text=True)
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
+
+
+def test_welfare_form_lists_province_then_district_then_subdistrict(world):
+    html = (
+        world.client_for(world.requester)
+        .get(f"{BASE}/new?organization_id={world.org.id}&type=welfare")
+        .get_data(as_text=True)
+    )
+
+    province, district, subdistrict = (
+        html.index(f'data-level="{level}"') for level in ("province", "district", "subdistrict")
+    )
+    assert province < district < subdistrict
+    assert 'data-api="/api/thailand-location"' in html
