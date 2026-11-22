@@ -326,7 +326,8 @@ def test_sidebar_shows_requisition_menus_when_flag_on(world, client_for, set_fla
 def test_select_system_card_goes_to_ma_list_when_flag_off(world, client_for, set_flag):
     html = client_for(world.users["admin"]).get(f"/select_system?{_q(world)}").get_data(as_text=True)
 
-    assert f'href="/procurement/products?{_q(world)}"' in html
+    # ปุ่ม MA ต้องเปิดรายการแบบไม่กรอง (usage_status/renewal_status ว่าง) ไม่ใช่ตัวกรองตั้งต้น
+    assert f'href="/procurement/products?{_q(world)}&amp;usage_status=&amp;renewal_status="' in html
     assert "ระบบจัดการสัญญา (MA)" in html
     assert "ระบบขอซื้อขอจ้าง" not in html
     assert "/procurement/requisitions/renewal_requested" not in html
@@ -434,3 +435,61 @@ def test_products_create_ignores_requisition_prefill(world, client_for, set_flag
     html = response.get_data(as_text=True)
     for value in ("PrefillFromTimeline", "PrefillCompany", "PREFILL-AC", "PREFILL-SN"):
         assert value not in html
+
+
+# ---------------------------------------------------------------------------
+# หน้าอัปโหลดไฟล์นำเข้า (/admin/upload_files) ปิดด้วย PROCUREMENT_UPLOAD_FILES_ENABLED
+# ---------------------------------------------------------------------------
+
+UPLOAD_FLAG = "PROCUREMENT_UPLOAD_FILES_ENABLED"
+
+
+@pytest.fixture
+def upload_flag(app, monkeypatch):
+    def _set(value):
+        if value is None:
+            monkeypatch.delitem(app.config, UPLOAD_FLAG, raising=False)
+        else:
+            monkeypatch.setitem(app.config, UPLOAD_FLAG, value)
+
+    return _set
+
+
+@pytest.mark.parametrize("value", (None, False, "False", "0"))
+@pytest.mark.parametrize(
+    "path",
+    ("/admin/upload_files/", "/admin/upload_files/create", "/admin/upload_files/template/ma"),
+)
+def test_upload_files_pages_404_when_flag_off(world, client_for, upload_flag, value, path):
+    upload_flag(value)
+
+    response = client_for(world.users["admin"]).get(f"{path}?{_q(world)}")
+
+    assert response.status_code == 404
+
+
+def test_upload_files_post_404_when_flag_off(world, client_for, upload_flag):
+    upload_flag(False)
+    client = client_for(world.users["admin"])
+
+    for action in ("processing", "delete"):
+        response = client.post(f"/admin/upload_files/{'0' * 24}/{action}?{_q(world)}")
+        assert response.status_code == 404
+
+
+def test_upload_files_menu_hidden_when_flag_off(world, client_for, upload_flag):
+    upload_flag(False)
+
+    html = client_for(world.users["admin"]).get(f"/procurement/products?{_q(world)}").get_data(as_text=True)
+
+    assert "/admin/upload_files" not in html
+    assert "อัพโหลดไฟล์" not in html
+
+
+def test_upload_files_open_and_menu_shown_when_flag_on(world, client_for, upload_flag):
+    upload_flag("true")
+    client = client_for(world.users["admin"])
+
+    assert client.get(f"/admin/upload_files/?{_q(world)}").status_code == 200
+    html = client.get(f"/procurement/products?{_q(world)}").get_data(as_text=True)
+    assert "/admin/upload_files/" in html

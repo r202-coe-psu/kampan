@@ -13,3 +13,5 @@ DAIRY_TIME_TO_SEND_PAYMENT_NOTIFICATION = "00:10"
 
 # ระบบขอซื้อขอจ้าง + แหล่งเงิน (MAS) ปิดไว้ก่อน เหลือแต่ระบบจัดการสัญญา (MA)
 PROCUREMENT_REQUISITION_ENABLED = False
+# หน้าอัปโหลดไฟล์นำเข้า MA/MAS (/admin/upload_files) ปิดไว้ก่อน
+PROCUREMENT_UPLOAD_FILES_ENABLED = False
