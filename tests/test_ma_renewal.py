@@ -60,7 +60,6 @@ def world(app, create_org, create_user, assign_user_to_org):
                     models.ItemDetail(brand="ยี่ห้อ A", model_name="รุ่น A", details="S/N: ABC-001"),
                     models.ItemDetail(brand="ยี่ห้อ B", details="S/N: ABC-002"),
                 ],
-                winner="บริษัท ผู้ชนะ",
                 unit_price=Decimal("30000.00"),
                 note="หมายเหตุ A",
                 responsible_by=[role_responsible],
@@ -124,7 +123,7 @@ def test_renew_form_is_prefilled_from_old_ma_and_creates_nothing(world, client_f
     assert _input_value(html, "items-0-sub_items-0-brand") == "ยี่ห้อ A"
     assert _input_value(html, "items-0-sub_items-0-model_name") == "รุ่น A"
     assert _input_value(html, "items-0-sub_items-1-brand") == "ยี่ห้อ B"
-    assert _input_value(html, "items-0-winner") == "บริษัท ผู้ชนะ"
+    assert "items-0-winner" not in html
     assert _input_value(html, "items-0-unit_price") == "30000.00"
     # รายการย่อยถูกนำเข้าฟอร์มเพียงรายการเดียว
     assert 'name="items-1-name"' not in html

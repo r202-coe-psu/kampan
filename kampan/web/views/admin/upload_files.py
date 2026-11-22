@@ -32,6 +32,7 @@ import pandas as pd
 from io import BytesIO
 
 module = Blueprint("upload_files", __name__, url_prefix="/upload_files")
+module.before_request(feature_flags.abort_if_upload_files_disabled)
 
 INVALID_REQUEST_MESSAGE = "คำขอไม่ถูกต้องหรือหมดอายุ กรุณาลองใหม่อีกครั้ง"
 MAS_UPLOAD_DISABLED_MESSAGE = "ปิดการนำเข้าไฟล์แหล่งเงิน (MAS) แล้ว"

@@ -43,6 +43,7 @@
               <span class="font-bold text-gray-900 text-lg whitespace-nowrap">สำหรับผู้ดูแล/เจ้าหน้าที่พัสดุ</span>
             </summary>
             <ul class="ml-1 w-full">
+              {% if is_upload_files_enabled() %}
               <li class="w-full">
                 <a class="{{ 'menu-active' if '/upload_files' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
                   href="{{ url_for('admin.upload_files.index', organization_id=organization.id) }}" title="อัพโหลดไฟล์">
@@ -50,6 +51,7 @@
                   <span class="truncate">อัพโหลดไฟล์</span>
                 </a>
               </li>
+              {% endif %}
               {% if is_requisition_enabled() %}
               <li class="w-full">
                 <details open>
