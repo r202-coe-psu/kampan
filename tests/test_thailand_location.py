@@ -123,3 +123,11 @@ def test_api_returns_empty_for_an_unknown_province(client):
 
     assert response.status_code == 200
     assert response.get_json() == []
+
+
+def test_changing_a_returned_subdistrict_does_not_touch_the_cached_data():
+    rows = thailand_location.list_subdistricts("สงขลา", "หาดใหญ่")
+    rows[0]["subdistrict"] = "แก้แล้ว"
+
+    again = thailand_location.list_subdistricts("สงขลา", "หาดใหญ่")
+    assert "แก้แล้ว" not in {row["subdistrict"] for row in again}

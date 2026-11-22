@@ -20,17 +20,17 @@ _LEADING_VOWEL = re.compile("([เแโใไ])([ก-ฮ])")
 _TONE_MARKS = re.compile("[่-๋์]")
 
 
-def thai_sort_key(text):
+def thai_sort_key(text: str) -> tuple[str, str]:
     swapped = _LEADING_VOWEL.sub(r"\2\1", text)
     return (_TONE_MARKS.sub("", swapped), swapped)
 
 
-def _pin_first(values, pinned):
+def _pin_first(values: list[str], pinned: str) -> list[str]:
     return sorted(values, key=lambda value: value != pinned)
 
 
 @functools.cache
-def _index():
+def _index() -> dict[str, dict[str, list[dict]]]:
     rows = json.loads(DATA_PATH.read_text(encoding="utf-8"))
     index = {}
     for row in rows:
@@ -41,23 +41,28 @@ def _index():
     return index
 
 
-def list_provinces():
+def list_provinces() -> list[str]:
     return _pin_first(sorted(_index(), key=thai_sort_key), PINNED_PROVINCE)
 
 
-def list_districts(province):
+def list_districts(province: str) -> list[str]:
     districts = sorted(_index().get(province, {}), key=thai_sort_key)
     if province == PINNED_PROVINCE:
         return _pin_first(districts, PINNED_DISTRICT)
     return districts
 
 
-def list_subdistricts(province, district):
+def list_subdistricts(province: str, district: str) -> list[dict]:
+    """คืน dict ชุดใหม่ ผู้เรียกแก้ได้โดยไม่กระทบข้อมูลที่ cache ไว้"""
     rows = _index().get(province, {}).get(district, [])
-    return sorted(rows, key=lambda row: thai_sort_key(row["subdistrict"]))
+    return sorted(
+        (dict(row) for row in rows), key=lambda row: thai_sort_key(row["subdistrict"])
+    )
 
 
-def is_valid(province, district=None, subdistrict=None):
+def is_valid(
+    province: str, district: str | None = None, subdistrict: str | None = None
+) -> bool:
     districts = _index().get(province)
     if districts is None:
         return False
@@ -71,7 +76,9 @@ def is_valid(province, district=None, subdistrict=None):
     return any(row["subdistrict"] == subdistrict for row in rows)
 
 
-def options(level, province="", district="", current=""):
+def options(
+    level: str, province: str = "", district: str = "", current: str = ""
+) -> list[tuple[str, str]]:
     """ตัวเลือกของ dropdown ระดับ `level` เป็นคู่ (value, label)
 
     ถ้าค่าที่บันทึกไว้เดิม (`current`) ไม่อยู่ในชุดข้อมูล (คำขอเก่าที่พิมพ์เอง)
