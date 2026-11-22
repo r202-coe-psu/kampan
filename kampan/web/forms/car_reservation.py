@@ -350,7 +350,7 @@ class PassengerRowForm(Form):
     """หนึ่งแถวของรายชื่อผู้โดยสารสนามบิน (แถวว่างทั้งแถวคือไม่ใช้)"""
 
     name = fields.StringField("ชื่อผู้โดยสาร", validators=[validators.Length(max=256)])
-    phone = fields.StringField("โทร", validators=[validators.Length(max=32)])
+    phone = fields.StringField("เบอร์โทร", validators=[validators.Length(max=32)])
 
 
 class AirportReservationForm(CommonReservationForm):
@@ -596,7 +596,7 @@ class AbroadReservationForm(CommonReservationForm):
         validators=[validators.DataRequired(), validators.Length(max=256)],
     )
     coordinator_phone = fields.StringField(
-        "โทรผู้ประสานงาน",
+        "เบอร์โทรผู้ประสานงาน",
         validators=[validators.DataRequired(), validators.Length(max=32)],
     )
     requester_position = fields.StringField(
