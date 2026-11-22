@@ -242,10 +242,12 @@ class DomesticReservationForm(CommonReservationForm):
         widget=widgets.NumberInput(),
     )
     province = fields.StringField(
-        "จังหวัด", validators=[validators.DataRequired(), validators.Length(max=256)]
+        "จังหวัด",
+        validators=[validators.DataRequired("กรุณาเลือกจังหวัด"), validators.Length(max=256)],
     )
     district = fields.StringField(
-        "อำเภอ", validators=[validators.DataRequired(), validators.Length(max=256)]
+        "อำเภอ",
+        validators=[validators.DataRequired("กรุณาเลือกอำเภอ"), validators.Length(max=256)],
     )
     in_office_of_president = fields.BooleanField("หน่วยงานในสำนักงานอธิการบดี")
     cost_responsibilities = fields.SelectMultipleField(
@@ -492,13 +494,16 @@ class WelfareReservationForm(CommonReservationForm):
         validators=[validators.DataRequired(), validators.Length(max=256)],
     )
     province = fields.StringField(
-        "จังหวัด", validators=[validators.DataRequired(), validators.Length(max=256)]
+        "จังหวัด",
+        validators=[validators.DataRequired("กรุณาเลือกจังหวัด"), validators.Length(max=256)],
     )
     district = fields.StringField(
-        "อำเภอ", validators=[validators.DataRequired(), validators.Length(max=256)]
+        "อำเภอ",
+        validators=[validators.DataRequired("กรุณาเลือกอำเภอ"), validators.Length(max=256)],
     )
     subdistrict = fields.StringField(
-        "ตำบล", validators=[validators.DataRequired(), validators.Length(max=256)]
+        "ตำบล",
+        validators=[validators.DataRequired("กรุณาเลือกตำบล"), validators.Length(max=256)],
     )
     direct_relative_confirmed = fields.BooleanField(
         "ขอใช้สำหรับตนเองหรือญาติสายตรงเท่านั้น",

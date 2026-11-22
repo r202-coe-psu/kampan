@@ -3999,3 +3999,13 @@ def test_welfare_form_lists_province_then_district_then_subdistrict(world):
     )
     assert province < district < subdistrict
     assert 'data-api="/api/thailand-location"' in html
+
+
+def test_empty_location_shows_a_thai_pick_message(world):
+    data = world.request_data("welfare")
+    data["subdistrict"] = ""
+
+    response = post_new(world, data, request_type="welfare")
+
+    assert "กรุณาเลือกตำบล" in response.get_data(as_text=True)
+    assert models.CarReservation.objects(creator=world.requester).count() == 0

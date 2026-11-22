@@ -330,7 +330,7 @@ file_input -->
              invalid=field.errors | count > 0, aria_label=field.label.text, searchable=True,
              placeholder=(waiting_text if waiting else "เลือก" ~ field.label.text)) }}
         {% for error in field.errors %}
-          <p class="text-error text-xs mt-1">{{ "กรุณาเลือก" ~ field.label.text if "This field is required" in error else error }}</p>
+          <p class="text-error text-xs mt-1">{{ error }}</p>
         {% endfor %}
       </fieldset>
     {% endfor %}
