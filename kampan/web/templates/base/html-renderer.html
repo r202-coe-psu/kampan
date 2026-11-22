@@ -311,6 +311,32 @@ file_input -->
   {% if hide_label %}</div>{% else %}</fieldset>{% endif %}
 {% endmacro %}
 
+{# จังหวัด → อำเภอ → ตำบล แบบ dropdown ต่อกัน (StringField ทั้งสามช่อง ค่าที่ส่งเป็นชื่อภาษาไทย)
+   ตัวเลือกชั้นแรกและชั้นที่เลือกไว้แล้วมาจาก server ส่วนชั้นถัดไปโหลดจาก /api/thailand-location
+   (js/forms/thailand_location_select.js) subdistrict=None สำหรับฟอร์มที่มีแค่จังหวัดกับอำเภอ
+   ห่อด้วย div.contents เพื่อให้แต่ละช่องเป็นเซลล์ของ grid ภายนอก #}
+{% macro thai_location_fields(province, district, subdistrict=None) %}
+  {% set levels = [("province", province, ""), ("district", district, "เลือกจังหวัดก่อน")] %}
+  {% if subdistrict %}{% set levels = levels + [("subdistrict", subdistrict, "เลือกอำเภอก่อน")] %}{% endif %}
+  <div class="contents" data-thai-location data-api="{{ url_for('thailand_location.provinces') | replace('/provinces', '') }}">
+    {% for level, field, waiting_text in levels %}
+      {% set choices = thai_location_options(level, province.data or "", district.data or "", field.data or "") %}
+      {% set waiting = level != "province" and not choices %}
+      <fieldset class="fieldset w-full" id="field-{{ field.id }}" data-level="{{ level }}" data-waiting-text="{{ waiting_text }}">
+        <legend class="fieldset-legend">
+          {{ field.label.text }}{% if field.flags.required %} <span class="text-error">*</span>{% endif %}
+        </legend>
+        {{ dropdown_select_control(field.name, field.id, choices, field.data or "", disabled=waiting,
+             invalid=field.errors | count > 0, aria_label=field.label.text, searchable=True,
+             placeholder=(waiting_text if waiting else "เลือก" ~ field.label.text)) }}
+        {% for error in field.errors %}
+          <p class="text-error text-xs mt-1">{{ "กรุณาเลือก" ~ field.label.text if "This field is required" in error else error }}</p>
+        {% endfor %}
+      </fieldset>
+    {% endfor %}
+  </div>
+{% endmacro %}
+
 {% macro date_field(field, class_="", placeholder="", prefix_icon="", suffix_icon="", disabled=False,
   calendar_id='calendar',
   readonly=False, field_id='', compact=False, hide_label=False, aria_label="", required=False,
