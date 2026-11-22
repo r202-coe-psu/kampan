@@ -20,7 +20,7 @@ PINNED_DISTRICT = "หาดใหญ่"
 
 # สระหน้า (เ แ โ ใ ไ) เขียนก่อนพยัญชนะแต่พจนานุกรมเรียงตามพยัญชนะ จึงสลับก่อนเทียบ
 _LEADING_VOWEL = re.compile("([เแโใไ])([ก-ฮ])")
-_TONE_MARKS = re.compile("[่-๋์]")
+_TONE_MARKS = re.compile("[็-์]")  # ไม้ไต่คู้ วรรณยุกต์ และการันต์
 
 
 def thai_sort_key(text: str) -> tuple[str, str]:
