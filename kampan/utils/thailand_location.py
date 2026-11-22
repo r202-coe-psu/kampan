@@ -3,6 +3,9 @@
 ข้อมูลมาจาก `thailand_location_data.json` ของโปรเจกต์ tent เก็บแบบแถวแบน
 `{province, district, subdistrict, zipcode}` อ่านครั้งเดียวแล้วเก็บ index ไว้ใน memory
 สงขลาและหาดใหญ่ขึ้นก่อน เพราะผู้ใช้ส่วนใหญ่อยู่ในพื้นที่ (ตรงกับ tent)
+
+แก้ไฟล์ JSON แล้วต้อง restart แอป (cache ใน process) และ browser อาจยังใช้คำตอบ API เดิม
+ได้นานสุด 1 วัน (Cache-Control ใน web/views/thailand_location.py)
 """
 
 import functools
@@ -41,8 +44,13 @@ def _index() -> dict[str, dict[str, list[dict]]]:
     return index
 
 
+@functools.cache
+def _sorted_provinces() -> tuple[str, ...]:
+    return tuple(_pin_first(sorted(_index(), key=thai_sort_key), PINNED_PROVINCE))
+
+
 def list_provinces() -> list[str]:
-    return _pin_first(sorted(_index(), key=thai_sort_key), PINNED_PROVINCE)
+    return list(_sorted_provinces())
 
 
 def list_districts(province: str) -> list[str]:
@@ -88,8 +96,10 @@ def options(
         names = list_provinces()
     elif level == "district":
         names = list_districts(province) if province else []
-    else:
+    elif level == "subdistrict":
         names = [row["subdistrict"] for row in list_subdistricts(province, district)]
+    else:
+        raise ValueError(f"unknown level: {level}")
     choices = [(name, name) for name in names]
     if current and current not in names:
         choices.insert(0, (current, f"{current} (ค่าเดิม)"))

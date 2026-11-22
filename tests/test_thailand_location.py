@@ -131,3 +131,15 @@ def test_changing_a_returned_subdistrict_does_not_touch_the_cached_data():
 
     again = thailand_location.list_subdistricts("สงขลา", "หาดใหญ่")
     assert "แก้แล้ว" not in {row["subdistrict"] for row in again}
+
+
+def test_options_reject_an_unknown_level():
+    with pytest.raises(ValueError):
+        thailand_location.options("village", province="สงขลา")
+
+
+def test_changing_the_returned_provinces_does_not_touch_the_cached_list():
+    provinces = thailand_location.list_provinces()
+    provinces.clear()
+
+    assert len(thailand_location.list_provinces()) == 77
