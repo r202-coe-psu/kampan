@@ -427,6 +427,23 @@ def test_welfare_request_is_saved_with_its_form_fields_and_shown_on_detail(world
         assert shown in html
 
 
+def test_welfare_request_can_skip_the_event_type(world):
+    data = world.request_data("welfare")
+    del data["event_type"]
+
+    response = post_new(world, data, request_type="welfare")
+
+    assert response.status_code == 302
+    saved = models.CarReservation.objects(creator=world.requester).first()
+    assert saved.details.event_type is None
+    assert saved.request_reason == "งานของ นายสมศักดิ์ ใจดี"
+    html = world.client_for(world.requester).get(detail_url(world, saved)).get_data(
+        as_text=True
+    )
+    assert "None" not in html
+    assert "งานของ นายสมศักดิ์ ใจดี" in html
+
+
 @pytest.mark.parametrize("vehicle_kind", ["เก๋ง", "มินิบัส"])
 def test_welfare_request_accepts_only_bus_or_van(world, vehicle_kind):
     data = world.request_data("welfare")

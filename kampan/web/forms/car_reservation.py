@@ -482,7 +482,7 @@ class WelfareReservationForm(CommonReservationForm):
     event_type = fields.RadioField(
         "เนื่องในงาน",
         choices=models.car_reservations.WELFARE_EVENT_TYPES,
-        validators=[validators.DataRequired()],
+        validators=[validators.Optional()],
     )
     host_name = fields.StringField(
         "ของ", validators=[validators.DataRequired(), validators.Length(max=256)]
@@ -525,7 +525,11 @@ class WelfareReservationForm(CommonReservationForm):
                 f"บ้านเลขที่ {self.house.data} ต.{self.subdistrict.data} "
                 f"อ.{self.district.data} จ.{self.province.data}"
             ),
-            "request_reason": f"{self.event_type.data} ของ {self.host_name.data}",
+            "request_reason": (
+                f"{self.event_type.data} ของ {self.host_name.data}"
+                if self.event_type.data
+                else f"งานของ {self.host_name.data}"
+            ),
         }
 
     def build_details(self):
@@ -533,7 +537,7 @@ class WelfareReservationForm(CommonReservationForm):
             employee_type=self.employee_type.data,
             affiliation=self.affiliation.data,
             vehicle_kind=self.vehicle_kind.data,
-            event_type=self.event_type.data,
+            event_type=self.event_type.data or None,
             host_name=self.host_name.data,
             house=self.house.data,
             subdistrict=self.subdistrict.data,

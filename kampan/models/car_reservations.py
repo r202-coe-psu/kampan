@@ -177,7 +177,7 @@ class WelfareDetails(me.EmbeddedDocument):
     employee_type = me.StringField(choices=WELFARE_EMPLOYEE_TYPES, required=True)
     affiliation = me.StringField(required=True, max_length=256)  # สังกัด
     vehicle_kind = me.StringField(choices=WELFARE_VEHICLE_KINDS, required=True)
-    event_type = me.StringField(choices=WELFARE_EVENT_TYPES, required=True)
+    event_type = me.StringField(choices=WELFARE_EVENT_TYPES)
     host_name = me.StringField(required=True, max_length=256)  # งานของ (เจ้าภาพ)
     house = me.StringField(required=True, max_length=256)  # สถานที่ไปบ้าน
     subdistrict = me.StringField(required=True, max_length=256)  # ตำบล
