@@ -133,6 +133,7 @@ def register_blueprint(app):
     app.add_template_global(switch_organization_next_url)
     app.add_template_global(feature_flags.is_requisition_enabled)
     app.add_template_global(feature_flags.is_upload_files_enabled)
+    app.add_template_global(feature_flags.is_legacy_manual_enabled)
     app.add_template_global(generate_csrf, name="csrf_token")
     parent = pathlib.Path(__file__).parent
     blueprints = get_subblueprints(parent)
