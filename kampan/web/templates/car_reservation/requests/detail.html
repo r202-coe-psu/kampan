@@ -69,11 +69,11 @@
 
 {% set feedback_url = feedback_link(reservation) if feedback_link is defined else None %}
 {% if feedback_url %}
-<div role="alert" class="alert alert-info alert-soft flex flex-col items-start gap-3 sm:flex-row sm:items-center" data-role="feedback-callout">
-  <i class="ph ph-star text-2xl"></i>
+<div role="alert" class="alert border-primary/20 bg-primary/5 text-base-content flex flex-col items-start gap-3 sm:flex-row sm:items-center" data-role="feedback-callout">
+  <i class="ph ph-star text-2xl text-primary"></i>
   <div class="flex-1">
-    <h3 class="font-bold">ประเมินความพึงพอใจการใช้รถ</h3>
-    <p class="text-sm">การเดินทางเสร็จสิ้นแล้ว ช่วยประเมินบริการของรถและพนักงานขับรถในเที่ยวนี้</p>
+    <h3 class="font-bold text-primary">ประเมินความพึงพอใจการใช้รถ</h3>
+    <p class="text-sm text-base-content/70">การเดินทางเสร็จสิ้นแล้ว ช่วยประเมินบริการของรถและพนักงานขับรถในเที่ยวนี้</p>
   </div>
   <a class="btn btn-primary w-full sm:w-auto" data-role="feedback-link" href="{{ feedback_url }}">
     <i class="ph ph-star"></i> ทำแบบประเมิน
