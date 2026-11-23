@@ -7,6 +7,7 @@
 
 import asyncio
 import datetime
+import re
 from decimal import Decimal
 
 import pytest
@@ -632,3 +633,32 @@ def test_due_reminders_skip_closed_ma(world, create_ma, status):
     _set(ma, status)
 
     assert due_reminders(TODAY) == []
+
+
+# ---------------------------------------------------------------------------
+# คำขอของผู้รับผิดชอบต้องเด่นชัดสำหรับเจ้าหน้าที่พัสดุ (ป้ายเขียว/แดง + แจ้งเตือนในหน้าจ่ายเงิน)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "request_value, label, color, other_color",
+    (("renew", "(ขอต่ออายุ)", "bg-success", "bg-error"), ("stop", "(ขอไม่ต่ออายุ)", "bg-error", "bg-success")),
+)
+def test_requested_renewal_is_a_prominent_badge_in_list_and_payment_notice(
+    world, client_for, create_ma, request_value, label, color, other_color
+):
+    ma = _ma_with_dates(world, create_ma, [(TODAY - 90 * datetime.timedelta(days=1), TODAY - 5 * datetime.timedelta(days=1))])
+    _set(ma, "renewal-requested", request_value)
+    client = client_for(world.admin)
+
+    html = client.get(f"/procurement/products?usage_status=&renewal_status=&{_q(world.org)}").get_data(as_text=True)
+    badge = re.search(r'<span[^>]*data-renewal-request="%s"[^>]*>(.*?)</span>' % request_value, html, re.S)
+
+    assert badge and label in badge.group(1)
+    assert color in badge.group(0) and other_color not in badge.group(0)
+
+    detail = client.get(f"/procurement/payment/{ma.id}?{_q(world.org)}").get_data(as_text=True)
+    notice = re.search(r'<div[^>]*id="renewal-request-notice"[^>]*>', detail)
+
+    assert notice and f'data-renewal-request="{request_value}"' in notice.group(0)
+    assert ("alert-error" if request_value == "stop" else "alert-success") in notice.group(0)

@@ -72,7 +72,7 @@
   </div>
 
   {% if procurement.status == "renewal-requested" %}
-    <div role="alert" class="alert alert-soft alert-info text-base-content shadow-xs rounded-xl" id="renewal-request-notice">
+    <div role="alert" class="alert {{ 'alert-error' if procurement.renewal_request == 'stop' else 'alert-success' }} alert-soft text-base-content font-semibold shadow-md rounded-xl border-2 {{ 'border-error' if procurement.renewal_request == 'stop' else 'border-success' }}" id="renewal-request-notice" data-renewal-request="{{ procurement.renewal_request or 'renew' }}">
       <i class="ph ph-hourglass text-xl"></i>
       <span>ผู้รับผิดชอบ{{ "ขอต่ออายุ" if procurement.renewal_request == "renew" else ("ขอไม่ต่ออายุ" if procurement.renewal_request == "stop" else "ขอต่ออายุ") }}แล้ว รอเจ้าหน้าที่พัสดุอนุมัติ</span>
     </div>
@@ -110,7 +110,7 @@
 
   {% set child_procurements = procurement.get_child_procurements() %}
   {% if child_procurements %}
-    <div class="card bg-base-100 border border-base-200/80 p-4 rounded-2xl shadow-xs flex flex-col gap-3">
+    <div class="card bg-base-100 border border-base-200/80 p-4 rounded-2xl shadow-md flex flex-col gap-3">
       <div class="flex items-center justify-between">
         <h3 class="font-bold text-sm flex items-center gap-2 text-base-content">
           <span class="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -148,7 +148,7 @@
   {% endif %}
 
   <!-- หัวสัญญา (Contract Summary Header) -->
-  <section class="card bg-base-100 border border-base-200/80 shadow-sm rounded-2xl overflow-hidden">
+  <section class="card bg-base-100 border border-base-200/80 shadow-md rounded-2xl overflow-hidden">
     <div class="card-body p-5 md:p-7 space-y-5">
       <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
         <!-- ฝั่งซ้าย: ข้อมูลสัญญา -->
@@ -247,7 +247,7 @@
 
   {% if renewal_chain|length > 1 %}
     <!-- สายการต่ออายุ -->
-    <section class="card bg-base-100 border border-base-200/80 shadow-sm rounded-2xl overflow-hidden">
+    <section class="card bg-base-100 border border-base-200/80 shadow-md rounded-2xl overflow-hidden">
       <div class="card-body p-5 md:p-6">
         <h3 class="font-bold text-lg flex items-center gap-2"><i class="ph ph-arrows-clockwise text-primary"></i>สายการต่ออายุ</h3>
         {# timeline เรียงลงมา: MA แรกสุดอยู่บน ล่าสุดอยู่ล่าง · ลิงก์ไปเฉพาะ MA ที่ผู้ใช้มีสิทธิ์ดู #}
@@ -296,7 +296,7 @@
 
   <!-- รายละเอียดและงวดการจ่ายเงิน -->
   {% for item in items %}
-    <section id="item-{{ item.id }}" class="card bg-base-100 border border-base-200/80 shadow-sm rounded-2xl overflow-hidden">
+    <section id="item-{{ item.id }}" class="card bg-base-100 border border-base-200/80 shadow-md rounded-2xl overflow-hidden">
       <!-- Item Header -->
       <div class="bg-base-200/30 px-5 py-4 border-b border-base-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-2.5">

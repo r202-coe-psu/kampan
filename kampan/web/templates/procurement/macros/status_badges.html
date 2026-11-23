@@ -27,6 +27,9 @@
   {% set waiting = status == "review" and procurement.usage_status == "upcoming" %}
   <span class="badge {{ size }} {{ 'badge-info' if waiting else renewal_badge_classes.get(status, 'badge-ghost') }} whitespace-nowrap px-2" data-renewal-status="{{ 'waiting' if waiting else status }}">{{ 'รอใช้งาน' if waiting else procurement.get_renewal_status_label() }}</span>
   {% if show_request and status == "renewal-requested" and procurement.renewal_request %}
-    <span class="text-[11px] text-base-content/60 whitespace-nowrap">({{ renewal_request_labels.get(procurement.renewal_request) }})</span>
+    {# คำขอของผู้รับผิดชอบ: ป้ายเด่นอีกบรรทัด (เขียว = ขอต่ออายุ, แดง = ขอไม่ต่ออายุ) ให้เจ้าหน้าที่พัสดุเห็นชัดว่าต้องอนุมัติอะไร #}
+    <span class="mt-1 flex w-fit mx-auto items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold whitespace-nowrap shadow-sm {{ 'bg-success text-success-content' if procurement.renewal_request == 'renew' else 'bg-error text-error-content' }}" data-renewal-request="{{ procurement.renewal_request }}">
+      <i class="ph {{ 'ph-arrows-clockwise' if procurement.renewal_request == 'renew' else 'ph-x' }} text-sm"></i>({{ renewal_request_labels.get(procurement.renewal_request) }})
+    </span>
   {% endif %}
 {% endmacro %}
