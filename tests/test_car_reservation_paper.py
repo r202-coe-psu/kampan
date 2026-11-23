@@ -3,6 +3,7 @@
 import datetime
 import decimal
 import io
+import urllib.parse
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -204,6 +205,35 @@ def test_requester_gets_the_official_form_filled_with_the_request_and_approvals(
     assert "กรุงเทพฯ" in text  # สถานที่
     assert "กก 1234" in text  # ทะเบียนรถที่ผู้จัดรถเลือก
     assert "ประเสริฐ มีสุข" in text  # ผู้บังคับบัญชาที่อนุมัติ
+
+
+@pytest.mark.parametrize(
+    "request_type, label",
+    [
+        ("domestic", "ใบขอใช้รถ-ในประเทศ"),
+        ("airport", "ใบขอใช้รถ-สนามบิน"),
+        ("welfare", "ใบขอใช้รถ-สวัสดิการ"),
+        ("abroad", "ใบขอใช้รถ-ต่างประเทศ"),
+    ],
+)
+def test_pdf_is_named_by_type_departure_date_and_short_id(world, request_type, label):
+    reservation = world.reservation(request_type)
+
+    response = world.paper(world.requester, reservation)
+
+    disposition = urllib.parse.unquote(response.headers["Content-Disposition"])
+    assert disposition.startswith("inline;")
+    assert f"{label}_2569-12-03_{str(reservation.id)[-6:]}.pdf" in disposition
+
+
+def test_download_button_asks_for_an_attachment(world):
+    reservation = world.reservation("domestic")
+
+    response = world.client_for(world.requester).get(
+        f"{BASE}/{reservation.id}/paper?organization_id={world.org.id}&download=1"
+    )
+
+    assert response.headers["Content-Disposition"].startswith("attachment;")
 
 
 def test_an_approvers_signature_image_is_placed_on_the_form(world):

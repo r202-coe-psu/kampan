@@ -348,6 +348,18 @@ def test_airport_form_shows_its_own_title_and_only_its_own_fields(world):
     assert 'name="province_scope"' not in html
 
 
+def test_airport_form_starts_with_one_passenger_row_and_an_add_button(world):
+    html = world.client_for(world.requester).get(
+        f"{BASE}/new?organization_id={world.org.id}&type=airport"
+    ).get_data(as_text=True)
+
+    rows = re.findall(r'<div class="([^"]*)" data-role="passenger-row">', html)
+    assert len(rows) == 5
+    assert "hidden" not in rows[0]
+    assert all("hidden" in row for row in rows[1:])
+    assert 'data-role="passenger-add"' in html
+
+
 def test_airport_request_without_any_passenger_is_refused(world):
     data = world.request_data("airport")
     data["passengers-0-name"] = ""

@@ -1,14 +1,15 @@
 import datetime
 import io
 
-from flask_wtf import FlaskForm
 from PIL import Image, UnidentifiedImageError
 from flask_wtf.file import FileAllowed, FileField, FileRequired
-from wtforms import Form, fields, validators, widgets
+from wtforms import fields, validators, widgets
 from wtforms import SelectField, SelectMultipleField
 
 from kampan import models, utils
+from kampan.utils import car_reservation_paper_layouts as paper_layouts
 from kampan.web.forms import accounts
+from kampan.web.forms.thai_messages import ThaiFlaskForm, ThaiForm
 
 
 PICKUP_TIME_FORMAT = "%H:%M"
@@ -21,24 +22,53 @@ MAX_MILEAGE = 9_999_999
 MAX_FUEL_LITERS = 99_999
 MAX_TRIP_COST = 9_999_999
 
+PAPER_LENGTH_MESSAGE = "ยาวเกินช่องในแบบฟอร์มใบขอใช้รถ (ไม่เกิน %(max)d ตัวอักษร)"
+# ฟิลด์ฟอร์มที่พิมพ์ลงช่องของแบบฟอร์มชื่อต่างจากชื่อฟิลด์
+PAPER_VARS = {"requester_unit": "unit", "affiliation": "unit"}
+# เลือกจากรายการอ้างอิงเท่านั้น และชื่อยาวสุดในรายการพิมพ์ได้ครบอยู่แล้ว (ตำบลยาวสุด 23 ตัวเกินเพดานที่ประมาณไว้)
+LOCATION_FIELDS = ("province", "district", "subdistrict")
 
-class CommonReservationForm(FlaskForm):
-    """ฟิลด์ที่ใช้ร่วมกันทุกประเภทใบขอ: ผู้ขอ วันเวลาไป-กลับ และที่ให้รถไปจอดรับ"""
+
+def cap_length_to_paper(field, var, request_types):
+    """ลดเพดาน Length ของ field ให้ข้อความพิมพ์ลงช่อง var ของแบบฟอร์มได้ครบไม่ถูกตัด"""
+    limit = paper_layouts.max_chars(var, request_types)
+    lengths = [check for check in field.validators if isinstance(check, validators.Length)]
+    if limit is None or not lengths or lengths[0].max <= limit:
+        return
+    # สร้าง list ใหม่: list เดิมแชร์กับฟอร์มอื่นของ class เดียวกัน
+    field.validators = [
+        *(check for check in field.validators if check not in lengths),
+        validators.Length(max=limit, message=PAPER_LENGTH_MESSAGE),
+    ]
+    field.flags.maxlength = limit
+
+
+class CommonReservationForm(ThaiFlaskForm):
+    """ฟิลด์ที่ใช้ร่วมกันทุกประเภทใบขอ: ผู้ขอ วันเวลาไป-กลับ และที่ให้รถไปจอดรับ
+
+    ฟิลด์ข้อความที่พิมพ์ลงแบบฟอร์มของ request_type ถูกจำกัดความยาวให้พอดีช่องในแบบฟอร์ม
+    """
+
+    request_type = None
 
     requester_unit = fields.StringField(
         "คณะ/หน่วยงาน",
+        render_kw={"placeholder": "เช่น คณะวิศวกรรมศาสตร์"},
         validators=[validators.DataRequired(), validators.Length(max=256)],
     )
     phone = fields.StringField(
         "เบอร์โทรศัพท์ผู้ขอใช้รถ",
+        render_kw={"placeholder": "เช่น 0812345678"},
         validators=[validators.DataRequired(), validators.Length(max=32)],
     )
     contact_name = fields.StringField(
         "ชื่อผู้ติดต่อรับแจ้งสถานะ",
+        render_kw={"placeholder": "ชื่อ-นามสกุลผู้ใช้รถจริง"},
         validators=[validators.DataRequired(), validators.Length(max=256)],
     )
-    contact_email = fields.StringField(
+    contact_email = fields.EmailField(
         "อีเมลผู้ติดต่อรับแจ้งสถานะ",
+        render_kw={"placeholder": "เช่น name@psu.ac.th"},
         validators=[
             validators.DataRequired(),
             validators.Length(max=256),
@@ -59,12 +89,21 @@ class CommonReservationForm(FlaskForm):
     )
     pickup_place = fields.StringField(
         "ให้รถไปจอดรับที่",
+        render_kw={"placeholder": "เช่น หน้าอาคารสำนักงานอธิการบดี"},
         validators=[validators.DataRequired(), validators.Length(max=516)],
     )
     pickup_time = fields.TimeField(
         "เวลารับ", validators=[validators.InputRequired()]
     )
     confirm_urgent = fields.BooleanField("ยืนยันยื่นคำขอแบบเร่งด่วน")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.request_type is None:
+            return
+        for name, field in self._fields.items():
+            if name not in LOCATION_FIELDS:
+                cap_length_to_paper(field, PAPER_VARS.get(name, name), (self.request_type,))
 
     def reservation_fields(self):
         """ฟิลด์ร่วมของ CarReservation ที่ได้จากฟอร์ม (ประเภทย่อยเติมของตัวเองต่อ)"""
@@ -217,16 +256,21 @@ TRIP_MOMENT_FIELDS = {
 class DomesticReservationForm(CommonReservationForm):
     """ใบขอใช้รถยนต์ไปปฏิบัติงานภายในประเทศ"""
 
+    request_type = "domestic"
+
     location = fields.StringField(
         "สถานที่ปฏิบัติงาน",
+        render_kw={"placeholder": "เช่น มหาวิทยาลัยเชียงใหม่"},
         validators=[validators.DataRequired(), validators.Length(max=516)],
     )
     request_reason = fields.StringField(
         "วัตถุประสงค์การเดินทาง",
+        render_kw={"placeholder": "เช่น ประชุมวิชาการ, ศึกษาดูงาน, รับ-ส่งวิทยากร"},
         validators=[validators.DataRequired(), validators.Length(max=516)],
     )
     passenger_number = fields.IntegerField(
         "จำนวนผู้โดยสาร",
+        render_kw={"placeholder": "เช่น 5"},
         validators=[validators.InputRequired(), validators.NumberRange(min=0, max=MAX_PASSENGERS)],
         widget=widgets.NumberInput(),
     )
@@ -238,6 +282,7 @@ class DomesticReservationForm(CommonReservationForm):
     )
     vehicle_count = fields.IntegerField(
         "จำนวนรถ (คัน)",
+        render_kw={"placeholder": "เช่น 1"},
         validators=[validators.InputRequired(), validators.NumberRange(min=1, max=MAX_VEHICLES)],
         widget=widgets.NumberInput(),
     )
@@ -300,7 +345,7 @@ class UrgentDomesticReservationForm(DomesticReservationForm):
     is_overtime = fields.BooleanField("งานนอกเวลา (OT)")
 
 
-class InsertJobForm(FlaskForm):
+class InsertJobForm(ThaiFlaskForm):
     """ผู้จัดรถเพิ่มงานแทรกให้ พขร. ที่มีงานอยู่แล้วในวันนั้น: งานสั้น ไม่ผ่านการอนุมัติ
 
     choices ของรถ/พขร. ตั้งจาก org ตอนสร้างหน้า ส่วนสิทธิ์และเวลาชนกันตรวจที่ engine
@@ -322,10 +367,12 @@ class InsertJobForm(FlaskForm):
     )
     location = fields.StringField(
         "สถานที่",
+        render_kw={"placeholder": "เช่น สนามบินหาดใหญ่"},
         validators=[validators.DataRequired(), validators.Length(max=516)],
     )
     request_reason = fields.StringField(
         "เหตุผล",
+        render_kw={"placeholder": "เช่น รับเอกสารด่วน"},
         validators=[validators.DataRequired(), validators.Length(max=516)],
     )
     insert_scope = fields.SelectField(
@@ -335,10 +382,12 @@ class InsertJobForm(FlaskForm):
     )
     contact_name = fields.StringField(
         "ชื่อผู้ติดต่อรับแจ้งสถานะ",
+        render_kw={"placeholder": "ชื่อ-นามสกุลผู้ใช้รถจริง"},
         validators=[validators.DataRequired(), validators.Length(max=256)],
     )
-    contact_email = fields.StringField(
+    contact_email = fields.EmailField(
         "อีเมลผู้ติดต่อรับแจ้งสถานะ",
+        render_kw={"placeholder": "เช่น name@psu.ac.th"},
         validators=[
             validators.DataRequired(),
             validators.Length(max=256),
@@ -348,16 +397,25 @@ class InsertJobForm(FlaskForm):
     is_overtime = fields.BooleanField("งานนอกเวลา (OT)")
 
 
-class PassengerRowForm(Form):
+class PassengerRowForm(ThaiForm):
     """หนึ่งแถวของรายชื่อผู้โดยสารสนามบิน (แถวว่างทั้งแถวคือไม่ใช้)"""
 
-    name = fields.StringField("ชื่อผู้โดยสาร", validators=[validators.Length(max=256)])
-    phone = fields.StringField("เบอร์โทร", validators=[validators.Length(max=32)])
+    name = fields.StringField(
+        "ชื่อผู้โดยสาร",
+        render_kw={"placeholder": "ชื่อ-นามสกุล"},
+        validators=[validators.Length(max=256)],
+    )
+    phone = fields.StringField(
+        "เบอร์โทร",
+        render_kw={"placeholder": "เช่น 0812345678"},
+        validators=[validators.Length(max=32)],
+    )
 
 
 class AirportReservationForm(CommonReservationForm):
     """ใบขอใช้รถ รับ-ส่ง สนามบินหาดใหญ่"""
 
+    request_type = "airport"
     AIRPORT = "สนามบินหาดใหญ่"
 
     transfer = fields.RadioField(
@@ -367,6 +425,7 @@ class AirportReservationForm(CommonReservationForm):
     )
     flight_number = fields.StringField(
         "เที่ยวบินที่",
+        render_kw={"placeholder": "เช่น TG2259"},
         validators=[validators.DataRequired(), validators.Length(max=32)],
     )
     flight_date = fields.DateField("วันที่", validators=[validators.InputRequired()])
@@ -385,6 +444,7 @@ class AirportReservationForm(CommonReservationForm):
     )
     requester_position = fields.StringField(
         "ตำแหน่งผู้ขอใช้รถ",
+        render_kw={"placeholder": "เช่น ผู้อำนวยการกองกายภาพ"},
         validators=[validators.DataRequired(), validators.Length(max=256)],
     )
     in_office_of_president = fields.BooleanField("หน่วยงานในสำนักงานอธิการบดี")
@@ -399,6 +459,15 @@ class AirportReservationForm(CommonReservationForm):
         validators=[validators.DataRequired("กรุณายืนยันสิทธิ์การขอใช้รถ")],
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._cap_passenger_rows()
+
+    def _cap_passenger_rows(self):
+        for row in self.passengers:  # ทุกแถวมีช่องกว้างเท่าแถวที่ 1
+            cap_length_to_paper(row.form.name, "p1_name", (self.request_type,))
+            cap_length_to_paper(row.form.phone, "p1_phone", (self.request_type,))
+
     def prefill(self, reservation):
         super().prefill(reservation)
         details = reservation.details
@@ -408,6 +477,7 @@ class AirportReservationForm(CommonReservationForm):
             None,
             [{"name": row.name, "phone": row.phone} for row in details.passengers],
         )
+        self._cap_passenger_rows()  # process() สร้างแถวใหม่ เพดานจาก __init__ จึงหายไป
         self.eligibility_confirmed.data = True
 
     def validate_passengers(self, field):
@@ -466,6 +536,7 @@ class AirportReservationForm(CommonReservationForm):
 class WelfareReservationForm(CommonReservationForm):
     """ใบขอใช้รถประเภทสวัสดิการบุคลากร"""
 
+    request_type = "welfare"
     requester_unit = None  # ใช้สังกัด (affiliation) แทน
 
     employee_type = fields.RadioField(
@@ -474,7 +545,9 @@ class WelfareReservationForm(CommonReservationForm):
         validators=[validators.DataRequired()],
     )
     affiliation = fields.StringField(
-        "สังกัด", validators=[validators.DataRequired(), validators.Length(max=256)]
+        "สังกัด",
+        render_kw={"placeholder": "เช่น คณะวิทยาศาสตร์"},
+        validators=[validators.DataRequired(), validators.Length(max=256)],
     )
     vehicle_kind = fields.RadioField(
         "ขอใช้รถ",
@@ -487,10 +560,13 @@ class WelfareReservationForm(CommonReservationForm):
         validators=[validators.Optional()],
     )
     host_name = fields.StringField(
-        "ของ", validators=[validators.DataRequired(), validators.Length(max=256)]
+        "ของ",
+        render_kw={"placeholder": "ชื่อเจ้าภาพ เช่น นายสมชาย ใจดี"},
+        validators=[validators.DataRequired(), validators.Length(max=256)],
     )
     house = fields.StringField(
         "สถานที่ไปบ้าน",
+        render_kw={"placeholder": "เช่น 12/3 หมู่ 4"},
         validators=[validators.DataRequired(), validators.Length(max=256)],
     )
     province = fields.StringField(
@@ -569,11 +645,16 @@ def validate_project_file_size(form, field):
 class AbroadReservationForm(CommonReservationForm):
     """บันทึกข้อความขอใช้รถยนต์พร้อมพนักงานขับรถไปปฏิบัติงานต่างประเทศ"""
 
+    request_type = "abroad"
     section = fields.StringField(
-        "ส่วนงาน", validators=[validators.DataRequired(), validators.Length(max=256)]
+        "ส่วนงาน",
+        render_kw={"placeholder": "เช่น คณะวิศวกรรมศาสตร์"},
+        validators=[validators.DataRequired(), validators.Length(max=256)],
     )
     document_number = fields.StringField(
-        "ที่", validators=[validators.DataRequired(), validators.Length(max=256)]
+        "ที่",
+        render_kw={"placeholder": "เช่น มอ 123/2569"},
+        validators=[validators.DataRequired(), validators.Length(max=256)],
     )
     vehicle_kind = fields.SelectField(
         "ประเภทรถ",
@@ -582,34 +663,44 @@ class AbroadReservationForm(CommonReservationForm):
     )
     vehicle_count = fields.IntegerField(
         "จำนวนรถ (คัน)",
+        render_kw={"placeholder": "เช่น 1"},
         validators=[validators.InputRequired(), validators.NumberRange(min=1, max=MAX_VEHICLES)],
         widget=widgets.NumberInput(),
     )
     passenger_number = fields.IntegerField(
         "จำนวนผู้โดยสาร",
+        render_kw={"placeholder": "เช่น 5"},
         validators=[validators.InputRequired(), validators.NumberRange(min=0, max=MAX_PASSENGERS)],
         widget=widgets.NumberInput(),
     )
     city_state = fields.StringField(
-        "เมือง/รัฐ", validators=[validators.DataRequired(), validators.Length(max=256)]
+        "เมือง/รัฐ",
+        render_kw={"placeholder": "เช่น ปีนัง"},
+        validators=[validators.DataRequired(), validators.Length(max=256)],
     )
     country = fields.StringField(
-        "ประเทศ", validators=[validators.DataRequired(), validators.Length(max=256)]
+        "ประเทศ",
+        render_kw={"placeholder": "เช่น มาเลเซีย"},
+        validators=[validators.DataRequired(), validators.Length(max=256)],
     )
     request_reason = fields.StringField(
         "วัตถุประสงค์การเดินทาง",
+        render_kw={"placeholder": "เช่น ประชุมวิชาการ, ศึกษาดูงาน, รับ-ส่งวิทยากร"},
         validators=[validators.DataRequired(), validators.Length(max=516)],
     )
     coordinator_name = fields.StringField(
         "ผู้ประสานงาน",
+        render_kw={"placeholder": "ชื่อ-นามสกุลผู้ประสานงาน"},
         validators=[validators.DataRequired(), validators.Length(max=256)],
     )
     coordinator_phone = fields.StringField(
         "เบอร์โทรผู้ประสานงาน",
+        render_kw={"placeholder": "เช่น 0812345678"},
         validators=[validators.DataRequired(), validators.Length(max=32)],
     )
     requester_position = fields.StringField(
         "ตำแหน่งผู้ขอใช้รถ",
+        render_kw={"placeholder": "เช่น ผู้อำนวยการกองกายภาพ"},
         validators=[validators.DataRequired(), validators.Length(max=256)],
     )
     project_file = FileField(
@@ -678,9 +769,11 @@ def reservation_form_for(request_type):
     return FORM_BY_REQUEST_TYPE[request_type]()
 
 
-class ApprovalDecisionForm(FlaskForm):
+class ApprovalDecisionForm(ThaiFlaskForm):
     comment = fields.StringField(
-        "ความเห็น", validators=[validators.Optional(), validators.Length(max=516)]
+        "ความเห็น",
+        render_kw={"placeholder": "ความเห็นเพิ่มเติม (ถ้ามี)"},
+        validators=[validators.Optional(), validators.Length(max=516)],
     )
     # ปุ่มลัดในกล่องรออนุมัติส่งมา: view ยอมรับเฉพาะ URL กล่องรออนุมัติของ org เป๊ะ ๆ
     next = fields.HiddenField()
@@ -693,6 +786,7 @@ class QuickApprovalForm(ApprovalDecisionForm):
 
     comment = fields.TextAreaField(
         "ความเห็น (ไม่บังคับ)",
+        render_kw={"placeholder": "ความเห็นเพิ่มเติม (ถ้ามี)"},
         validators=[validators.Optional(), validators.Length(max=516)],
     )
 
@@ -716,13 +810,19 @@ class DispatchDecisionForm(ApprovalDecisionForm):
     driver = fields.RadioField("พนักงานขับรถ", choices=[], validate_choice=False)
     extra_travelers = fields.StringField(
         "ขออนุมัติให้ผู้ร่วมเดินทางไปปฏิบัติงานต่างจังหวัด",
+        render_kw={"placeholder": "เช่น นายสมชาย ใจดี, นายสมศักดิ์ รักงาน"},
         description="ตามช่อง (3) ของใบขอใช้รถ เช่น ชื่อพนักงานขับรถ หรือผู้ช่วย คั่นด้วยจุลภาค",
-        validators=[validators.Optional(), validators.Length(max=516)],
+        validators=[
+            validators.Optional(),
+            validators.Length(
+                max=paper_layouts.max_chars("extra_travelers"), message=PAPER_LENGTH_MESSAGE
+            ),
+        ],
     )
     is_overtime = fields.BooleanField("งานนอกเวลา (OT)")
 
 
-class OvertimeForm(FlaskForm):
+class OvertimeForm(ThaiFlaskForm):
     """ผู้จัดรถสลับสถานะงานนอกเวลา (OT) ของคำขอที่ active"""
 
     is_overtime = fields.BooleanField("งานนอกเวลา (OT)")
@@ -734,12 +834,13 @@ def validate_optional_picture(form, field):
         accounts.validate_picture_content(form, field)
 
 
-class CarForm(FlaskForm):
+class CarForm(ThaiFlaskForm):
     """ฟอร์มเพิ่ม/แก้ไขรถของระบบจองรถ (ที่นั่งบังคับกรอกในฟอร์มนี้ แต่เป็น optional ที่โมเดล
     เพื่อให้รถของระบบยืมรถ DIIS ยังใช้งานได้)"""
 
     license_plate = fields.StringField(
         "ป้ายทะเบียนรถ",
+        render_kw={"placeholder": "เช่น นข 1234 สงขลา"},
         validators=[validators.DataRequired(), validators.Length(max=256)],
     )
     vehicle_type = fields.SelectField(
@@ -748,18 +849,25 @@ class CarForm(FlaskForm):
         validators=[validators.DataRequired()],
     )
     brand = fields.StringField(
-        "ยี่ห้อ", validators=[validators.Optional(), validators.Length(max=128)]
+        "ยี่ห้อ",
+        render_kw={"placeholder": "เช่น Toyota"},
+        validators=[validators.Optional(), validators.Length(max=128)],
     )
     car_model = fields.StringField(
-        "รุ่น", validators=[validators.Optional(), validators.Length(max=128)]
+        "รุ่น",
+        render_kw={"placeholder": "เช่น Commuter"},
+        validators=[validators.Optional(), validators.Length(max=128)],
     )
     seat_count = fields.IntegerField(
         "จำนวนที่นั่ง",
+        render_kw={"placeholder": "เช่น 12"},
         validators=[validators.InputRequired(), validators.NumberRange(min=1, max=MAX_SEATS)],
         widget=widgets.NumberInput(),
     )
     description = fields.TextAreaField(
-        "รายละเอียด/ลักษณะ", validators=[validators.Optional()]
+        "รายละเอียด/ลักษณะ",
+        render_kw={"placeholder": "เช่น สีขาว ติดตราสัญลักษณ์มหาวิทยาลัย"},
+        validators=[validators.Optional()],
     )
     status = fields.SelectField(
         "สถานะ",
@@ -776,15 +884,17 @@ class CarForm(FlaskForm):
     )
 
 
-class SettingsForm(FlaskForm):
+class SettingsForm(ThaiFlaskForm):
     """ตั้งค่าของระบบจองรถที่แอดมินองค์กรแก้ได้"""
 
     car_reservation_contact_phone = fields.StringField(
         "เบอร์โทรศัพท์ติดต่อฝ่ายจองรถ",
+        render_kw={"placeholder": "เช่น 074282000"},
         validators=[validators.Optional(), validators.Length(max=32)],
     )
     car_reservation_campus_networks = fields.TextAreaField(
         "ช่วง IP ของมหาวิทยาลัย (หนึ่งช่วงต่อบรรทัด เช่น 10.0.0.0/8)",
+        render_kw={"placeholder": "เช่น 10.0.0.0/8"},
         validators=[validators.Optional()],
     )
 
@@ -794,7 +904,7 @@ class SettingsForm(FlaskForm):
                 raise validators.ValidationError(f"ช่วง IP ไม่ถูกต้อง: {line}")
 
 
-class DriverStatsFilterForm(FlaskForm):
+class DriverStatsFilterForm(ThaiFlaskForm):
     """ตัวกรอง dashboard ภาระงาน พขร. (GET จึงไม่มี CSRF) ช่วงเวลาเป็น hidden (ค่าที่ไม่รู้จักถูกแทนด้วยค่าเริ่มต้นใน view)
 
     organization_id ต้องติดไปกับ query ทุกครั้งที่ส่งฟอร์ม; driver choices ตั้งจาก พขร. ของ org ใน view
@@ -812,22 +922,24 @@ class DriverStatsFilterForm(FlaskForm):
     )
 
 
-class DenyDecisionForm(FlaskForm):
+class DenyDecisionForm(ThaiFlaskForm):
     comment = fields.TextAreaField(
         "เหตุผลที่ไม่อนุมัติ",
+        render_kw={"placeholder": "ระบุเหตุผลให้ผู้ขอทราบ"},
         validators=[validators.DataRequired(), validators.Length(max=516)],
     )
     next = fields.HiddenField()
 
 
-class CancelRequestForm(FlaskForm):
+class CancelRequestForm(ThaiFlaskForm):
     reason = fields.TextAreaField(
         "เหตุผลที่ยกเลิก (ถ้ามี)",
+        render_kw={"placeholder": "เช่น เปลี่ยนกำหนดการ"},
         validators=[validators.Optional(), validators.Length(max=516)],
     )
 
 
-class CloseConfirmationForm(FlaskForm):
+class CloseConfirmationForm(ThaiFlaskForm):
     """ผู้ขอยืนยันเวลาปิดงานของ พขร.: ถูกต้อง หรือ ไม่ถูกต้อง พร้อมเวลาสิ้นสุดจริง (และหมายเหตุ)"""
 
     decision = fields.SelectField(
@@ -842,7 +954,9 @@ class CloseConfirmationForm(FlaskForm):
         "เวลาสิ้นสุดงานจริง", validators=[validators.Optional()]
     )
     note = fields.StringField(
-        "หมายเหตุ", validators=[validators.Optional(), validators.Length(max=516)]
+        "หมายเหตุ",
+        render_kw={"placeholder": "เช่น กลับถึงมหาวิทยาลัยช้ากว่าที่บันทึกไว้"},
+        validators=[validators.Optional(), validators.Length(max=516)],
     )
 
 
@@ -868,21 +982,24 @@ def validate_mileage_photo(form, field):
         raise validators.ValidationError("รูปเลขไมล์ต้องเป็นภาพ JPEG หรือ PNG")
 
 
-class TripCloseForm(FlaskForm):
+class TripCloseForm(ThaiFlaskForm):
     """พนักงานขับรถปิดงาน: เลข กม. ออก/กลับ น้ำมัน กรณีค่าใช้จ่าย และเป็นเงิน (ท้ายใบขอใช้รถ)"""
 
     mileage_out = fields.IntegerField(
         "เลข กม. ออก",
+        render_kw={"placeholder": "เลขไมล์ตอนออกเดินทาง"},
         validators=[validators.InputRequired(), validators.NumberRange(min=0, max=MAX_MILEAGE)],
         widget=widgets.NumberInput(),
     )
     mileage_in = fields.IntegerField(
         "เลข กม. กลับ",
+        render_kw={"placeholder": "เลขไมล์ตอนกลับถึง"},
         validators=[validators.InputRequired(), validators.NumberRange(min=0, max=MAX_MILEAGE)],
         widget=widgets.NumberInput(),
     )
     fuel_liters = fields.DecimalField(
         "น้ำมัน (ลิตร)",
+        render_kw={"placeholder": "เช่น 35.50"},
         places=2,
         validators=[validators.Optional(), validators.NumberRange(min=0, max=MAX_FUEL_LITERS)],
         widget=widgets.NumberInput(step="0.01"),
@@ -894,6 +1011,7 @@ class TripCloseForm(FlaskForm):
     )
     cost_baht = fields.DecimalField(
         "เป็นเงิน (บาท)",
+        render_kw={"placeholder": "เช่น 1500.00"},
         places=2,
         validators=[validators.Optional(), validators.NumberRange(min=0, max=MAX_TRIP_COST)],
         widget=widgets.NumberInput(step="0.01"),

@@ -8,16 +8,80 @@
   {{ renderer.render_field(form.flight_departure_time) }}
   {{ renderer.render_field(form.requester_position) }}
 </div>
-<fieldset class="fieldset">
-  <legend class="fieldset-legend">รายชื่อผู้โดยสาร (สูงสุด 5 คน)</legend>
+{# แถวผู้โดยสารมีครบ 5 แถวในฟอร์มเสมอ: ซ่อนแถวว่างไว้ แล้วกด + เพื่อเปิดแถวถัดไป (แถวที่ซ่อนส่งไปเป็นค่าว่าง ระบบข้ามให้) #}
+{% set max_passengers = form.passengers.max_entries %}
+<fieldset class="fieldset" data-role="passenger-list">
+  <legend class="fieldset-legend">
+    รายชื่อผู้โดยสาร <span class="text-error">*</span>
+    <span class="font-normal text-base-content/60">(<span data-role="passenger-count"></span>/{{ max_passengers }} คน)</span>
+  </legend>
   {% for row in form.passengers %}
-  <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
-    {{ renderer.render_field(row.form.name) }}
-    {{ renderer.render_field(row.form.phone) }}
+  {% set filled = row.form.name.data or row.form.phone.data or row.form.name.errors or row.form.phone.errors %}
+  <div class="rounded-box border border-base-300 p-3 {{ '' if loop.first or filled else 'hidden' }}" data-role="passenger-row">
+    <div class="flex items-center justify-between">
+      <span class="text-sm font-medium">ผู้โดยสารคนที่ <span data-role="passenger-number">{{ loop.index }}</span></span>
+      <button type="button" class="btn btn-ghost btn-xs btn-square text-error" data-role="passenger-remove" aria-label="ลบผู้โดยสาร">
+        <i class="ph ph-trash text-base"></i>
+      </button>
+    </div>
+    <div class="grid grid-cols-1 gap-x-4 md:grid-cols-2">
+      {{ renderer.render_field(row.form.name, disabled_optional_text=True) }}
+      {{ renderer.render_field(row.form.phone, disabled_optional_text=True) }}
+    </div>
   </div>
   {% endfor %}
+  <button type="button" class="btn btn-outline btn-primary btn-sm w-fit" data-role="passenger-add">
+    <i class="ph ph-plus"></i> เพิ่มผู้โดยสาร
+  </button>
   {% for error in form.passengers.errors %}<p class="text-error text-sm">{{ error }}</p>{% endfor %}
 </fieldset>
+<script>
+  (function () {
+    var list = document.currentScript.previousElementSibling;
+    var rows = Array.prototype.slice.call(list.querySelectorAll('[data-role="passenger-row"]'));
+    var addButton = list.querySelector('[data-role="passenger-add"]');
+    var count = list.querySelector('[data-role="passenger-count"]');
+
+    function visibleRows() {
+      return rows.filter(function (row) { return !row.classList.contains("hidden"); });
+    }
+    function inputs(row) {
+      return Array.prototype.slice.call(row.querySelectorAll("input"));
+    }
+    function refresh() {
+      var shown = visibleRows();
+      count.textContent = shown.length;
+      addButton.classList.toggle("hidden", shown.length >= rows.length);
+      shown.forEach(function (row, i) {
+        row.querySelector('[data-role="passenger-number"]').textContent = i + 1;
+        row.querySelector('[data-role="passenger-remove"]').classList.toggle("invisible", shown.length === 1);
+      });
+    }
+    addButton.addEventListener("click", function () {
+      var next = rows.filter(function (row) { return row.classList.contains("hidden"); })[0];
+      if (!next) { return; }
+      next.classList.remove("hidden");
+      inputs(next)[0].focus();
+      refresh();
+    });
+    // ลบแถว: เลื่อนค่าของแถวถัดไปขึ้นมาแทน แล้วซ่อนแถวสุดท้าย ลำดับคนที่ 1..n จึงไม่เว้นช่อง
+    rows.forEach(function (row) {
+      row.querySelector('[data-role="passenger-remove"]').addEventListener("click", function () {
+        var shown = visibleRows();
+        // เดินตามแถวที่แสดงอยู่ (อาจไม่ต่อกัน เช่น server render แถว 1 กับ 3 เพราะแถว 2 ว่าง)
+        for (var i = shown.indexOf(row); i < shown.length - 1; i++) {
+          var target = inputs(shown[i]);
+          inputs(shown[i + 1]).forEach(function (input, k) { target[k].value = input.value; });
+        }
+        var last = shown[shown.length - 1];
+        inputs(last).forEach(function (input) { input.value = ""; });
+        last.classList.add("hidden");
+        refresh();
+      });
+    });
+    refresh();
+  })();
+</script>
 <label class="flex w-fit cursor-pointer items-center gap-3 font-medium">
   {{ form.eligibility_confirmed(class_="checkbox checkbox-primary border-2 rounded-md") }}
   <span>{{ form.eligibility_confirmed.label.text }}{% if form.eligibility_confirmed.flags.required %} <span class="text-error">*</span>{% endif %}</span>

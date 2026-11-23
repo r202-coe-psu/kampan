@@ -10,6 +10,10 @@ from typing import NamedTuple, Optional, Tuple
 
 PAPERS_DIR = pathlib.Path(__file__).resolve().parent.parent / "web/static/car_papers"
 PAGE_W, PAGE_H = 595.32, 841.92
+MIN_FONT_SIZE = 9  # ข้อความยาวถูกย่อลงได้ถึงขนาดนี้ ยังล้นอีกจึงถูกตัดท้ายเป็น "..."
+# ความกว้างที่เผื่อต่ออักขระ เป็นสัดส่วนของขนาดฟอนต์: ราวตัวเลขหนึ่งหลักของ THSarabunNew (0.362em)
+# ข้อความไทยจริงเฉลี่ยแคบกว่านี้ (~0.31em) เพราะสระบน/ล่างและวรรณยุกต์ไม่กินที่
+CHAR_EM = 0.37
 
 
 class Field(NamedTuple):
@@ -356,3 +360,19 @@ LAYOUTS = {
     "welfare": WELFARE,
     "abroad": ABROAD,
 }
+
+
+def max_chars(var, request_types=tuple(LAYOUTS)):
+    """จำนวนอักขระมากสุดของค่า var ที่พิมพ์ลงช่องแคบสุดของ var ได้ครบที่ MIN_FONT_SIZE
+
+    None เมื่อแบบฟอร์มของ request_types ไม่มีช่องของ var
+    """
+    widths = [
+        field.x1 - field.x0
+        for request_type in request_types
+        for field in LAYOUTS[request_type].fields
+        if field.var == var
+    ]
+    if not widths:
+        return None
+    return int(min(widths) / (CHAR_EM * MIN_FONT_SIZE))

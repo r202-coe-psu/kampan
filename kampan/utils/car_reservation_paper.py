@@ -15,6 +15,7 @@ from reportlab.pdfgen import canvas
 from kampan.utils import car_reservation_flow as flow
 from kampan.utils.car_reservation_paper_layouts import (
     LAYOUTS,
+    MIN_FONT_SIZE,
     PAGE_H,
     PAPERS_DIR,
     Sign,
@@ -22,7 +23,6 @@ from kampan.utils.car_reservation_paper_layouts import (
 
 FONT_NAME = "THSarabunNew"
 FONT_PATH = PAPERS_DIR.parent / "fonts/THSarabunNew.ttf"
-MIN_FONT_SIZE = 9
 BASELINE_LIFT = 6.0  # ข้อความนั่งเหนือเส้นจุด: baseline = ขอบล่างบรรทัด - ค่านี้
 
 THAI_MONTHS = [
