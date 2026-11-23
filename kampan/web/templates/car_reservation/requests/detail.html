@@ -304,8 +304,8 @@
       <h3 class="flex items-center gap-2 text-lg font-bold">ตัวอย่างใบขอใช้รถ (PDF)</h3>
       <div class="flex items-center gap-1">
         <a class="btn btn-sm btn-ghost btn-circle tooltip tooltip-left" data-tip="ดาวน์โหลด PDF" aria-label="ดาวน์โหลด PDF"
-           data-role="paper-download" target="_blank" rel="noopener"
-           href="{{ url_for('car_reservation.requests.paper', request_id=reservation.id, organization_id=organization.id) }}">
+           data-role="paper-download"
+           href="{{ url_for('car_reservation.requests.paper', request_id=reservation.id, organization_id=organization.id, download=1) }}">
           <i class="ph ph-download-simple"></i>
         </a>
         <form method="dialog"><button class="btn btn-sm btn-ghost btn-circle" aria-label="ปิด"><i class="ph ph-x"></i></button></form>

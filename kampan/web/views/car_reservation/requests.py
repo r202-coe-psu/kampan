@@ -630,8 +630,31 @@ def paper(request_id):
     return send_file(
         io.BytesIO(utils.car_reservation_paper.render_pdf(reservation)),
         mimetype="application/pdf",
-        download_name=f"car_request_{reservation.id}.pdf",
+        # ปุ่มดาวน์โหลดส่ง download=1 ส่วนตัวอย่างในหน้าเปิดแบบ inline
+        as_attachment=request.args.get("download") == "1",
+        download_name=pdf_filename(PAPER_FILE_LABELS[reservation.request_type], reservation),
     )
+
+
+# ชื่อเอกสารสั้น ๆ ที่ขึ้นต้นชื่อไฟล์ PDF (ชื่อเต็มของประเภทยาวเกินไปสำหรับชื่อไฟล์)
+PAPER_FILE_LABELS = {
+    "domestic": "ใบขอใช้รถ-ในประเทศ",
+    "airport": "ใบขอใช้รถ-สนามบิน",
+    "welfare": "ใบขอใช้รถ-สวัสดิการ",
+    "abroad": "ใบขอใช้รถ-ต่างประเทศ",
+}
+FINANCE_FILE_LABELS = {
+    "travel": "ใบเบิกค่าเดินทาง",
+    "allowance": "ใบเบิกเบี้ยเลี้ยง",
+}
+SHORT_ID_LENGTH = 6
+
+
+def pdf_filename(label, reservation):
+    """เช่น ใบขอใช้รถ-สนามบิน_2569-11-25_a1b2c3.pdf: ชื่อเอกสาร วันออกเดินทาง (พ.ศ.) และท้าย id ของคำขอ"""
+    departure = reservation.departure_datetime
+    date = f"{departure.year + 543}-{departure:%m-%d}"
+    return f"{label}_{date}_{str(reservation.id)[-SHORT_ID_LENGTH:]}.pdf"
 
 
 def inbox_url_if_requested(form):
@@ -872,7 +895,7 @@ def close_confirmation(request_id):
 
 
 def finance_filename(reservation, doc):
-    return f"car-finance-{doc}-{reservation.id}.pdf"
+    return pdf_filename(FINANCE_FILE_LABELS[doc], reservation)
 
 
 @module.route("/<request_id>/finance/<doc>", methods=["GET", "POST"])
