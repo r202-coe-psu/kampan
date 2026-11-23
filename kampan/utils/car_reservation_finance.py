@@ -19,6 +19,7 @@ from reportlab.pdfgen import canvas
 
 from kampan import models
 from kampan.utils import template_filters
+from kampan.utils.car_reservation_paper_layouts import CHAR_EM
 
 DIGITS = ["ศูนย์", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"]
 PLACES = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน"]
@@ -378,6 +379,12 @@ def _fitted_size(text, width):
     while size > MIN_FONT_SIZE and pdfmetrics.stringWidth(text, FONT_NAME, size) > width:
         size -= 0.5
     return size
+
+
+def max_chars(cell):
+    """จำนวนอักขระมากสุดที่ put พิมพ์ลงช่อง cell ได้โดยไม่ล้นช่องที่ MIN_FONT_SIZE"""
+    x0, x1 = cell
+    return int((x1 - x0 - 4) / (CHAR_EM * MIN_FONT_SIZE))
 
 
 def put(pdf, text, cell, line, align="center"):
