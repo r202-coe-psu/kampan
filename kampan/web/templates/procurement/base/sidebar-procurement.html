@@ -1,3 +1,4 @@
+{% from 'base/components/logout_button.html' import logout_button %}
 {# แท็บของระบบจัดการ MA (เจ้าหน้าที่พัสดุ): เป็นตัวกรองของหน้ารายการบำรุงรักษา (products.index) · "ต่ออายุแล้ว" รวมรายการที่รอใช้งานด้วย #}
 {% set ma_tabs = [
   ("renewal-requested", "รอต่ออายุ", "ph-arrows-clockwise", {"usage_status": "", "renewal_status": "renewal-requested"}),
@@ -442,10 +443,9 @@
           </p>
         </div>
         <div class="flex-shrink-0">
-          <a class="btn btn-ghost btn-sm rounded-full text-error hover:bg-error/10"
-            href="{{ url_for('accounts.logout') }}" title="ออกจากระบบ">
+          {% call logout_button(class="btn btn-ghost btn-sm rounded-full text-error hover:bg-error/10", title="ออกจากระบบ") %}
             <i class="ph ph-sign-out text-lg"></i>
-          </a>
+          {% endcall %}
         </div>
       </div>
     </div>

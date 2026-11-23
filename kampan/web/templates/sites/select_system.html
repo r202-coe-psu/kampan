@@ -1,5 +1,6 @@
 {% extends "/base/template-page-unlogin.html" %}
 
+{% from 'base/components/logout_button.html' import logout_button %}
 {% block title %}เลือกระบบ{% endblock %}
 
 {% block content %}
@@ -20,9 +21,9 @@
                href="{{ url_for('accounts.index', organization_id=organization.id, from='select_system') if organization else url_for('accounts.index', from='select_system') }}">
               <i class="ph ph-user-gear"></i>แก้ไขโปรไฟล์
             </a>
-            <a class="btn btn-ghost btn-xs" href="{{ url_for('accounts.logout') }}">
+            {% call logout_button(class="btn btn-ghost btn-xs", title="ออกจากระบบ") %}
               <i class="ph ph-sign-out"></i>ออกจากระบบ
-            </a>
+            {% endcall %}
           </div>
         </div>
       </div>

@@ -1,0 +1,7 @@
+{# ปุ่มออกจากระบบ: ต้องส่งเป็น POST พร้อม CSRF (route /logout ไม่รับ GET) #}
+{% macro logout_button(class="", title="ออกจากระบบ", form_class="inline") %}
+<form method="post" action="{{ url_for('accounts.logout') }}" class="{{ form_class }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit" class="{{ class }}" title="{{ title }}" aria-label="{{ title }}">{{ caller() }}</button>
+</form>
+{% endmacro %}
