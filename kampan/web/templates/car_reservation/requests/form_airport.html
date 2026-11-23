@@ -52,7 +52,8 @@
       var shown = visibleRows();
       count.textContent = shown.length;
       addButton.classList.toggle("hidden", shown.length >= rows.length);
-      shown.forEach(function (row) {
+      shown.forEach(function (row, i) {
+        row.querySelector('[data-role="passenger-number"]').textContent = i + 1;
         row.querySelector('[data-role="passenger-remove"]').classList.toggle("invisible", shown.length === 1);
       });
     }
@@ -64,12 +65,13 @@
       refresh();
     });
     // ลบแถว: เลื่อนค่าของแถวถัดไปขึ้นมาแทน แล้วซ่อนแถวสุดท้าย ลำดับคนที่ 1..n จึงไม่เว้นช่อง
-    rows.forEach(function (row, index) {
+    rows.forEach(function (row) {
       row.querySelector('[data-role="passenger-remove"]').addEventListener("click", function () {
         var shown = visibleRows();
-        for (var i = index; i < shown.length - 1; i++) {
-          var target = inputs(rows[i]);
-          inputs(rows[i + 1]).forEach(function (input, k) { target[k].value = input.value; });
+        // เดินตามแถวที่แสดงอยู่ (อาจไม่ต่อกัน เช่น server render แถว 1 กับ 3 เพราะแถว 2 ว่าง)
+        for (var i = shown.indexOf(row); i < shown.length - 1; i++) {
+          var target = inputs(shown[i]);
+          inputs(shown[i + 1]).forEach(function (input, k) { target[k].value = input.value; });
         }
         var last = shown[shown.length - 1];
         inputs(last).forEach(function (input) { input.value = ""; });
