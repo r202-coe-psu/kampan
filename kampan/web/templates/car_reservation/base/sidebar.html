@@ -1,3 +1,4 @@
+{% from 'base/components/logout_button.html' import logout_button %}
 {# รายการเมนู: active เมื่อ endpoint ปัจจุบันอยู่ใน endpoints (ใส่ aria-current ให้ screen reader ด้วย) #}
 {% macro MenuItem(endpoints, icon, label, href, attrs='') %}
 {% set active = request.endpoint in endpoints %}
@@ -87,9 +88,9 @@
           <span class="block truncate text-xs text-base-content/60">{{ current_user.email }}</span>
         </span>
       </a>
-      <a class="btn btn-ghost btn-square hover:text-error" href="{{ url_for('accounts.logout') }}" aria-label="ออกจากระบบ" title="ออกจากระบบ">
+      {% call logout_button(class="btn btn-ghost btn-square hover:text-error", title="ออกจากระบบ") %}
         <i class="ph ph-size ph-sign-out"></i>
-      </a>
+      {% endcall %}
     </div>
   </ul>
 </div>
