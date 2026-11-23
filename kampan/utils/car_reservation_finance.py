@@ -384,6 +384,7 @@ def _fitted_size(text, width):
 def max_chars(cell):
     """จำนวนอักขระมากสุดที่ put พิมพ์ลงช่อง cell ได้โดยไม่ล้นช่องที่ MIN_FONT_SIZE"""
     x0, x1 = cell
+    # หัก 4pt เท่ากับที่ put เว้นขอบซ้าย-ขวาข้างละ 2pt (ใบขอใช้รถพิมพ์เต็มความกว้างช่อง จึงไม่หัก)
     return int((x1 - x0 - 4) / (CHAR_EM * MIN_FONT_SIZE))
 
 

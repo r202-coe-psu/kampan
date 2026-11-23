@@ -18,7 +18,7 @@ file_input -->
   {% if not field.errors %}
     {% set min = min if min is not none else field.flags.min %}
     {% set max = max if max is not none else field.flags.max %}
-    {% set input_type = (field.render_kw or {}).get("type", "") %}
+    {% set hint = none %}
     {% if field.type in ("IntegerField", "DecimalField", "FloatField") %}
       {% if min is not none and max is not none %}
         {% set hint = "กรุณากรอกเป็นตัวเลข " ~ min ~ " ถึง " ~ max %}
@@ -31,7 +31,7 @@ file_input -->
       {% set hint = "กรุณาเลือกวันที่ให้ถูกต้อง" %}
     {% elif field.type == "TimeField" %}
       {% set hint = "กรุณาระบุเวลาให้ถูกต้อง" %}
-    {% elif input_type == "email" %}
+    {% elif field.type == "EmailField" %}
       {% set hint = "รูปแบบอีเมลไม่ถูกต้อง เช่น name@psu.ac.th" %}
     {% elif field.flags.required %}
       {% set hint = "กรุณากรอกข้อมูล" %}

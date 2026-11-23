@@ -66,9 +66,9 @@ class CommonReservationForm(ThaiFlaskForm):
         render_kw={"placeholder": "ชื่อ-นามสกุลผู้ใช้รถจริง"},
         validators=[validators.DataRequired(), validators.Length(max=256)],
     )
-    contact_email = fields.StringField(
+    contact_email = fields.EmailField(
         "อีเมลผู้ติดต่อรับแจ้งสถานะ",
-        render_kw={"placeholder": "เช่น name@psu.ac.th", "type": "email"},
+        render_kw={"placeholder": "เช่น name@psu.ac.th"},
         validators=[
             validators.DataRequired(),
             validators.Length(max=256),
@@ -385,9 +385,9 @@ class InsertJobForm(ThaiFlaskForm):
         render_kw={"placeholder": "ชื่อ-นามสกุลผู้ใช้รถจริง"},
         validators=[validators.DataRequired(), validators.Length(max=256)],
     )
-    contact_email = fields.StringField(
+    contact_email = fields.EmailField(
         "อีเมลผู้ติดต่อรับแจ้งสถานะ",
-        render_kw={"placeholder": "เช่น name@psu.ac.th", "type": "email"},
+        render_kw={"placeholder": "เช่น name@psu.ac.th"},
         validators=[
             validators.DataRequired(),
             validators.Length(max=256),
