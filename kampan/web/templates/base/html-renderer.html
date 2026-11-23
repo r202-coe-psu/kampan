@@ -1,4 +1,5 @@
-<!-- base_render
+<!-- client_hint
+base_render
 render_checkbox
 render_number_field
 render_field
@@ -10,6 +11,34 @@ render_text_area_field
 render_multiple_select_field
 render_search_select_field
 file_input -->
+
+{# ข้อความเตือนใต้ช่องที่เบราว์เซอร์แสดงทันทีเมื่อกรอกผิด (DaisyUI validator-hint) ก่อนส่งฟอร์ม
+   ไม่แสดงเมื่อมี error จาก server อยู่แล้ว #}
+{% macro client_hint(field, min=None, max=None) %}
+  {% if not field.errors %}
+    {% set min = min if min is not none else field.flags.min %}
+    {% set max = max if max is not none else field.flags.max %}
+    {% set input_type = (field.render_kw or {}).get("type", "") %}
+    {% if field.type in ("IntegerField", "DecimalField", "FloatField") %}
+      {% if min is not none and max is not none %}
+        {% set hint = "กรุณากรอกเป็นตัวเลข " ~ min ~ " ถึง " ~ max %}
+      {% elif min is not none %}
+        {% set hint = "กรุณากรอกเป็นตัวเลขตั้งแต่ " ~ min ~ " ขึ้นไป" %}
+      {% else %}
+        {% set hint = "กรุณากรอกเป็นตัวเลข" %}
+      {% endif %}
+    {% elif field.type == "DateField" %}
+      {% set hint = "กรุณาเลือกวันที่ให้ถูกต้อง" %}
+    {% elif field.type == "TimeField" %}
+      {% set hint = "กรุณาระบุเวลาให้ถูกต้อง" %}
+    {% elif input_type == "email" %}
+      {% set hint = "รูปแบบอีเมลไม่ถูกต้อง เช่น name@psu.ac.th" %}
+    {% elif field.flags.required %}
+      {% set hint = "กรุณากรอกข้อมูล" %}
+    {% endif %}
+    {% if hint %}<p class="validator-hint hidden">{{ hint }}</p>{% endif %}
+  {% endif %}
+{% endmacro %}
 
 {% macro base_render(
   field,
@@ -28,6 +57,7 @@ file_input -->
   {#% set style = "input input-bordered flex items-center gap-2 w-full" %#}
   {% set style = "input flex items-center gap-2 w-full" %}
   {% set field_id = id_prefix + field.id %}
+  {% set placeholder = placeholder or (field.render_kw or {}).get("placeholder", "") %}
 
   {% if field.errors | count > 0 %}
     {% set style = style + " input-error" %}
@@ -56,6 +86,7 @@ file_input -->
         {# textarea มีกรอบของตัวเอง ห่อด้วย label.input จะเป็นกล่องซ้อนกล่อง จึงใช้ class textarea ของ DaisyUI ตรง ๆ #}
         {% set textarea_class = "textarea w-full validator" ~ (" textarea-error" if field.errors else "") ~ (" " ~ class_ if class_ else "") %}
         {{ field(class_=textarea_class, placeholder=placeholder, readonly=readonly, disabled=disabled, **kwargs) }}
+        {{ client_hint(field) }}
       {% else %}
       <label class="{{ style }} validator {% if readonly %}input-readonly{% endif %}">
         {% if prefix %}{{ prefix_icon }}{% endif %}
@@ -66,6 +97,7 @@ file_input -->
         {% endif %}
         {% if suffix %}{{ suffix_icon }}{% endif %}
       </label>
+      {{ client_hint(field) }}
       {% endif %}
       {% if field.errors %}
         <span class="fieldset-label text-error text-sm mt-1">
@@ -110,6 +142,7 @@ file_input -->
   ) %}
 
   {% set style = "input rounded-md flex items-center gap-2 w-full" %}
+  {% set placeholder = placeholder or (field.render_kw or {}).get("placeholder", "") %}
 
   {% if field.errors | count > 0 %}
     {% set style = style + " input-error" %}
@@ -155,6 +188,7 @@ file_input -->
         {% endif %}
         {% if suffix %}{{ suffix_icon }}{% endif %}
       </label>
+      {{ client_hint(field, min, max) }}
 
       {% if field.errors %}
         <span class="fieldset-label text-error text-sm mt-1">
@@ -517,7 +551,7 @@ file_input -->
       <textarea class="w-full h-24 textarea {% if field.errors %}textarea-error{% endif %}"
                 name="{{ field.name }}"
                 id="{{ field.id }}"
-                placeholder="กรอก{{ field.label.text }}ที่นี่">{{ field.data if field.data else field.default if field.default else "" }}</textarea>
+                placeholder="{{ (field.render_kw or {}).get('placeholder') or 'กรอก' ~ field.label.text ~ 'ที่นี่' }}">{{ field.data if field.data else field.default if field.default else "" }}</textarea>
       {% if field.errors %}
         <span class="fieldset-label text-error text-sm mt-1">
           {% for error in field.errors %}
