@@ -113,21 +113,31 @@
     </div>
     <div class="flex flex-col gap-3 md:hidden">
       {% for reservation in reservations %}
-      <a class="card card-border bg-base-100 transition hover:border-primary"
-         data-role="request-card"
-         href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">
-        <div class="card-body gap-1 p-4">
-          <div class="flex items-start justify-between gap-2">
-            <span class="font-medium break-words">{{ reservation.request_reason }}</span>
-            {{ status_badge.render(reservation) }} {% include '/car_reservation/feedback/_link.html' %}
+      {# การ์ดเป็น div ไม่ใช่ a: ลิงก์ประเมินข้างในจะได้ไม่ซ้อน a แล้วดันเนื้อหาหลุดออกนอกการ์ด ทั้งใบกดได้ผ่านชื่อรายการ (after:inset-0) #}
+      <div class="card relative border border-base-300 bg-base-100 shadow-sm transition hover:border-primary"
+           data-role="request-card">
+        <div class="card-body gap-2 p-4">
+          <div class="flex items-start justify-between gap-3">
+            <a class="font-semibold break-words after:absolute after:inset-0"
+               href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">
+              {{ reservation.request_reason }}
+            </a>
+            <span class="shrink-0">{{ status_badge.render(reservation) }}</span>
           </div>
-          <p class="text-sm text-base-content/70">{{ reservation.get_request_type_display() }}</p>
-          <div class="flex items-center justify-between gap-2 text-sm text-base-content/60">
-            <span>{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</span>
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-base-content/70">
+            <span class="inline-flex items-center gap-1"><i class="ph ph-tag"></i> {{ reservation.get_request_type_display() }}</span>
+            <span class="inline-flex items-center gap-1"><i class="ph ph-calendar-blank"></i> {{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</span>
+          </div>
+          {% set feedback_url = feedback_link(reservation) if feedback_link is defined else None %}
+          {% if reservation.is_urgent or reservation.is_insert or feedback_url %}
+          <div class="relative z-10 flex flex-wrap items-center gap-2 border-t border-base-200 pt-2">
             {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
+            {% if reservation.is_insert %}{{ status_badge.insert() }}{% endif %}
+            {% if feedback_url %}<span class="ml-auto">{% include '/car_reservation/feedback/_link.html' %}</span>{% endif %}
           </div>
+          {% endif %}
         </div>
-      </a>
+      </div>
       {% endfor %}
     </div>
     {% elif filters.active %}

@@ -5,11 +5,9 @@
 {{ renderer.render_radio_field(form.vehicle_kind) }}
 {{ renderer.render_radio_field(form.event_type) }}
 {{ renderer.render_field(form.host_name) }}
-<div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
-  {{ renderer.render_field(form.house) }}
-  {{ renderer.render_field(form.subdistrict) }}
-  {{ renderer.render_field(form.district) }}
-  {{ renderer.render_field(form.province) }}
+<div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
+  <div class="md:col-span-3">{{ renderer.render_field(form.house) }}</div>
+  {{ renderer.thai_location_fields(form.province, form.district, form.subdistrict) }}
 </div>
 <label class="flex w-fit cursor-pointer items-center gap-3 font-medium">
   {{ form.direct_relative_confirmed(class_="checkbox checkbox-primary border-2 rounded-md") }}

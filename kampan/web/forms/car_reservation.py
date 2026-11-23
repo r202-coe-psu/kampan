@@ -163,6 +163,29 @@ class CommonReservationForm(FlaskForm):
         self.pickup_time.data = _parse_hhmm(reservation.pickup_time)
 
 
+# ตรวจ จังหวัด / อำเภอ / ตำบล กับข้อมูลอ้างอิง (dropdown ต่อกัน) ชั้นล่างตรวจเฉพาะเมื่อชั้นบนถูกแล้ว
+# จะได้ไม่ขึ้น error ซ้ำทุกชั้นเมื่อชั้นบนผิด
+def validate_thai_province(form, field):
+    if not utils.thailand_location.is_valid(field.data):
+        raise validators.ValidationError("กรุณาเลือกจังหวัดจากรายการ")
+
+
+def validate_thai_district(form, field):
+    province = form.province.data
+    if utils.thailand_location.is_valid(province) and not utils.thailand_location.is_valid(
+        province, field.data
+    ):
+        raise validators.ValidationError("กรุณาเลือกอำเภอจากรายการ")
+
+
+def validate_thai_subdistrict(form, field):
+    province, district = form.province.data, form.district.data
+    if utils.thailand_location.is_valid(
+        province, district
+    ) and not utils.thailand_location.is_valid(province, district, field.data):
+        raise validators.ValidationError("กรุณาเลือกตำบลจากรายการ")
+
+
 def _parse_hhmm(value):
     if not value:
         return None
@@ -218,11 +241,13 @@ class DomesticReservationForm(CommonReservationForm):
         validators=[validators.InputRequired(), validators.NumberRange(min=1, max=MAX_VEHICLES)],
         widget=widgets.NumberInput(),
     )
-    district = fields.StringField(
-        "อำเภอ", validators=[validators.DataRequired(), validators.Length(max=256)]
-    )
     province = fields.StringField(
-        "จังหวัด", validators=[validators.DataRequired(), validators.Length(max=256)]
+        "จังหวัด",
+        validators=[validators.DataRequired("กรุณาเลือกจังหวัด"), validators.Length(max=256)],
+    )
+    district = fields.StringField(
+        "อำเภอ",
+        validators=[validators.DataRequired("กรุณาเลือกอำเภอ"), validators.Length(max=256)],
     )
     in_office_of_president = fields.BooleanField("หน่วยงานในสำนักงานอธิการบดี")
     cost_responsibilities = fields.SelectMultipleField(
@@ -236,6 +261,9 @@ class DomesticReservationForm(CommonReservationForm):
         choices=models.car_reservations.PROVINCE_SCOPES,
         validators=[validators.DataRequired()],
     )
+
+    validate_province = validate_thai_province
+    validate_district = validate_thai_district
 
     def reservation_fields(self):
         return {
@@ -324,7 +352,7 @@ class PassengerRowForm(Form):
     """หนึ่งแถวของรายชื่อผู้โดยสารสนามบิน (แถวว่างทั้งแถวคือไม่ใช้)"""
 
     name = fields.StringField("ชื่อผู้โดยสาร", validators=[validators.Length(max=256)])
-    phone = fields.StringField("โทร", validators=[validators.Length(max=32)])
+    phone = fields.StringField("เบอร์โทร", validators=[validators.Length(max=32)])
 
 
 class AirportReservationForm(CommonReservationForm):
@@ -456,7 +484,7 @@ class WelfareReservationForm(CommonReservationForm):
     event_type = fields.RadioField(
         "เนื่องในงาน",
         choices=models.car_reservations.WELFARE_EVENT_TYPES,
-        validators=[validators.DataRequired()],
+        validators=[validators.Optional()],
     )
     host_name = fields.StringField(
         "ของ", validators=[validators.DataRequired(), validators.Length(max=256)]
@@ -465,14 +493,17 @@ class WelfareReservationForm(CommonReservationForm):
         "สถานที่ไปบ้าน",
         validators=[validators.DataRequired(), validators.Length(max=256)],
     )
-    subdistrict = fields.StringField(
-        "ตำบล", validators=[validators.DataRequired(), validators.Length(max=256)]
+    province = fields.StringField(
+        "จังหวัด",
+        validators=[validators.DataRequired("กรุณาเลือกจังหวัด"), validators.Length(max=256)],
     )
     district = fields.StringField(
-        "อำเภอ", validators=[validators.DataRequired(), validators.Length(max=256)]
+        "อำเภอ",
+        validators=[validators.DataRequired("กรุณาเลือกอำเภอ"), validators.Length(max=256)],
     )
-    province = fields.StringField(
-        "จังหวัด", validators=[validators.DataRequired(), validators.Length(max=256)]
+    subdistrict = fields.StringField(
+        "ตำบล",
+        validators=[validators.DataRequired("กรุณาเลือกตำบล"), validators.Length(max=256)],
     )
     direct_relative_confirmed = fields.BooleanField(
         "ขอใช้สำหรับตนเองหรือญาติสายตรงเท่านั้น",
@@ -482,6 +513,10 @@ class WelfareReservationForm(CommonReservationForm):
             )
         ],
     )
+
+    validate_province = validate_thai_province
+    validate_district = validate_thai_district
+    validate_subdistrict = validate_thai_subdistrict
 
     def prefill(self, reservation):
         super().prefill(reservation)
@@ -495,7 +530,11 @@ class WelfareReservationForm(CommonReservationForm):
                 f"บ้านเลขที่ {self.house.data} ต.{self.subdistrict.data} "
                 f"อ.{self.district.data} จ.{self.province.data}"
             ),
-            "request_reason": f"{self.event_type.data} ของ {self.host_name.data}",
+            "request_reason": (
+                f"{self.event_type.data} ของ {self.host_name.data}"
+                if self.event_type.data
+                else f"งานของ {self.host_name.data}"
+            ),
         }
 
     def build_details(self):
@@ -503,7 +542,7 @@ class WelfareReservationForm(CommonReservationForm):
             employee_type=self.employee_type.data,
             affiliation=self.affiliation.data,
             vehicle_kind=self.vehicle_kind.data,
-            event_type=self.event_type.data,
+            event_type=self.event_type.data or None,
             host_name=self.host_name.data,
             house=self.house.data,
             subdistrict=self.subdistrict.data,
@@ -566,7 +605,7 @@ class AbroadReservationForm(CommonReservationForm):
         validators=[validators.DataRequired(), validators.Length(max=256)],
     )
     coordinator_phone = fields.StringField(
-        "โทรผู้ประสานงาน",
+        "เบอร์โทรผู้ประสานงาน",
         validators=[validators.DataRequired(), validators.Length(max=32)],
     )
     requester_position = fields.StringField(

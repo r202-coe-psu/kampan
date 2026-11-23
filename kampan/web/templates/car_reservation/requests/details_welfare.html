@@ -2,7 +2,7 @@
 <div><dt class="text-sm text-base-content/60">สถานะผู้ขอ</dt><dd class="font-medium break-words">{{ details.employee_type }}</dd></div>
 <div><dt class="text-sm text-base-content/60">สังกัด</dt><dd class="font-medium break-words">{{ details.affiliation }}</dd></div>
 <div><dt class="text-sm text-base-content/60">ประเภทรถ</dt><dd class="font-medium break-words">{{ details.vehicle_kind }}</dd></div>
-<div><dt class="text-sm text-base-content/60">เนื่องในงาน</dt><dd class="font-medium break-words">{{ details.event_type }} ของ {{ details.host_name }}</dd></div>
+<div><dt class="text-sm text-base-content/60">เนื่องในงาน</dt><dd class="font-medium break-words">{% if details.event_type %}{{ details.event_type }} ของ{% else %}งานของ{% endif %} {{ details.host_name }}</dd></div>
 <div><dt class="text-sm text-base-content/60">สถานที่ไปบ้าน</dt><dd class="font-medium break-words">{{ details.house }}</dd></div>
 <div><dt class="text-sm text-base-content/60">ตำบล</dt><dd class="font-medium break-words">{{ details.subdistrict }}</dd></div>
 <div><dt class="text-sm text-base-content/60">อำเภอ</dt><dd class="font-medium break-words">{{ details.district }}</dd></div>
