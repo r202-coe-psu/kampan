@@ -461,6 +461,9 @@ class AirportReservationForm(CommonReservationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._cap_passenger_rows()
+
+    def _cap_passenger_rows(self):
         for row in self.passengers:  # ทุกแถวมีช่องกว้างเท่าแถวที่ 1
             cap_length_to_paper(row.form.name, "p1_name", (self.request_type,))
             cap_length_to_paper(row.form.phone, "p1_phone", (self.request_type,))
@@ -474,6 +477,7 @@ class AirportReservationForm(CommonReservationForm):
             None,
             [{"name": row.name, "phone": row.phone} for row in details.passengers],
         )
+        self._cap_passenger_rows()  # process() สร้างแถวใหม่ เพดานจาก __init__ จึงหายไป
         self.eligibility_confirmed.data = True
 
     def validate_passengers(self, field):

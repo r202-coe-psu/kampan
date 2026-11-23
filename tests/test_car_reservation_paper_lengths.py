@@ -1,5 +1,7 @@
 """ช่องข้อความในฟอร์มขอใช้รถถูกจำกัดความยาวให้พิมพ์ลงช่องของแบบฟอร์ม PDF ได้ครบ ไม่ถูกตัดเป็น "..." """
 
+import datetime
+
 import pytest
 from reportlab.pdfbase import pdfmetrics
 from wtforms import validators
@@ -63,6 +65,33 @@ def test_airport_passenger_rows_are_capped(app):
     for row in form.passengers:
         assert _max_length(row.form.name) == layouts.max_chars("p1_name", ("airport",))
         assert _max_length(row.form.phone) == layouts.max_chars("p1_phone", ("airport",))
+
+
+def test_airport_passenger_rows_stay_capped_on_the_edit_page(app):
+    """prefill สร้างแถวผู้โดยสารใหม่ด้วย process(): แถวใหม่ต้องได้เพดานตาม PDF ด้วย"""
+    from types import SimpleNamespace
+
+    from kampan import models
+
+    D = models.car_reservations
+    when = datetime.datetime(2026, 12, 3, 8, 0)
+    reservation = SimpleNamespace(
+        details=D.AirportDetails(
+            passengers=[D.AirportPassenger(name="นภา รักดี", phone="081-000-1111")]
+        ),
+        departure_datetime=when,
+        return_datetime=when,
+        pickup_time="08:00",
+    )
+    limit = layouts.max_chars("p1_name", ("airport",))
+    with app.test_request_context():
+        form = forms.AirportReservationForm()
+        form.prefill(reservation)
+        html = str(form.passengers[0].form.name())
+    assert form.passengers[0].form.name.data == "นภา รักดี"
+    for row in form.passengers:
+        assert _max_length(row.form.name) == limit
+    assert f'maxlength="{limit}"' in html
 
 
 def test_location_dropdowns_keep_their_limit_so_every_reference_name_is_accepted(app):
