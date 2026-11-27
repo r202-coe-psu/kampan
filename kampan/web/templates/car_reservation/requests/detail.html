@@ -66,11 +66,11 @@
 
 {% set feedback_items = feedback_links(reservation) if feedback_links is defined else [] %}
 {% if feedback_items %}
-<div role="alert" class="alert alert-info alert-soft flex flex-col items-start gap-3 sm:flex-row sm:items-center" data-role="feedback-callout">
-  <i class="ph ph-star text-2xl"></i>
+<div role="alert" class="alert border-primary/20 bg-primary/5 text-base-content flex flex-col items-start gap-3 sm:flex-row sm:items-center" data-role="feedback-callout">
+  <i class="ph ph-star text-2xl text-primary"></i>
   <div class="flex-1">
-    <h3 class="font-bold">ประเมินความพึงพอใจการใช้รถ</h3>
-    <p class="text-sm">{% if feedback_items | length > 1 %}การเดินทางเสร็จสิ้นแล้ว ช่วยประเมินบริการแยกทีละคัน เลือกคันที่ท่านนั่ง{% else %}การเดินทางเสร็จสิ้นแล้ว ช่วยประเมินบริการของรถและพนักงานขับรถในเที่ยวนี้{% endif %}</p>
+    <h3 class="font-bold text-primary">ประเมินความพึงพอใจการใช้รถ</h3>
+    <p class="text-sm text-base-content/70">{% if feedback_items | length > 1 %}การเดินทางเสร็จสิ้นแล้ว ช่วยประเมินบริการแยกทีละคัน เลือกคันที่ท่านนั่ง{% else %}การเดินทางเสร็จสิ้นแล้ว ช่วยประเมินบริการของรถและพนักงานขับรถในเที่ยวนี้{% endif %}</p>
   </div>
   <div class="flex w-full flex-col gap-2 sm:w-auto">
     {% for link in feedback_items %}
@@ -429,7 +429,12 @@
   <div class="modal-box flex h-[90vh] w-11/12 max-w-5xl flex-col gap-3 p-4">
     <div class="flex items-center justify-between gap-2">
       <h3 class="flex items-center gap-2 text-lg font-bold">ตัวอย่างใบขอใช้รถ (PDF)</h3>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1">
+        <a class="btn btn-sm btn-ghost btn-circle tooltip tooltip-left" data-tip="ดาวน์โหลด PDF" aria-label="ดาวน์โหลด PDF"
+           data-role="paper-download"
+           href="{{ url_for('car_reservation.requests.paper', request_id=reservation.id, organization_id=organization.id, download=1) }}">
+          <i class="ph ph-download-simple"></i>
+        </a>
         <form method="dialog"><button class="btn btn-sm btn-ghost btn-circle" aria-label="ปิด"><i class="ph ph-x"></i></button></form>
       </div>
     </div>
@@ -443,34 +448,205 @@
       {% endfor %}
     </div>
     {% endif %}
-    <div class="relative min-h-0 flex-1 overflow-hidden rounded-box border border-base-300 bg-base-200">
-      <span class="loading loading-spinner loading-lg absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"></span>
-      <iframe title="ตัวอย่างใบขอใช้รถ" class="relative h-full w-full" data-role="paper-frame"></iframe>
+    {# แถบเครื่องมือของตัวดู PDF เอง: เลื่อนหน้าและซูมเท่านั้น ไม่ใช้แถบของเบราว์เซอร์ที่มีปุ่มวาด/แก้ไข #}
+    <div class="flex flex-wrap items-center justify-between gap-2 rounded-box bg-base-200 px-2 py-1.5" data-role="paper-toolbar">
+      <div class="flex items-center gap-1">
+        <button type="button" class="btn btn-sm btn-ghost btn-square" data-action="prev" aria-label="หน้าก่อนหน้า" disabled><i class="ph ph-caret-up"></i></button>
+        <button type="button" class="btn btn-sm btn-ghost btn-square" data-action="next" aria-label="หน้าถัดไป" disabled><i class="ph ph-caret-down"></i></button>
+        <label class="flex items-center gap-1.5 text-sm">
+          <span class="sr-only">หน้า</span>
+          <input type="number" min="1" value="1" class="input input-sm w-14 text-center" data-role="page-input" aria-label="ไปที่หน้า" />
+          <span class="text-base-content/70">/ <span data-role="page-count">–</span></span>
+        </label>
+      </div>
+      <div class="flex items-center gap-1">
+        <button type="button" class="btn btn-sm btn-ghost btn-square" data-action="zoom-out" aria-label="ย่อ"><i class="ph ph-minus"></i></button>
+        <button type="button" class="btn btn-sm btn-ghost btn-square" data-action="zoom-in" aria-label="ขยาย"><i class="ph ph-plus"></i></button>
+        <select class="select select-sm w-36" data-role="zoom-select" aria-label="ขนาดการแสดงผล">
+          <option value="fit" selected>พอดีความกว้าง</option>
+          <option value="page">พอดีหน้า</option>
+          <option value="0.5">50%</option>
+          <option value="0.75">75%</option>
+          <option value="1">100%</option>
+          <option value="1.25">125%</option>
+          <option value="1.5">150%</option>
+          <option value="2">200%</option>
+          <option value="3">300%</option>
+          <option value="custom" hidden></option>
+        </select>
+      </div>
+    </div>
+    <div class="relative min-h-0 flex-1 overflow-auto rounded-box border border-base-300 bg-base-200" data-role="paper-viewport">
+      <span class="loading loading-spinner loading-lg absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" data-role="paper-loading"></span>
+      <p class="hidden p-6 text-center text-error" data-role="paper-error">โหลด PDF ไม่สำเร็จ ลองกดดาวน์โหลดแทน</p>
+      <div class="flex w-max min-w-full flex-col items-center gap-4 p-4" data-role="paper-pages"></div>
     </div>
   </div>
   <form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>
-<script>
-  (function () {
-    var modal = document.getElementById('paper-preview-modal');
-    if (!modal) return;
-    var frame = modal.querySelector('iframe');
+<script type="module">
+  const modal = document.getElementById('paper-preview-modal');
+  if (modal) {
+    const PDFJS_LIB = "{{ 'node_modules/pdfjs-dist/build/pdf.min.mjs' | static_url }}";
+    const PDFJS_WORKER = "{{ 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs' | static_url }}";
+    const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
+    const $ = (sel) => modal.querySelector(sel);
+    const viewport = $('[data-role="paper-viewport"]');
+    const pagesEl = $('[data-role="paper-pages"]');
+    const pageInput = $('[data-role="page-input"]');
+    const zoomSelect = $('[data-role="zoom-select"]');
+    const prevBtn = $('[data-action="prev"]');
+    const nextBtn = $('[data-action="next"]');
+    let pdf = null;
+    let scale = 1;
+    let canvases = [];
+
     // โหลด PDF เมื่อเปิด modal ครั้งแรกเท่านั้น ไม่ต้องสร้างไฟล์ทุกครั้งที่เปิดหน้า
-    new MutationObserver(function () {
-      if (modal.open && !frame.getAttribute('src')) frame.setAttribute('src', modal.dataset.src);
+    new MutationObserver(() => {
+      if (modal.open && !pdf && !modal.dataset.loading) load();
     }).observe(modal, { attributes: true, attributeFilter: ['open'] });
-    // เลือกใบของรถอีกคัน: โหลดเฉพาะใบที่กดดู
-    var tabs = modal.querySelectorAll('[data-role="paper-assignment"]');
-    tabs.forEach(function (tab) {
-      tab.addEventListener('click', function () {
-        tabs.forEach(function (other) {
+
+    let loadId = 0;
+    async function load() {
+      const id = ++loadId;
+      modal.dataset.loading = '1';
+      $('[data-role="paper-error"]').classList.add('hidden');
+      $('[data-role="paper-loading"]').classList.remove('hidden');
+      try {
+        const pdfjs = await import(PDFJS_LIB);
+        pdfjs.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+        const doc = await pdfjs.getDocument(modal.dataset.src).promise;
+        if (id !== loadId) return; // กดสลับไปดูใบของรถอีกคันระหว่างโหลด
+        pdf = doc;
+        $('[data-role="page-count"]').textContent = pdf.numPages;
+        pageInput.max = pdf.numPages;
+        await applyZoom('fit');
+      } catch (error) {
+        if (id !== loadId) return;
+        console.error('Error loading PDF:', error);
+        $('[data-role="paper-error"]').classList.remove('hidden');
+      } finally {
+        if (id === loadId) {
+          $('[data-role="paper-loading"]').classList.add('hidden');
+          delete modal.dataset.loading;
+        }
+      }
+    }
+
+    // เลือกใบของรถอีกคัน: โหลดเฉพาะใบที่กดดู และให้ปุ่มดาวน์โหลดตามใบที่เปิดอยู่
+    const tabs = modal.querySelectorAll('[data-role="paper-assignment"]');
+    const downloadLink = $('[data-role="paper-download"]');
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((other) => {
           other.classList.toggle('btn-primary', other === tab);
           other.classList.toggle('btn-outline', other !== tab);
         });
-        frame.setAttribute('src', tab.dataset.src);
+        const src = tab.dataset.src;
+        modal.dataset.src = src;
+        downloadLink.href = src + (src.includes('?') ? '&' : '?') + 'download=1';
+        pdf = null;
+        canvases = [];
+        pagesEl.replaceChildren();
+        load();
       });
     });
-  })();
+
+    // "fit"/"page" คำนวณจากขนาดหน้าแรกเทียบกับพื้นที่แสดงผล ที่เหลือเป็นตัวคูณตรงๆ
+    async function scaleFor(mode) {
+      if (mode !== 'fit' && mode !== 'page') return Number(mode);
+      const page = await pdf.getPage(1);
+      const base = page.getViewport({ scale: 1 });
+      const padding = 32;
+      const byWidth = (viewport.clientWidth - padding) / base.width;
+      return mode === 'fit' ? byWidth : Math.min(byWidth, (viewport.clientHeight - padding) / base.height);
+    }
+
+    async function applyZoom(mode) {
+      const current = currentPage();
+      scale = await scaleFor(mode);
+      const preset = ZOOM_STEPS.includes(scale) ? String(scale) : null;
+      if (mode === 'fit' || mode === 'page') {
+        zoomSelect.value = mode;
+      } else if (preset) {
+        zoomSelect.value = preset;
+      } else {
+        const custom = zoomSelect.querySelector('option[value="custom"]');
+        custom.textContent = Math.round(scale * 100) + '%';
+        zoomSelect.value = 'custom';
+      }
+      await render();
+      goTo(current);
+    }
+
+    async function render() {
+      const ratio = window.devicePixelRatio || 1;
+      const fresh = [];
+      for (let n = 1; n <= pdf.numPages; n++) {
+        const page = await pdf.getPage(n);
+        const vp = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.className = 'bg-white shadow-md';
+        canvas.dataset.page = n;
+        canvas.width = Math.floor(vp.width * ratio);
+        canvas.height = Math.floor(vp.height * ratio);
+        canvas.style.width = Math.floor(vp.width) + 'px';
+        canvas.style.height = Math.floor(vp.height) + 'px';
+        await page.render({
+          canvasContext: canvas.getContext('2d'),
+          viewport: vp,
+          transform: ratio === 1 ? null : [ratio, 0, 0, ratio, 0, 0],
+        }).promise;
+        fresh.push(canvas);
+      }
+      pagesEl.replaceChildren(...fresh);
+      canvases = fresh;
+      syncPage();
+    }
+
+    function currentPage() {
+      if (!canvases.length) return 1;
+      const top = viewport.scrollTop + viewport.clientHeight / 3;
+      let page = 1;
+      for (const canvas of canvases) if (canvas.offsetTop <= top) page = Number(canvas.dataset.page);
+      return page;
+    }
+
+    function goTo(n) {
+      const target = canvases[Math.min(Math.max(n, 1), canvases.length) - 1];
+      if (target) viewport.scrollTop = target.offsetTop - 16;
+      syncPage();
+    }
+
+    function syncPage() {
+      const page = currentPage();
+      pageInput.value = page;
+      prevBtn.disabled = page <= 1;
+      nextBtn.disabled = !pdf || page >= pdf.numPages;
+    }
+
+    // ซูมทีละครั้งตามลำดับ กดรัวๆ แล้วครั้งถัดไปจะคิดจากขนาดที่เพิ่งวาดเสร็จ
+    let zooming = Promise.resolve();
+    function zoom(mode) {
+      if (!pdf) return;
+      zooming = zooming.then(() => applyZoom(typeof mode === 'function' ? mode() : mode)).catch(console.error);
+    }
+
+    function stepFrom(direction) {
+      const next = direction > 0
+        ? ZOOM_STEPS.find((z) => z > scale + 0.001)
+        : [...ZOOM_STEPS].reverse().find((z) => z < scale - 0.001);
+      return String(next ?? scale);
+    }
+
+    prevBtn.addEventListener('click', () => goTo(currentPage() - 1));
+    nextBtn.addEventListener('click', () => goTo(currentPage() + 1));
+    pageInput.addEventListener('change', () => goTo(Number(pageInput.value) || 1));
+    $('[data-action="zoom-in"]').addEventListener('click', () => zoom(() => stepFrom(1)));
+    $('[data-action="zoom-out"]').addEventListener('click', () => zoom(() => stepFrom(-1)));
+    zoomSelect.addEventListener('change', () => zoom(zoomSelect.value));
+    viewport.addEventListener('scroll', syncPage, { passive: true });
+  }
 </script>
 {% endif %}
 </div>

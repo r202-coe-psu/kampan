@@ -1,5 +1,7 @@
-from flask_wtf import FlaskForm
 from wtforms import fields, validators, widgets
+
+from kampan.utils import car_reservation_finance as finance
+from kampan.web.forms.thai_messages import ThaiFlaskForm
 
 
 def money_field(label, step="0.01"):
@@ -11,11 +13,19 @@ def money_field(label, step="0.01"):
     )
 
 
-class FinanceForm(FlaskForm):
+class FinanceForm(ThaiFlaskForm):
     """การเงินกรอกตัวเลขของใบเบิกค่าใช้จ่ายของ พขร. (ช่องที่ไม่กรอกถือเป็น 0)"""
 
     memo_number = fields.StringField(
-        "ตามบันทึก ที่", validators=[validators.Optional(), validators.Length(max=64)]
+        "ตามบันทึก ที่",
+        render_kw={"placeholder": "เช่น มอ 123/2569"},
+        validators=[
+            validators.Optional(),
+            validators.Length(
+                max=finance.max_chars(finance.MEMO_NUMBER),
+                message="ยาวเกินช่องในแบบฟอร์มใบเบิก (ไม่เกิน %(max)d ตัวอักษร)",
+            ),
+        ],
     )
     memo_date = fields.DateField("ลงวันที่", validators=[validators.Optional()])
     allowance_type = fields.StringField(

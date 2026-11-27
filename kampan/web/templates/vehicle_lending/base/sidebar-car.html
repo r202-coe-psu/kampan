@@ -1,3 +1,4 @@
+{% from 'base/components/logout_button.html' import logout_button %}
 <div class="drawer-side shadow">
   <label for="drawer-menu" aria-label="close sidebar" class="drawer-overlay h-full"></label>
   <ul class="menu w-[280px] min-h-screen bg-base-100 gap-3 ">
@@ -97,9 +98,9 @@
               <p>{{ current_user.email }}</p>
             </div>
           </div>
-          <a class="font-bold hover:text-error py-3" href="{{ url_for('accounts.logout') }}">
+          {% call logout_button(class="font-bold hover:text-error py-3", title="ออกจากระบบ") %}
             <i class="ph ph-size ph-sign-out"></i>
-          </a>
+          {% endcall %}
         </div>
       </div>
     </div>

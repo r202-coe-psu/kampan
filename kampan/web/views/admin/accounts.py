@@ -5,6 +5,7 @@ import mongoengine as me
 from flask import (
     Blueprint,
     abort,
+    flash,
     redirect,
     render_template,
     request,
@@ -110,11 +111,17 @@ def authorized_oauth(name):
     return oauth2.handle_authorized_oauth2(remote, token)
 
 
-@module.route("/logout")
+@module.route("/logout", methods=["POST"])
 @login_required
 @acl.roles_required("admin")
 def logout():
+    # ออกจากระบบต้อง POST + CSRF กันลิงก์/รูปจากเว็บอื่นบังคับให้ผู้ใช้ออกจากระบบ
+    if not forms.post_action.PostActionForm().validate_on_submit():
+        flash("คำขอไม่ถูกต้องหรือหมดอายุ กรุณาลองใหม่อีกครั้ง", "error")
+        return redirect(url_for("admin.index"))
+
     logout_user()
+    session.clear()
     return redirect(url_for("site.index"))
 
 

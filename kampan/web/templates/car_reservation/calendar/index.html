@@ -196,6 +196,20 @@
   #calendar .fc-list-event-dot { border-color: var(--tone, var(--color-base-content)); }
   #calendar .fc-list-event:hover td { background: var(--color-base-200); }
 
+  /* จอแคบ (มือถือแนวนอน/แนวตั้ง): ตัวอักษรในปฏิทินเล็กลง ให้คอลัมน์ที่แคบยังอ่านรายการได้ */
+  @media (max-width: 1023px) {
+    #calendar .fc-toolbar-title { font-size: 1.125rem; }
+    #calendar .fc-button { font-size: .75rem; }
+    #calendar .fc-col-header-cell-cushion,
+    #calendar .fc-daygrid-day-number { font-size: .7rem; }
+    #calendar .fc-event { font-size: .65rem; padding: 0 3px; }
+    #calendar .fc-timegrid-event .fc-event-title { font-size: .625rem; }
+    #calendar .fc-timegrid-slot-label-cushion { font-size: .65rem; }
+    #calendar .fc-daygrid-more-link { font-size: .65rem; }
+    #calendar .day-header-weekday { font-size: .65rem; }
+    #calendar .day-header-number { width: 2rem; height: 2rem; font-size: 1.125rem; }
+  }
+
   @media (max-width: 640px) {
     #calendar .fc-toolbar { flex-direction: column; align-items: stretch; gap: .5rem; }
     #calendar .fc-toolbar-chunk { flex-wrap: wrap; }

@@ -311,6 +311,21 @@ fieldset {
   font-weight: 600;
 }
 
+:is(.input, .select, .textarea):is(:focus, :focus-within):not(
+    .input-error,
+    .select-error,
+    .textarea-error,
+    :user-invalid,
+    :has(:user-invalid),
+    [aria-invalid="true"],
+    :has([aria-invalid="true"])
+  ) {
+  --input-color: var(--color-primary);
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 18%, transparent);
+}
+
 /* stepper อนุมัติ: วงกลมใหญ่กว่า daisyUI (32px) เส้นเชื่อมบางกว่า (8px)
    แนวตั้งเส้นใช้ width แนวนอนใช้ height และ md:steps-horizontal สลับกลับเป็นแนวนอน */
 .approval-steps .step::after {

@@ -28,3 +28,4 @@ from . import car_reservation_email
 from . import campus_network
 from . import car_reservation_finance
 from . import uploaded_files
+from . import thailand_location

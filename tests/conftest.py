@@ -24,6 +24,10 @@ def app():
     flask_app.config["SECRET_KEY"] = "test-secret-key"
     flask_app.config["TESTING"] = True
     flask_app.config["WTF_CSRF_ENABLED"] = False
+    # หน้าอัปโหลดไฟล์ปิดเป็นค่าตั้งต้น เทสต์ของหน้านี้จึงเปิดไว้ · เทสต์ที่ตรวจตอนปิดใช้ monkeypatch เอง
+    flask_app.config["PROCUREMENT_UPLOAD_FILES_ENABLED"] = True
+    # คู่มือเก่าซ่อนเป็นค่าตั้งต้น เทสต์คู่มือเก่าจึงเปิดไว้ · เทสต์คู่มือใหม่ปิดด้วย monkeypatch
+    flask_app.config["PROCUREMENT_LEGACY_MANUAL_ENABLED"] = True
     flask_app.config["MONGODB_SETTINGS"] = {
         "db": "kampan_test_db",
         "mongo_client_class": mongomock.MongoClient,

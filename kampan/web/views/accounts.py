@@ -13,6 +13,7 @@ from flask import (
     session,
     current_app,
     abort,
+    flash,
     g,
 )
 from flask_login import login_user, logout_user, login_required, current_user
@@ -125,10 +126,17 @@ def authorized_oauth(name):
     return oauth2.handle_authorized_oauth2(remote, token)
 
 
-@module.route("/logout")
+@module.route("/logout", methods=["POST"])
 @login_required
 def logout():
+    # ออกจากระบบต้อง POST + CSRF กันลิงก์/รูปจากเว็บอื่นบังคับให้ผู้ใช้ออกจากระบบ
+    if not forms.post_action.PostActionForm().validate_on_submit():
+        flash("คำขอไม่ถูกต้องหรือหมดอายุ กรุณาลองใหม่อีกครั้ง", "error")
+        return redirect(url_for("site.select_system"))
+
     logout_user()
+    # ล้างทุกคีย์ใน session (เช่น oauth_provider) ไม่ใช่แค่ผู้ใช้
+    session.clear()
     return redirect(url_for("site.index"))
 
 

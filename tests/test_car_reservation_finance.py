@@ -2,6 +2,7 @@
 
 import datetime
 import io
+import urllib.parse
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
@@ -149,7 +150,9 @@ def test_finance_downloads_a_travel_expense_pdf_filled_with_the_trip_and_the_mon
 
     assert response.status_code == 200
     assert response.mimetype == "application/pdf"
-    assert str(reservation.id) in response.headers["Content-Disposition"]
+    disposition = urllib.parse.unquote(response.headers["Content-Disposition"])
+    assert "ใบเบิกค่าเดินทาง_" in disposition
+    assert f"_{str(reservation.id)[-6:]}.pdf" in disposition
     text = pdf_text(response)
     for expected in (
         "สมชาย ใจดี",  # พขร.

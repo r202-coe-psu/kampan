@@ -1,10 +1,11 @@
 """ฟอร์มแบบประเมินความพึงพอใจการใช้รถของระบบจองรถ: แบบประเมินปรับแต่งได้ต่อรถ"""
 
-from flask_wtf import FlaskForm
 from wtforms import fields, validators, widgets
 
+from kampan.web.forms.thai_messages import ThaiFlaskForm
 
-class CarFeedbackTemplateForm(FlaskForm):
+
+class CarFeedbackTemplateForm(ThaiFlaskForm):
     name = fields.StringField(
         "ชื่อแบบประเมิน",
         validators=[validators.DataRequired(message="กรุณาระบุชื่อแบบประเมิน")],
@@ -17,11 +18,11 @@ class CarFeedbackTemplateForm(FlaskForm):
     questions_data = fields.HiddenField()
 
 
-class CarFeedbackTemplateDeleteForm(FlaskForm):
+class CarFeedbackTemplateDeleteForm(ThaiFlaskForm):
     """ฟอร์มเปล่าไว้บังคับตรวจ CSRF token ของคำสั่งลบแบบประเมิน"""
 
 
-class CarFeedbackResponseFilterForm(FlaskForm):
+class CarFeedbackResponseFilterForm(ThaiFlaskForm):
     organization_id = fields.HiddenField()
     car_id = fields.SelectField(
         "รถยนต์",
@@ -41,7 +42,7 @@ class CarFeedbackResponseFilterForm(FlaskForm):
 
 
 def get_dynamic_feedback_form(template, trip_choices=None, default_trip_id=None):
-    class DynamicFeedbackForm(FlaskForm):
+    class DynamicFeedbackForm(ThaiFlaskForm):
         pass
 
     if trip_choices:

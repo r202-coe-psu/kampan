@@ -348,6 +348,18 @@ def test_airport_form_shows_its_own_title_and_only_its_own_fields(world):
     assert 'name="province_scope"' not in html
 
 
+def test_airport_form_starts_with_one_passenger_row_and_an_add_button(world):
+    html = world.client_for(world.requester).get(
+        f"{BASE}/new?organization_id={world.org.id}&type=airport"
+    ).get_data(as_text=True)
+
+    rows = re.findall(r'<div class="([^"]*)" data-role="passenger-row">', html)
+    assert len(rows) == 5
+    assert "hidden" not in rows[0]
+    assert all("hidden" in row for row in rows[1:])
+    assert 'data-role="passenger-add"' in html
+
+
 def test_airport_request_without_any_passenger_is_refused(world):
     data = world.request_data("airport")
     data["passengers-0-name"] = ""
@@ -425,6 +437,23 @@ def test_welfare_request_is_saved_with_its_form_fields_and_shown_on_detail(world
     )
     for shown in ("ลูกจ้างประจำ", "ฌาปนกิจศพ", "นางบุญมี ศรีสุข", "ทุ่งตำเสา", "บัส"):
         assert shown in html
+
+
+def test_welfare_request_can_skip_the_event_type(world):
+    data = world.request_data("welfare")
+    del data["event_type"]
+
+    response = post_new(world, data, request_type="welfare")
+
+    assert response.status_code == 302
+    saved = models.CarReservation.objects(creator=world.requester).first()
+    assert saved.details.event_type is None
+    assert saved.request_reason == "งานของ นายสมศักดิ์ ใจดี"
+    html = world.client_for(world.requester).get(detail_url(world, saved)).get_data(
+        as_text=True
+    )
+    assert "None" not in html
+    assert "งานของ นายสมศักดิ์ ใจดี" in html
 
 
 @pytest.mark.parametrize("vehicle_kind", ["เก๋ง", "มินิบัส"])
@@ -4203,3 +4232,49 @@ def test_inbox_lists_exactly_what_can_act_allows_for_every_user(world):
         assert flow.inbox_count(world.org, user) == len(expected)
     assert {str(pending.id)} <= {str(a.id) for a in flow.inbox_for(world.org, world.supervisor)}
     assert str(at_dispatcher.id) in {str(a.id) for a in flow.inbox_for(world.org, world.dispatcher)}
+
+
+@pytest.mark.parametrize(
+    "request_type, changes, error",
+    [
+        ("domestic", {"province": "จังหวัดสมมุติ"}, "กรุณาเลือกจังหวัดจากรายการ"),
+        ("domestic", {"district": "เมืองปัตตานี"}, "กรุณาเลือกอำเภอจากรายการ"),
+        ("welfare", {"district": "อ.หาดใหญ่"}, "กรุณาเลือกอำเภอจากรายการ"),
+        ("welfare", {"subdistrict": "รูสะมิแล"}, "กรุณาเลือกตำบลจากรายการ"),
+    ],
+)
+def test_location_must_be_picked_from_the_thai_location_list(
+    world, request_type, changes, error
+):
+    data = world.request_data(request_type)
+    data.update(changes)
+
+    response = post_new(world, data, request_type=request_type)
+
+    assert response.status_code == 200
+    assert error in response.get_data(as_text=True)
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
+
+
+def test_welfare_form_lists_province_then_district_then_subdistrict(world):
+    html = (
+        world.client_for(world.requester)
+        .get(f"{BASE}/new?organization_id={world.org.id}&type=welfare")
+        .get_data(as_text=True)
+    )
+
+    province, district, subdistrict = (
+        html.index(f'data-level="{level}"') for level in ("province", "district", "subdistrict")
+    )
+    assert province < district < subdistrict
+    assert 'data-districts-url="/api/thailand-location/districts"' in html
+
+
+def test_empty_location_shows_a_thai_pick_message(world):
+    data = world.request_data("welfare")
+    data["subdistrict"] = ""
+
+    response = post_new(world, data, request_type="welfare")
+
+    assert "กรุณาเลือกตำบล" in response.get_data(as_text=True)
+    assert models.CarReservation.objects(creator=world.requester).count() == 0

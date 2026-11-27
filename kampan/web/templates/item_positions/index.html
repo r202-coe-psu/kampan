@@ -7,7 +7,7 @@
 {% block breadcrumbs %}
 {% if request.endpoint == 'item_positions.index' %}
 <a class="btn btn-primary" href="{{ url_for('item_positions.add_or_edit', organization_id=organization.id) }}">
-  เพิ่มตำแหน่งวัสดุ
+  <i class="ph ph-plus"></i> เพิ่มตำแหน่งวัสดุ
 </a>
 {% else %}
 <a class="section" href="{{ url_for('item_positions.index', organization_id=organization.id) }}">ตำแหน่งวัสดุ</a>
