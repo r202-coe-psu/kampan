@@ -9,8 +9,8 @@
 {% set pick = timeline.picker %}
 <p class="tl-pick-window" data-role="picker-window">
   <span class="tl-pick-window-chip" aria-hidden="true"></span>
-  ช่วงเวลาของคำขอ {{ pick.window_start | format_thai_datetime_short_month }} – {{ pick.window_end | format_thai_datetime_short_month }}
-  <span class="text-base-content/60">(แถบสีบนตาราง แสดงก่อน-หลัง 2 วัน)</span>
+  ช่วงเวลาคำขอ ({{ pick.window_start | format_thai_datetime_short_month }} – {{ pick.window_end | format_thai_datetime_short_month }})
+  <span class="text-base-content/60">· ตารางแสดงก่อน-หลัง 2 วัน</span>
 </p>
 {% set id_prefix = 'pk' %}
 {% include "/car_reservation/timeline/_grid.html" %}

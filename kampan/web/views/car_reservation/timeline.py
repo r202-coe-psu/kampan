@@ -41,8 +41,10 @@ def filter_form(organization, filters):
             "q": filters.q,
             "driver": filters.driver_id,
             "status": filters.statuses,
-            "free_from": filters.free_from,
-            "free_to": filters.free_to,
+            "free_from_date": filters.free_from.date() if filters.free_from else None,
+            "free_from_time": filters.free_from.time() if filters.free_from else None,
+            "free_to_date": filters.free_to.date() if filters.free_to else None,
+            "free_to_time": filters.free_to.time() if filters.free_to else None,
         },
     )
     form.driver.choices = [("", "พนักงานขับรถทุกคน")] + sorted(

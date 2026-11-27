@@ -2,7 +2,7 @@
 
    แนวคิด
    - ช่อง (slot) = <select> รถเดิมของแต่ละคัน ซึ่งยังเป็นช่องที่ฟอร์มส่งจริง JS ซ่อนมัน (ยังโฟกัส/ขึ้นข้อความตรวจฟอร์มได้) แล้วขับค่าของมัน
-   - มี "ช่องที่กำลังเลือก" (active) ช่องเดียว กดปุ่ม "เลือกรถ" ของช่องไหน ช่องนั้นเป็น active
+   - มี "ช่องที่กำลังเลือก" (active) ช่องเดียว กดช่อง "รถที่เลือก" ของคันไหน คันนั้นเป็น active (ช่องนี้เป็นช่องแสดงผล ไม่ใช่ปุ่มสั่งงาน)
    - กดแถวรถที่ว่าง: ใส่รถนั้นในช่อง active แล้วย้ายไปช่องว่างถัดไป · กดแถวที่เลือกอยู่ในช่อง active ซ้ำ หรือกด "ล้าง": ล้างช่อง
    - รถที่ชนเวลา (data-selectable="0") และรถที่เลือกในช่องอื่นแล้ว กดเลือกไม่ได้
    - ค่าที่ส่งขึ้น server ยังตรวจซ้ำทั้งหมด (ชน ซ้ำ ใช้งานได้) ฝั่งนี้เป็นแค่ตัวช่วยเลือก ไม่ใช่การบังคับ
@@ -21,18 +21,30 @@
       var form = root.closest('form') || document;
       var body = root.querySelector('[data-role="picker-body"]');
       var params = root.querySelector('[data-role="picker-params"]');
-      var countEl = root.querySelector('[data-role="picker-count"]');
+      var countEl = root.querySelector('[data-role="picker-count"]') || form.querySelector('[data-role="picker-count"]');
       var activeEl = root.querySelector('[data-role="picker-active"]');
       var noticeEl = root.querySelector('[data-role="picker-notice"]');
+      var toggleEl = root.querySelector('[data-role="picker-toggle"]');
+      var panelEl = root.querySelector('[data-role="picker-panel"]');
+      var searchEl = root.querySelector('[data-role="picker-search"]');
+      var searchEmptyEl = root.querySelector('[data-role="picker-search-empty"]');
+      var hideBusyEl = root.querySelector('[data-role="picker-hide-busy"]');
       var slots = Array.prototype.slice.call(form.querySelectorAll('[data-picker-slot]')).map(function (el, index) {
+        var select = document.getElementById(el.dataset.selectId);
+        // ตารางสรุปการจัดรถ (โมดอลอนุมัติ): ช่องแสดงรถ ปุ่มล้าง และคำเตือนอยู่ในแถวของคันนั้น ผูกกันด้วย data-for = id ของ <select>
+        var sum = select ? form.querySelector('[data-role="slot-sum"][data-for="' + select.id + '"]') : null;
+        function part(role) { return el.querySelector('[data-role="' + role + '"]') || (sum && sum.querySelector('[data-role="' + role + '"]')); }
         return {
           el: el,
-          select: document.getElementById(el.dataset.selectId),
+          sum: sum,
+          select: select,
           button: el.querySelector('[data-role="slot-button"]'),
           label: el.querySelector('[data-role="slot-label"]'),
-          clear: el.querySelector('[data-role="slot-clear"]'),
-          warn: el.querySelector('[data-role="slot-type-warning"]'),
-          card: el.closest('[data-role="assignment-slot"]'),
+          sumButton: sum && sum.querySelector('[data-role="slot-summary"]'),
+          sumLabel: sum && sum.querySelector('[data-role="slot-summary-label"]'),
+          clear: part('slot-clear'),
+          warn: part('slot-type-warning'),
+          card: el.closest('[data-role="assignment-slot"]') || (select && select.closest('[data-role="assignment-slot"]')),
           index: index
         };
       }).filter(function (slot) { return slot.select && slot.button; });
@@ -94,6 +106,16 @@
         return from;
       }
 
+      // เปิด/ปิดทั้งตาราง (ผู้ใช้กดหัวตาราง) สลับคันหรือมีข้อความแจ้งเตือนจะเปิดให้อัตโนมัติ
+      function setPanel(open) {
+        if (!panelEl || !toggleEl) return;
+        panelEl.hidden = !open;
+        toggleEl.setAttribute('aria-expanded', String(open));
+        var hint = toggleEl.querySelector('[data-role="picker-toggle-hint"]');
+        if (hint) hint.textContent = open ? '(กดเพื่อซ่อน)' : '(กดเพื่อแสดง)';
+      }
+      if (toggleEl) toggleEl.addEventListener('click', function () { setPanel(panelEl.hidden); });
+
       function setNotice(text) {
         if (!noticeEl) return;
         noticeEl.textContent = text || '';
@@ -104,16 +126,32 @@
         rows().forEach(function (row) { carTypes[row.dataset.carId] = row.dataset.vehicleType || ''; });
       }
 
+      // ค้นหาตามเลขทะเบียน: ตัดช่องว่าง/ขีดออกก่อนเทียบ ("กก 1234" หา "กก-1234" หรือ "1234" เจอ)
+      function normalize(text) { return String(text || '').toLowerCase().replace(/[\s\-]+/g, ''); }
+
+      // ค้นหาอยู่: แสดงเฉพาะแถวที่ตรง (แม้กลุ่มจะพับไว้) และซ่อนหัวกลุ่มที่ไม่มีแถวตรง ไม่ค้นหา: ตามที่พับ/ขยายไว้
+      // ซ่อนรถที่ไม่ว่าง: ตัดแถวที่เลือกไม่ได้ออก และซ่อนหัวกลุ่มที่เหลือรถว่างไม่ถึงหนึ่งคัน
       function applyGroups() {
+        var query = searchEl ? normalize(searchEl.value) : '';
+        var hideBusy = !!(hideBusyEl && hideBusyEl.checked);
+        var shown = 0;
         body.querySelectorAll('[data-role="group-head"]').forEach(function (head) {
           var key = head.dataset.group;
           var isCollapsed = key in collapsed ? collapsed[key] : head.dataset.defaultCollapsed === '1';
           var toggle = head.querySelector('[data-pk-toggle]');
           if (toggle) toggle.setAttribute('aria-expanded', String(!isCollapsed));
+          var matches = 0;
           body.querySelectorAll('[data-role="car-row"]').forEach(function (row) {
-            if (row.dataset.group === key) row.hidden = isCollapsed;
+            if (row.dataset.group !== key) return;
+            var match = (!query || normalize(row.dataset.plate).indexOf(query) >= 0)
+              && !(hideBusy && row.dataset.selectable === '0');
+            if (match) matches++;
+            row.hidden = query ? !match : (isCollapsed || !match);
           });
+          head.hidden = (!!query || hideBusy) && !matches;
+          shown += matches;
         });
+        if (searchEmptyEl) searchEmptyEl.hidden = !((query || hideBusy) && rows().length && !shown);
       }
 
       function setParam(name, value) {
@@ -166,7 +204,13 @@
           var id = valueOf(slot);
           if (id) filled++;
           var plate = plateOf(slot);
-          slot.label.textContent = plate || 'เลือกรถ';
+          slot.label.textContent = plate || slot.label.dataset.empty || 'จิ้มเลือกรถจากตารางด้านล่าง';
+          slot.el.dataset.filled = id ? '1' : '0';
+          if (slot.sum) {
+            slot.sum.dataset.filled = id ? '1' : '0';
+            slot.sum.dataset.active = index === active ? '1' : '0';
+            if (slot.sumLabel) slot.sumLabel.textContent = plate || 'ยังไม่ได้เลือก · จิ้มเลือกจากตารางด้านบน';
+          }
           slot.el.dataset.active = index === active ? '1' : '0';
           slot.button.setAttribute('aria-pressed', String(index === active));
           if (slot.clear) slot.clear.hidden = !id;
@@ -180,12 +224,12 @@
         var requested = requestedCount();
         if (countEl) {
           countEl.hidden = !requested;
-          countEl.textContent = requested ? 'ขอ ' + requested + ' คัน: เลือกแล้ว ' + filled : '';
+          countEl.textContent = requested ? 'เลือกแล้ว ' + filled + '/' + requested : '';
           countEl.classList.toggle('text-success', !!requested && filled === requested);
           countEl.classList.toggle('text-warning', !!requested && filled !== requested);
         }
         if (activeEl && rows().length) {
-          activeEl.textContent = (multi ? 'กำลังเลือกให้รถคันที่ ' + (active + 1) + ': ' : '') +
+          activeEl.textContent = (multi ? 'กำลังเลือกให้คันที่ ' + (active + 1) + ' (สลับคันได้ที่แถบด้านบน): ' : '') +
             'กดแถวรถที่ว่างในตารางเพื่อเลือก (กดแถวที่เลือกแล้วซ้ำเพื่อยกเลิก)';
         }
         syncParams(false);
@@ -225,6 +269,7 @@
           });
         }
         setNotice(cleared.length ? cleared.join(', ') + ' ไม่ว่างในช่วงเวลาใหม่ จึงล้างการเลือก กรุณาเลือกรถคันอื่น' : '');
+        if (cleared.length) setPanel(true);
         render();
       }
 
@@ -233,8 +278,14 @@
         var wrapper = document.getElementById('field-' + slot.select.id) || slot.select;
         wrapper.classList.add('pk-select-hidden');
         slot.el.hidden = false;
+        if (slot.sum) {
+          slot.sum.hidden = false;
+          // กดช่องรถของแถวสรุป = สลับไปเลือกรถให้คันนั้น (เลื่อนกลับขึ้นไปที่ตาราง)
+          if (slot.sumButton) slot.sumButton.addEventListener('click', function () { activate(slot.index); setPanel(true); render(); root.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
+        }
         slot.button.addEventListener('click', function () {
           activate(slot.index);
+          setPanel(true);
           render();
           if (root.scrollIntoView) root.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         });
@@ -247,7 +298,7 @@
           });
         }
         // ช่องบังคับที่ยังว่างตอนกดส่ง: ชี้ช่องนั้นให้ผู้ใช้เห็นว่าต้องเลือกรถ
-        slot.select.addEventListener('invalid', function () { activate(slot.index); render(); });
+        slot.select.addEventListener('invalid', function () { activate(slot.index); setPanel(true); render(); });
       });
 
       root.addEventListener('click', function (event) {
@@ -265,6 +316,11 @@
         var row = event.target.closest('[data-role="car-row"]');
         if (row) pick(row);
       });
+      if (hideBusyEl) hideBusyEl.addEventListener('change', function (event) { event.stopPropagation(); applyGroups(); });
+      if (searchEl) {
+        searchEl.addEventListener('input', function (event) { event.stopPropagation(); applyGroups(); });
+        searchEl.addEventListener('keydown', function (event) { if (event.key === 'Enter') event.preventDefault(); });
+      }
       root.addEventListener('keydown', function (event) {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         var cell = event.target.closest('[data-role="pick-cell"]');

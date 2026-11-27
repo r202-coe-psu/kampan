@@ -862,13 +862,20 @@ class TimelineFilterForm(FlaskForm):
     q = fields.StringField("ทะเบียน", validators=[validators.Length(max=64)])
     driver = SelectField("พนักงานขับรถ", choices=[])
     status = SelectMultipleField(
-        "สถานะ", choices=models.car_reservations.RESERVATION_STATUS
+        "สถานะ", choices=models.car_reservations.RESERVATION_STATUS_DISPLAY
     )
-    free_from = fields.DateTimeLocalField(
-        "ว่างช่วง", format="%Y-%m-%dT%H:%M", validators=[validators.Optional()]
+    # "ว่างช่วง" แยกวัน/เวลาเพื่อใช้ปฏิทิน (date_field) และตัวเลือกเวลา (time_picker) ของระบบ
+    free_from_date = fields.DateField(
+        "ว่างช่วง (วันที่เริ่มต้น)", validators=[validators.Optional()]
     )
-    free_to = fields.DateTimeLocalField(
-        "ถึง", format="%Y-%m-%dT%H:%M", validators=[validators.Optional()]
+    free_from_time = fields.TimeField(
+        "ว่างช่วง (เวลาเริ่มต้น)", format="%H:%M", validators=[validators.Optional()]
+    )
+    free_to_date = fields.DateField(
+        "ว่างช่วง (วันที่สิ้นสุด)", validators=[validators.Optional()]
+    )
+    free_to_time = fields.TimeField(
+        "ว่างช่วง (เวลาสิ้นสุด)", format="%H:%M", validators=[validators.Optional()]
     )
 
 

@@ -1,100 +1,130 @@
 {% extends '/car_reservation/base/default-page.html' %}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}ตารางรถ{% endblock %}
-{% block dashboard_title %}ตารางรถ{% endblock %}
-
-{% block page_subtitle %}ดูว่ารถแต่ละคันว่างหรือไม่ว่างช่วงไหน แท่งแต่ละแท่งคือหนึ่งงานของรถคันนั้น กดที่แท่งเพื่อดูรายละเอียด{% endblock %}
+{% block dashboard_title %}<span class="flex flex-wrap items-center gap-x-4 gap-y-1">
+  <span class="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-content"><i class="ph ph-calendar-dots text-2xl" aria-hidden="true"></i></span>
+  <span>ตารางรถ</span>
+  <span class="text-sm font-normal text-base-content/60 sm:border-l sm:border-base-300 sm:pl-4" data-role="page-subtitle">ดูว่ารถแต่ละคันว่างหรือไม่ว่างช่วงไหน แท่งแต่ละแท่งคือหนึ่งงานของรถคันนั้น <b class="font-semibold text-base-content/80">กดที่แท่งเพื่อดูรายละเอียด</b></span>
+</span>{% endblock %}
+{% block page_subtitle %}{% endblock %}
 
 {% block content %}
 {% set filters = timeline.filters %}
 {% include "/car_reservation/timeline/_styles.html" %}
 <style>
-  .tl-filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .75rem 1rem; }
-  .tl-checks { display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
-  .tl-checks label { display: inline-flex; align-items: center; gap: .4rem; font-size: .85rem; cursor: pointer; }
+  .tl-filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .75rem 1rem; }
   .tl-filters > summary { cursor: pointer; list-style: none; }
   .tl-filters > summary::-webkit-details-marker { display: none; }
   .tl-filters[open] > summary .tl-filters-caret { transform: rotate(180deg); }
+  .tl-field-label { display: block; margin-bottom: .35rem; font-size: .8rem; font-weight: 600; }
 </style>
 
-<div class="flex flex-col gap-3">
+{% set active_filters = [] %}
+{% if form.q.data %}{% set _ = active_filters.append('ทะเบียน') %}{% endif %}
+{% if form.driver.data %}{% set _ = active_filters.append('พนักงานขับรถ') %}{% endif %}
+{% if form.free_from_date.data or form.free_to_date.data %}{% set _ = active_filters.append('ว่างช่วง') %}{% endif %}
+{% if form.vehicle_type.data %}{% set _ = active_filters.append('ประเภทรถ (' ~ (form.vehicle_type.data | length) ~ ')') %}{% endif %}
+{% if form.status.data %}{% set _ = active_filters.append('สถานะ (' ~ (form.status.data | length) ~ ')') %}{% endif %}
+
+<div class="flex flex-col gap-4">
   <details id="timeline-filters" class="tl-filters card bg-base-100 border border-base-300 shadow-sm" data-role="timeline-filters"
            {% if filtered %}open{% endif %}>
-    <summary class="flex items-center justify-between gap-2 p-4 font-medium">
-      <span class="flex items-center gap-2"><i class="ph ph-funnel"></i> ตัวกรอง
-        {% if filtered %}<span class="badge badge-sm badge-primary badge-soft">กำลังกรอง</span>{% endif %}
+    <summary class="flex items-center justify-between gap-2 px-5 py-4">
+      <span class="flex flex-wrap items-center gap-2 font-semibold">
+        <i class="ph ph-funnel text-lg text-primary" aria-hidden="true"></i> ตัวกรอง
+        {% for item in active_filters %}<span class="badge badge-sm badge-primary badge-soft" {% if loop.first and filtered %}data-role="filtering"{% endif %}>{{ item }}</span>{% endfor %}
       </span>
-      <i class="ph ph-caret-down tl-filters-caret" aria-hidden="true"></i>
+      <i class="ph ph-caret-down tl-filters-caret text-base-content/60" aria-hidden="true"></i>
     </summary>
-    <form id="timeline-filter" method="get" class="flex flex-col gap-4 px-4 pb-4" data-role="timeline-filter"
+    <form id="timeline-filter" method="get" class="flex flex-col gap-4 border-t border-base-300 px-5 py-4" data-role="timeline-filter"
           action="{{ url_for('car_reservation.timeline.index') }}"
           hx-get="{{ url_for('car_reservation.timeline.index') }}" hx-target="#timeline-grid" hx-push-url="true"
           hx-trigger="submit, change delay:200ms">
       {{ form.organization_id }}
-      <div class="tl-filter-grid">
+      <div class="tl-filter-grid lg:grid-cols-4" style="grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr))">
         <div>
-          <label class="label text-sm" for="{{ form.q.id }}">{{ form.q.label.text }}</label>
-          {{ form.q(class_="input input-sm w-full", placeholder="ค้นหาเลขทะเบียน", maxlength=64) }}
+          <label class="tl-field-label" for="{{ form.q.id }}">{{ form.q.label.text }}</label>
+          <label class="input w-full">
+            {{ form.q(class_="grow", placeholder="ค้นหาเลขทะเบียน เช่น กษ-9318", maxlength=64) }}
+            <i class="ph ph-magnifying-glass text-base-content/50" aria-hidden="true"></i>
+          </label>
         </div>
         <div>
-          <label class="label text-sm" for="{{ form.driver.id }}">{{ form.driver.label.text }}</label>
-          {{ form.driver(class_="select select-sm w-full") }}
+          <label class="tl-field-label" for="{{ form.driver.id }}">{{ form.driver.label.text }}</label>
+          {{ form.driver(class_="select w-full") }}
         </div>
+        {# ช่วงเวลาที่ต้องการให้รถว่าง: ปฏิทิน (date_field) + ตัวเลือกเวลา (time_picker) ของระบบ แทน datetime-local ของเบราว์เซอร์ #}
         <div>
-          <label class="label text-sm" for="{{ form.free_from.id }}">ว่างช่วง</label>
-          <div class="flex flex-wrap items-center gap-2">
-            {{ form.free_from(class_="input input-sm", **{"aria-label": "ว่างตั้งแต่"}) }}
-            <span class="text-sm">ถึง</span>
-            {{ form.free_to(class_="input input-sm", **{"aria-label": "ว่างถึง"}) }}
+          <p class="tl-field-label">ว่างช่วง (เริ่มต้น)</p>
+          <div class="grid grid-cols-[minmax(0,1fr)_6.75rem] items-start gap-2">
+            {{ renderer.date_field(form.free_from_date, hide_label=True, clearable=True, fixed_popover=True, auto_init=False, buddhist=True,
+                                   placeholder_text="เลือกวันที่", aria_label="วันที่เริ่มต้น") }}
+            {{ renderer.render_field(form.free_from_time, hide_label=True, **{"aria-label": "เวลาเริ่มต้น"}) }}
           </div>
-          <p class="mt-1 text-xs text-base-content/60">ซ่อนรถที่มีงานทับช่วงนี้ (นับสถานะเดียวกับที่ระบบบล็อกตอนจัดรถ รวมใบยืมรถระบบเดิม)</p>
+        </div>
+        <div>
+          <p class="tl-field-label">ว่างช่วง (สิ้นสุด)</p>
+          <div class="grid grid-cols-[minmax(0,1fr)_6.75rem] items-start gap-2">
+            {{ renderer.date_field(form.free_to_date, hide_label=True, clearable=True, fixed_popover=True, auto_init=False, buddhist=True,
+                                   placeholder_text="เลือกวันที่", aria_label="วันที่สิ้นสุด") }}
+            {{ renderer.render_field(form.free_to_time, hide_label=True, **{"aria-label": "เวลาสิ้นสุด"}) }}
+          </div>
+          <p class="mt-1 text-xs text-base-content/50">ซ่อนรถที่มีงานทับช่วงนี้ (นับรวมใบยืมรถระบบเดิม)</p>
           {% if filters.free_error %}
           <p class="mt-1 text-sm text-warning" data-role="free-error"><i class="ph ph-warning"></i> {{ filters.free_error }}</p>
           {% endif %}
         </div>
       </div>
-      <div>
-        <p class="label text-sm">{{ form.vehicle_type.label.text }}</p>
-        <div class="tl-checks">
-          {% for value, label in form.vehicle_type.choices %}
-          <label><input type="checkbox" class="checkbox checkbox-xs" name="vehicle_type" value="{{ value }}"
-                        {% if value in (form.vehicle_type.data or []) %}checked{% endif %}> {{ label }}</label>
-          {% endfor %}
+      <div class="flex flex-wrap items-end gap-x-10 gap-y-4 border-t border-base-300 pt-4">
+        <div>
+          <p class="tl-field-label">{{ form.vehicle_type.label.text }}</p>
+          <div class="flex flex-wrap gap-2">
+            {% for value, label in form.vehicle_type.choices %}
+            <label class="tl-pill is-type"><input type="checkbox" class="checkbox checkbox-xs" name="vehicle_type" value="{{ value }}"
+                          {% if value in (form.vehicle_type.data or []) %}checked{% endif %}> {{ label }}</label>
+            {% endfor %}
+          </div>
         </div>
-      </div>
-      <div>
-        <p class="label text-sm">{{ form.status.label.text }}</p>
-        <div class="tl-checks">
-          {% for value, label in form.status.choices %}
-          <label><input type="checkbox" class="checkbox checkbox-xs" name="status" value="{{ value }}"
-                        {% if value in (form.status.data or []) %}checked{% endif %}> {{ label }}{% if value in hidden_by_default %} <span class="text-xs text-base-content/50">(ซ่อนไว้)</span>{% endif %}</label>
-          {% endfor %}
+        <div>
+          <p class="tl-field-label">{{ form.status.label.text }}</p>
+          <div class="flex flex-wrap gap-2">
+            {% for value, label in form.status.choices %}
+            <label class="tl-pill is-status tl-st-{{ value }}"><input type="checkbox" name="status" value="{{ value }}"
+                          {% if value in (form.status.data or []) %}checked{% endif %}>{{ label }}{% if value in hidden_by_default %} <span class="text-base-content/50">(ซ่อนไว้)</span>{% endif %}<i class="ph ph-check" aria-hidden="true"></i></label>
+            {% endfor %}
+          </div>
         </div>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <button type="submit" class="btn btn-primary btn-sm"><i class="ph ph-funnel"></i> กรอง</button>
-        <a class="btn btn-ghost btn-sm" href="{{ reset_href }}" hx-get="{{ reset_href }}" hx-target="#timeline-grid"
-           hx-push-url="true" data-role="reset-filter"><i class="ph ph-x"></i> ล้างตัวกรอง</a>
+        <div class="flex items-center gap-2 sm:ml-auto">
+          <a class="btn btn-outline border-base-300" href="{{ reset_href }}" hx-get="{{ reset_href }}" hx-target="#timeline-grid"
+             hx-push-url="true" data-role="reset-filter"><i class="ph ph-x"></i> ล้างตัวกรอง</a>
+          <button type="submit" class="btn btn-primary"><i class="ph ph-funnel"></i> กรอง</button>
+        </div>
       </div>
     </form>
   </details>
 
-  <div class="card bg-base-100 border border-base-300 shadow-sm">
-    <div class="card-body gap-3 p-4">
+  <div class="tl-flush card bg-base-100 border border-base-300 shadow-sm overflow-hidden">
+    <div class="px-5 py-4">
       {% include "/car_reservation/timeline/_nav.html" %}
-      <ul class="flex flex-wrap items-center gap-x-4 gap-y-1" aria-label="คำอธิบายสี" data-role="legend">
-        {% for key, label in [('active', 'อนุมัติแล้ว'), ('pending', 'รออนุมัติ'), ('cancel_requested', 'ขอยกเลิก'), ('completed', 'เสร็จสิ้น'), ('cancelled', 'ยกเลิก'), ('denied', 'ไม่อนุมัติ')] %}
-        <li class="tl-chip tl-st-{{ key }}">{{ label }}{% if key in hidden_by_default %} <span class="text-base-content/50">(ซ่อนไว้)</span>{% endif %}</li>
+    </div>
+    <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-y border-base-300 bg-base-200/60 px-5 py-2.5">
+      <ul class="flex flex-wrap items-center gap-x-5 gap-y-1" aria-label="คำอธิบายสี" data-role="legend">
+        <li class="text-xs font-medium text-base-content/70">คำอธิบายสถานะ:</li>
+        {% for key, label in form.status.choices %}
+        <li class="tl-chip tl-st-{{ key }}">{{ label }}{% if key in hidden_by_default %} <span class="font-normal text-base-content/50">(ซ่อนไว้)</span>{% endif %}</li>
         {% endfor %}
       </ul>
-      <div id="timeline-grid" data-role="timeline-grid">
-        {% include "/car_reservation/timeline/_grid.html" %}
-      </div>
+      <span class="tl-now-key">เวลาปัจจุบัน ({{ timeline.now.strftime('%H:%M') }} น.)</span>
+    </div>
+    <div id="timeline-grid" data-role="timeline-grid">
+      {% include "/car_reservation/timeline/_grid.html" %}
     </div>
   </div>
 </div>
 
 {% include "/car_reservation/timeline/_scripts.html" %}
+<script>initDatePickersIn(document.getElementById('timeline-filters'));</script>
 <script>
   // เปิดแผงตัวกรองไว้บนจอใหญ่ ส่วนบนมือถือพับไว้ (เปิดเองเมื่อกำลังกรองอยู่)
   (function () {

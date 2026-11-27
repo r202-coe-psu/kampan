@@ -37,29 +37,30 @@ def car_choice_label(car):
 
 
 def flash_flow_error(error):
-    """flash ข้อความของ FlowError: รถชนกับคำขออื่นให้ลิงก์ไปหน้ารายละเอียดของคำขอนั้น
+    """flash ข้อความของ FlowError (ดู flow_error_message)"""
+    flash(flow_error_message(error), "error")
+
+
+def flow_error_message(error):
+    """ข้อความของ FlowError: รถชนกับคำขออื่นให้ลิงก์ไปหน้ารายละเอียดของคำขอนั้น
 
     Markup ไม่ถูก Jinja escape ซ้ำ จึงต้อง escape ค่าที่ผู้ใช้กรอก (ชื่อผู้ขอ ทะเบียน) เอง
     """
     if not isinstance(error, flow.CarConflictError):
-        flash(str(error), "error")
-        return
+        return str(error)
     link = url_for(
         "car_reservation.requests.detail",
         request_id=error.conflict.id,
         organization_id=g.organization.id,
     )
-    flash(
-        Markup(
-            "รถ {plate} มีงานช่วงเวลานี้แล้ว "
-            '(ผู้ขอ {name} เวลา {window}) <a href="{link}" class="link font-bold">ดูคำขอที่ชน</a>'
-        ).format(
-            plate=error.car.license_plate,
-            name=error.requester_name,
-            window=error.window,
-            link=link,
-        ),
-        "error",
+    return Markup(
+        "รถ {plate} มีงานช่วงเวลานี้แล้ว "
+        '(ผู้ขอ {name} เวลา {window}) <a href="{link}" class="link font-bold">ดูคำขอที่ชน</a>'
+    ).format(
+        plate=error.car.license_plate,
+        name=error.requester_name,
+        window=error.window,
+        link=link,
     )
 
 
@@ -622,7 +623,11 @@ def assignment_cards(reservation, user):
 @module.route("/<request_id>")
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def detail(request_id):
-    reservation = get_request_or_404(request_id)
+    return render_detail(get_request_or_404(request_id))
+
+
+def render_detail(reservation, approve_error=None):
+    """หน้ารายละเอียดคำขอ approve_error = ข้อความผิดพลาดจากการกดอนุมัติ: เปิดโมดอลอนุมัติค้างไว้พร้อมค่าที่เลือกไว้เดิม"""
     user = current_user._get_current_object()
     current_key = flow.current_step_key(reservation)
     required_count = models.car_reservations.required_vehicle_count(reservation)
@@ -675,6 +680,8 @@ def detail(request_id):
         off_campus=any(a.closed_off_campus for a in reservation.assignments),
         form=form,
         workload=workload,
+        approve_error=approve_error,
+        duplicate_messages={"car": flow.DUPLICATE_CAR, "driver": flow.DUPLICATE_DRIVER},
         **({"car_picker": car_picker} if car_picker else {}),
         deny_form=forms.car_reservation.DenyDecisionForm(),
         close_confirmation_days=models.car_reservations.CLOSE_CONFIRMATION_DAYS,
@@ -855,14 +862,7 @@ def approve(request_id):
             # ชุดที่เลือกรถหรือ พขร. อย่างเดียว: ผู้ที่ไม่ใช่ผู้จัดรถไม่ควรรู้ว่าฟอร์มนี้ตรวจอะไร
             if not flow.can_act(reservation, user):
                 abort(403)
-            flash(flow.CAR_AND_DRIVER_REQUIRED, "error")
-            return redirect(
-                url_for(
-                    "car_reservation.requests.detail",
-                    request_id=reservation.id,
-                    organization_id=g.organization.id,
-                )
-            )
+            return render_detail(reservation, approve_error=flow.CAR_AND_DRIVER_REQUIRED)
         extra = {
             "assignments": load_assignments(g.organization, chosen),
             "reduce_reason": (form.reduce_reason.data or "").strip(),
@@ -875,14 +875,9 @@ def approve(request_id):
     except flow.FlowError as error:
         if not dispatching or not flow.can_act(reservation, user):
             abort(403)
-        flash_flow_error(error)
-        return redirect(
-            url_for(
-                "car_reservation.requests.detail",
-                request_id=reservation.id,
-                organization_id=g.organization.id,
-            )
-        )
+        # แสดงข้อผิดพลาดในโมดอลอนุมัติเอง (ไม่ redirect) เพื่อไม่ให้ฟอร์มปิดและค่าที่เลือกไว้หาย
+        reservation.reload()
+        return render_detail(reservation, approve_error=flow_error_message(error))
 
     utils.car_reservation_email.notify(
         reservation, "active" if reservation.status == "active" else "approved"

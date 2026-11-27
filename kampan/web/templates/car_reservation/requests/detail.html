@@ -3,7 +3,7 @@
 {% from '/car_reservation/components/info_card.html' import InfoCard, Item %}
 {% from '/base/components/modals.html' import DeleteModal %}
 {% from '/car_reservation/components/approval_steps.html' import ApprovalSteps %}
-{% from '/car_reservation/timeline/_picker_widget.html' import CarPicker, PickerSlot %}
+{% from '/car_reservation/timeline/_picker_widget.html' import CarPicker, PickerSlot, SlotTab, SlotSummary %}
 
 {% block title %}คำขอใช้รถ{% endblock %}
 
@@ -195,67 +195,60 @@
           class="flex flex-col gap-2">
       {{ form.csrf_token }}
       {{ form.step }}
+      {# ข้อผิดพลาดจากการกดอนุมัติ (server ส่งหน้าเดิมกลับมาพร้อมโมดอลที่เปิดค้างไว้ และค่าที่เลือกไว้) หรือจากการตรวจซ้ำฝั่งเบราว์เซอร์ #}
+      <div role="alert" class="alert alert-error alert-soft text-sm" data-role="approve-error" {% if not approve_error %}hidden{% endif %}>
+        <i class="ph ph-warning-circle text-lg" aria-hidden="true"></i>
+        <span data-role="approve-error-text">{{ approve_error or '' }}</span>
+      </div>
       {% if form.assignments is defined %}
-      <div class="flex flex-col gap-2" data-role="driver-workload">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <span class="font-medium">ภาระงานพนักงานขับรถ (ย้อนหลัง 30 วัน)</span>
-          <a href="{{ url_for('car_reservation.stats.drivers', organization_id=organization.id) }}" class="link link-primary text-sm" data-role="workload-dashboard-link">ดู dashboard ภาระงาน</a>
+      {# การจัดรถ: (1) แถบสลับ "คันที่ N" ติดบนของโมดอล (2) จิ้มรถจากตารางให้คันที่เลือกอยู่ (3) ตารางสรุปท้ายฟอร์ม: รถ + พขร. + OT ของทุกคัน #}
+      <div class="sticky -top-6 z-20 -mx-6 flex flex-col gap-2 border-b border-base-300 bg-base-100 px-6 pb-3 pt-4 shadow-sm" data-role="assignment-panel">
+        <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h4 class="font-semibold">การจัดรถ (ขอ {{ required_vehicle_count }} คัน)</h4>
+          <p class="text-sm font-medium" data-role="picker-count" aria-live="polite"></p>
         </div>
-        {# ตารางนี้ให้ข้อมูลอย่างเดียว (เลือก พขร. ที่ช่องของแต่ละคันด้านล่าง): มือถือเป็นการ์ดสองบรรทัด (ชื่อ+ป้ายสถานะ / สถิติย่อ) เดสก์ท็อปเป็นกริดแบบตาราง ไม่ต้องเลื่อนแนวนอน #}
-        {% set cols = 'md:grid-cols-[minmax(0,1fr)_4.5rem_4.5rem_4.5rem_6.5rem_7rem]' %}
-        <div class="max-h-64 overflow-y-auto rounded-box border border-base-300 bg-base-100 divide-y divide-base-300">
-          <div class="hidden md:grid {{ cols }} items-center gap-x-3 px-3 py-2 text-xs font-semibold text-base-content/70" aria-hidden="true">
-            <span>ชื่อ</span>
-            <span class="text-right">ในเวลา</span>
-            <span class="text-right">OT</span>
-            <span class="text-right">ชม.</span>
-            <span class="text-right">งานที่จะมาถึง</span>
-            <span>สถานะ</span>
+        {% if required_vehicle_count > 1 %}
+        <p class="text-xs text-base-content/70" data-role="vehicle-count-hint">
+          ขอ {{ required_vehicle_count }} คัน: ถ้าจัดได้น้อยกว่านี้ต้องใส่เหตุผล (เว้นรถและพนักงานขับรถของคันที่ไม่จัดให้ว่างทั้งคู่)
+        </p>
+        {% endif %}
+        {% if car_picker is defined %}
+        <div class="flex flex-wrap items-center gap-2" role="group" aria-label="เลือกรถให้คันที่">
+          <span class="text-sm text-base-content/70">เลือกรถให้</span>
+          {% for slot in form.assignments %}{{ SlotTab(slot.form.car, loop.index) }}{% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {# ตัวเลือกรถแบบตาราง (ช่วงเวลาของคำขอคงที่ จึงไม่โหลดใหม่) <select> รถของแต่ละคันอยู่ในตารางสรุปด้านล่าง เป็นช่องที่ฟอร์มส่งจริง #}
+      {% if car_picker is defined %}
+      {{ CarPicker(organization, car_picker.timeline, car_picker.picker_error, kind=requested_vehicle_kind,
+                   exclude_id=reservation.id | string, requested=required_vehicle_count, show_count=false) }}
+      {% endif %}
+      <section class="flex flex-col gap-2" data-role="assignment-summary">
+        <h4 class="font-semibold"><i class="ph ph-list-checks" aria-hidden="true"></i> สรุปรถที่เลือกทั้งหมด</h4>
+        {% set cols = 'md:grid-cols-[4rem_minmax(0,1fr)_minmax(0,1.2fr)_auto]' %}
+        <div class="divide-y divide-base-300 rounded-box border border-base-300">
+          <div class="hidden gap-x-3 bg-base-200/60 px-3 py-2 text-xs font-semibold text-base-content/70 md:grid {{ cols }}" aria-hidden="true">
+            <span>คันที่</span><span>รถที่เลือก</span><span>พนักงานขับรถ</span><span>นอกเวลา</span>
           </div>
-          {% for row in workload %}
-          <div class="grid grid-cols-[minmax(0,1fr)_auto] {{ cols }} items-center gap-x-3 gap-y-1 px-3 py-2"
-               data-role="driver-row" data-driver-id="{{ row.driver.id }}" data-busy="{{ 'true' if row.busy else 'false' }}">
-            <span class="font-medium break-words">{{ row.driver.get_name() }}</span>
-            <span class="col-span-2 row-start-2 flex flex-wrap gap-x-3 text-xs text-base-content/70 md:contents md:text-sm md:text-base-content">
-              <span class="md:text-right"><span class="md:hidden">ในเวลา </span>{{ row.in_hours_jobs }}</span>
-              <span class="md:text-right"><span class="md:hidden">OT </span>{{ row.ot_jobs }}</span>
-              <span class="md:text-right">{{ '%.1f' | format(row.hours) }}<span class="md:hidden"> ชม.</span></span>
-              <span class="md:text-right"><span class="md:hidden">ที่จะมาถึง </span>{{ row.upcoming }}</span>
-            </span>
-            <span class="col-start-2 row-start-1 md:col-auto md:row-auto">
-              {% if row.busy %}
-              <span class="badge badge-warning badge-soft badge-sm whitespace-nowrap" data-role="busy-badge">มีงานชน</span>
-              {% else %}
-              <span class="badge badge-success badge-soft badge-sm tone-deep-success whitespace-nowrap">ว่าง</span>
-              {% endif %}
-            </span>
+          {% for slot in form.assignments %}
+          {% set first = loop.first %}
+          <div class="grid grid-cols-1 gap-x-3 gap-y-2 p-3 {{ cols }} md:items-start" data-role="assignment-slot">
+            <p class="font-semibold">คันที่ {{ loop.index }}{% if first %} <span class="text-error">*</span>{% endif %}</p>
+            <div class="relative">
+              {{ renderer.render_select_field(slot.form.car, required=first, optionals={'required': first}) }}
+              {% if car_picker is defined %}{{ SlotSummary(slot.form.car) }}{% endif %}
+            </div>
+            <div class="tl-sum-driver flex flex-col gap-1">
+              {{ renderer.render_select_field(slot.form.driver, required=first, optionals={'required': first}) }}
+              <p class="tl-driver-load" data-role="driver-load" data-for="{{ slot.form.driver.id }}" hidden></p>
+              <p class="text-sm text-error" data-role="driver-dup" data-for="{{ slot.form.driver.id }}" hidden></p>
+            </div>
+            <div class="whitespace-nowrap">{{ renderer.render_checkbox(slot.form.is_overtime) }}</div>
           </div>
           {% endfor %}
         </div>
-      </div>
-      <p class="text-sm text-base-content/70" data-role="vehicle-count-hint">
-        ขอ {{ required_vehicle_count }} คัน{% if required_vehicle_count > 1 %}: ถ้าจัดได้น้อยกว่านี้ต้องใส่เหตุผล (เว้นรถและพนักงานขับรถของคันที่ไม่จัดให้ว่างทั้งคู่){% endif %}
-      </p>
-      {% for slot in form.assignments %}
-      {% set first = loop.first %}
-      <div class="flex flex-col gap-2 rounded-box border border-base-300 p-3" data-role="assignment-slot">
-        <p class="font-semibold">รถคันที่ {{ loop.index }}{% if first %} <span class="text-error">*</span>{% endif %}</p>
-        {# ลำดับตาม #74: เลือก พขร. ก่อน แล้วเลือกรถ ตามด้วย OT #}
-        <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
-          {{ renderer.render_select_field(slot.form.driver, required=first, optionals={'required': first}) }}
-          <div class="relative">
-            {{ renderer.render_select_field(slot.form.car, required=first, optionals={'required': first}) }}
-            {% if car_picker is defined %}{{ PickerSlot(slot.form.car, loop.index) }}{% endif %}
-          </div>
-        </div>
-        {{ renderer.render_checkbox(slot.form.is_overtime) }}
-      </div>
-      {% endfor %}
-      {# ตัวเลือกรถแบบตาราง อยู่ท้ายช่องของแต่ละคัน (ช่วงเวลาของคำขอคงที่ จึงไม่โหลดใหม่) <select> รถของแต่ละคันยังอยู่เป็นช่องที่ฟอร์มส่งจริง #}
-      {% if car_picker is defined %}
-      {{ CarPicker(organization, car_picker.timeline, car_picker.picker_error, kind=requested_vehicle_kind,
-                   exclude_id=reservation.id | string, requested=required_vehicle_count) }}
-      {% endif %}
+      </section>
       <div class="grid grid-cols-1 gap-x-4 gap-y-2">
         {% if required_vehicle_count > 1 %}
         {{ renderer.render_field(form.reduce_reason) }}
@@ -267,6 +260,50 @@
         </div>
         {% endif %}
       </div>
+      {% endif %}
+      {# ภาระงานของ พขร. ทั้งหมด: ยุบไว้ (สรุปของคนที่เลือกอยู่ใต้ช่อง พขร. ของแต่ละคันแล้ว) ข้อมูลอยู่ใน DOM ให้สคริปต์ดึงไปแสดงสรุป #}
+      {% if form.assignments is defined %}
+      <details class="rounded-box border border-base-300 bg-base-100" data-role="driver-workload">
+        <summary class="flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-sm font-medium">
+          <span><i class="ph ph-users-three" aria-hidden="true"></i> ดูภาระงานพนักงานขับรถทั้งหมด (ย้อนหลัง 30 วัน)</span>
+          <i class="ph ph-caret-down text-base-content/60" aria-hidden="true"></i>
+        </summary>
+        <div class="flex flex-col gap-2 border-t border-base-300 p-3">
+          <a href="{{ url_for('car_reservation.stats.drivers', organization_id=organization.id) }}" class="link link-primary self-end text-sm" data-role="workload-dashboard-link">ดู dashboard ภาระงาน</a>
+          {# ตารางนี้ให้ข้อมูลอย่างเดียว (เลือก พขร. ที่ช่องของแต่ละคันด้านบน): มือถือเป็นการ์ดสองบรรทัด (ชื่อ+ป้ายสถานะ / สถิติย่อ) เดสก์ท็อปเป็นกริดแบบตาราง ไม่ต้องเลื่อนแนวนอน #}
+          {% set cols = 'md:grid-cols-[minmax(0,1fr)_4.5rem_4.5rem_4.5rem_6.5rem_7rem]' %}
+          <div class="max-h-64 overflow-y-auto rounded-box border border-base-300 bg-base-100 divide-y divide-base-300">
+            <div class="hidden md:grid {{ cols }} items-center gap-x-3 px-3 py-2 text-xs font-semibold text-base-content/70" aria-hidden="true">
+              <span>ชื่อ</span>
+              <span class="text-right">ในเวลา</span>
+              <span class="text-right">OT</span>
+              <span class="text-right">ชม.</span>
+              <span class="text-right">งานที่จะมาถึง</span>
+              <span>สถานะ</span>
+            </div>
+            {% for row in workload %}
+            <div class="grid grid-cols-[minmax(0,1fr)_auto] {{ cols }} items-center gap-x-3 gap-y-1 px-3 py-2"
+                 data-role="driver-row" data-driver-id="{{ row.driver.id }}" data-busy="{{ 'true' if row.busy else 'false' }}"
+                 data-in-hours="{{ row.in_hours_jobs }}" data-ot="{{ row.ot_jobs }}" data-hours="{{ '%.1f' | format(row.hours) }}" data-upcoming="{{ row.upcoming }}">
+              <span class="font-medium break-words">{{ row.driver.get_name() }}</span>
+              <span class="col-span-2 row-start-2 flex flex-wrap gap-x-3 text-xs text-base-content/70 md:contents md:text-sm md:text-base-content">
+                <span class="md:text-right"><span class="md:hidden">ในเวลา </span>{{ row.in_hours_jobs }}</span>
+                <span class="md:text-right"><span class="md:hidden">OT </span>{{ row.ot_jobs }}</span>
+                <span class="md:text-right">{{ '%.1f' | format(row.hours) }}<span class="md:hidden"> ชม.</span></span>
+                <span class="md:text-right"><span class="md:hidden">ที่จะมาถึง </span>{{ row.upcoming }}</span>
+              </span>
+              <span class="col-start-2 row-start-1 md:col-auto md:row-auto">
+                {% if row.busy %}
+                <span class="badge badge-warning badge-soft badge-sm whitespace-nowrap" data-role="busy-badge">มีงานชน</span>
+                {% else %}
+                <span class="badge badge-success badge-soft badge-sm tone-deep-success whitespace-nowrap">ว่าง</span>
+                {% endif %}
+              </span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </details>
       {% endif %}
       {{ renderer.render_field(form.comment) }}
       <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -280,6 +317,89 @@
 {% if car_picker is defined %}
 {% include "/car_reservation/timeline/_picker_styles.html" %}
 {% include "/car_reservation/timeline/_picker_scripts.html" %}
+{% endif %}
+{% if form.assignments is defined %}
+<style>
+  .tl-driver-load[hidden] { display: none; }
+  /* หัวคอลัมน์ "พนักงานขับรถ" ของตารางสรุปบอกอยู่แล้ว: บนจอกว้างซ่อน label ซ้ำ (ยังอ่านออกเสียงได้) บนมือถือไม่มีหัวคอลัมน์จึงคง label ไว้ */
+  @media (min-width: 48rem) {
+    .tl-sum-driver .fieldset-legend { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; padding: 0; }
+  }
+</style>
+<script>
+  // สรุปภาระงานของ พขร. ที่เลือก + ตรวจ พขร./รถซ้ำก่อนส่ง (ฟอร์มไม่ปิด แจ้งใต้ช่องและที่หัวโมดอล)
+  (function () {
+    var modal = document.getElementById('approve-modal');
+    if (!modal) return;
+    var form = modal.querySelector('form');
+    var messages = {{ duplicate_messages | tojson }};
+    var errorBox = modal.querySelector('[data-role="approve-error"]');
+    var errorText = modal.querySelector('[data-role="approve-error-text"]');
+
+    function selectOf(note) { return document.getElementById(note.dataset.for); }
+    function showLoad(note) {
+      var select = selectOf(note);
+      var row = select && select.value ? modal.querySelector('[data-role="driver-row"][data-driver-id="' + select.value + '"]') : null;
+      note.hidden = !row;
+      if (!row) { note.textContent = ''; return; }
+      var busy = row.dataset.busy === 'true';
+      note.textContent = 'ภาระงาน 30 วัน: ในเวลา ' + row.dataset.inHours + ' | OT ' + row.dataset.ot + ' | ' + row.dataset.hours +
+        ' ชม. · ' + (busy ? 'มีงานชนช่วงนี้' : 'ว่างช่วงนี้');
+      note.classList.toggle('text-warning', busy);
+    }
+
+    // ช่องที่เลือกค่าซ้ำกับช่องก่อนหน้า (นับเฉพาะค่าที่ไม่ว่าง)
+    function duplicatedSelects(kind) {
+      var seen = {};
+      var dups = [];
+      modal.querySelectorAll('select[name$="-' + kind + '"]').forEach(function (select) {
+        if (!select.value) return;
+        if (seen[select.value]) dups.push(select); else seen[select.value] = true;
+      });
+      return dups;
+    }
+    function showDuplicates() {
+      var dups = duplicatedSelects('driver');
+      modal.querySelectorAll('[data-role="driver-dup"]').forEach(function (note) {
+        var select = selectOf(note);
+        var isDup = dups.indexOf(select) >= 0;
+        note.hidden = !isDup;
+        note.textContent = isDup ? messages.driver : '';
+        if (select) select.classList.toggle('select-error', isDup);
+      });
+      return dups.length > 0;
+    }
+    function refresh() {
+      modal.querySelectorAll('[data-role="driver-load"]').forEach(showLoad);
+      showDuplicates();
+    }
+    modal.addEventListener('change', refresh);
+    window.addEventListener('pageshow', refresh);
+    refresh();
+
+    function showError(text) {
+      errorText.textContent = text;
+      errorBox.hidden = false;
+      errorBox.scrollIntoView({ block: 'nearest' });
+    }
+    if (form) {
+      form.addEventListener('submit', function (event) {
+        var carDup = duplicatedSelects('car').length > 0;
+        var driverDup = showDuplicates();
+        if (carDup || driverDup) {
+          event.preventDefault();
+          showError(carDup ? messages.car : messages.driver);
+        } else if (errorBox && !{{ 'true' if approve_error else 'false' }}) {
+          errorBox.hidden = true;
+        }
+      });
+    }
+    {% if approve_error %}
+    // server ปฏิเสธการอนุมัติ: เปิดโมดอลค้างไว้ให้แก้ต่อ ค่าที่เลือกไว้ยังอยู่ครบ
+    if (!modal.open) modal.showModal();
+    {% endif %}
+  })();
+</script>
 {% endif %}
 {% endif %}
 {% if can_cancel %}

@@ -27,8 +27,9 @@ DEFAULT_DAYS = 14
 
 # ค่าเริ่มต้นของ filter สถานะ: งานที่ยังจองรถอยู่ + เสร็จสิ้น (ยกเลิก/ไม่อนุมัติซ่อนไว้ ต้องเลือกเอง)
 DEFAULT_STATUSES = ("pending", "active", "cancel_requested", "completed")
-ALL_STATUSES = tuple(key for key, _ in models.car_reservations.RESERVATION_STATUS)
 STATUS_LABELS = dict(models.car_reservations.RESERVATION_STATUS)
+STATUS_CHOICES = models.car_reservations.RESERVATION_STATUS_DISPLAY
+ALL_STATUSES = tuple(key for key, _ in STATUS_CHOICES)
 
 # ลำดับกลุ่มประเภทรถ ประเภทอื่นต่อท้ายตามตัวอักษร "ไม่ระบุประเภท" อยู่ท้ายสุด
 GROUP_ORDER = ("บัส", "มินิบัส", "ตู้", "เก๋ง")
@@ -221,6 +222,7 @@ class Timeline:
     hour_ticks: list  # [(label, left_pct)] เฉพาะมุมมอง 1 วัน
     car_count: int = 0
     picker: PickerInfo | None = None
+    now: datetime.datetime | None = None  # เวลาที่สร้างตาราง ใช้แสดงเวลาปัจจุบันใน legend
 
     @property
     def end_date(self):
@@ -264,6 +266,31 @@ def parse_datetime_local(value):
     return None
 
 
+def parse_time(value):
+    """HH:MM (หรือ HH:MM:SS) จากช่องเวลา ค่าผิดรูปแบบคืน None"""
+    text = (value or "").strip() if isinstance(value, str) else ""
+    for fmt in ("%H:%M", "%H:%M:%S"):
+        try:
+            return datetime.datetime.strptime(text, fmt).time()
+        except ValueError:
+            continue
+    return None
+
+
+def parse_free_datetime(args, name, default_time):
+    """เวลาเริ่ม/สิ้นสุดของ "ว่างช่วง" (name = free_from / free_to)
+
+    ช่องแยกวัน-เวลา (<name>_date, <name>_time จากปฏิทินและตัวเลือกเวลา) ใช้เมื่อมีส่งมา: ใส่แต่วันที่ใช้ default_time
+    (เริ่ม = 00:00, สิ้นสุด = 23:59 คือว่างทั้งวัน) ไม่งั้นอ่านรูปแบบเดิม <name>=YYYY-MM-DDTHH:MM จากลิงก์ที่เก็บไว้
+    """
+    if f"{name}_date" in args or f"{name}_time" in args:
+        date = parse_date(args.get(f"{name}_date"))
+        if date is None:
+            return None
+        return datetime.datetime.combine(date, parse_time(args.get(f"{name}_time")) or default_time)
+    return parse_datetime_local(args.get(name))
+
+
 def _valid_object_id(value):
     return value if value and bson.ObjectId.is_valid(value) else ""
 
@@ -282,8 +309,8 @@ def parse_query(args, today=None):
         value for value in dict.fromkeys(args.getlist("vehicle_type")) if value in VEHICLE_TYPE_LABELS
     ]
     statuses = [value for value in dict.fromkeys(args.getlist("status")) if value in ALL_STATUSES]
-    free_from = parse_datetime_local(args.get("free_from"))
-    free_to = parse_datetime_local(args.get("free_to"))
+    free_from = parse_free_datetime(args, "free_from", datetime.time.min)
+    free_to = parse_free_datetime(args, "free_to", datetime.time(23, 59))
     free_error = ""
     if free_from and free_to and free_to <= free_from:
         free_error = "เวลาสิ้นสุดของ \"ว่างช่วง\" ต้องหลังเวลาเริ่ม"
@@ -582,6 +609,7 @@ def _build(organization, start_date, days, filters=None, now=None, exclude_id=No
         filters=filters,
         hour_ticks=hour_ticks,
         car_count=sum(len(group.rows) for group in groups),
+        now=now,
     )
 
 

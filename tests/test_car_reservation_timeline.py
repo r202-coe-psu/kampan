@@ -3,6 +3,7 @@
 import datetime
 import html
 import re
+from lxml import html as lxml_html
 from urllib.parse import parse_qs, urlparse
 
 import pytest
@@ -329,10 +330,40 @@ def test_the_filters_round_trip_through_the_query_string(world):
     assert re.search(r'name="status" value="cancelled"\s+checked', page)
     assert not re.search(r'name="status" value="active"\s+checked', page)
     assert f'<option selected value="{world.driver.id}">' in page
-    assert f'value="{params["free_from"]}"' in page and f'value="{params["free_to"]}"' in page
+    # ว่างช่วงแสดงด้วยปฏิทิน (วันที่ ISO ใน input ซ่อน) + ตัวเลือกเวลา ไม่ใช่ datetime-local ของเบราว์เซอร์
+    assert f'name="free_from_date" class="w-full cursor-pointer input validator "' in page or 'name="free_from_date"' in page
+    assert f'value="{at(5, 8):%Y-%m-%d}"' in page and 'value="08:00"' in page and 'value="17:00"' in page
+    assert 'type="datetime-local"' not in page and "datetime-local" not in page.split("data-role=\"timeline-filter\"")[1].split("</form>")[0]
     assert 'name="start"' in page and f'value="{params["start"]}"' in page
     assert re.search(r'name="days" value="7"', page)
     assert sorted(bar_statuses(page)) == ["cancelled", "pending"]
+
+
+def test_bars_use_the_daisyui_tooltip_component_not_a_native_title(world):
+    world.reservation(at(1, 9), at(1, 12), location="ภูเก็ต", status="pending")
+    doc = lxml_html.fromstring(world.text())
+
+    (tip,) = doc.xpath("//div[contains(concat(' ', normalize-space(@class), ' '), ' tooltip ')][contains(concat(' ', normalize-space(@class), ' '), ' tl-tip ')]")
+    (content,) = tip.xpath("./div[contains(@class, 'tooltip-content')]")
+    text = " ".join(content.text_content().split())
+    assert "ภูเก็ต" in text and "พขร. Driver Timeline" in text and "รออนุมัติ" in text
+    (bar,) = tip.xpath("./button[@data-role='bar']")
+    assert bar.get("title") is None and "ภูเก็ต" in bar.get("aria-label")
+
+
+def test_the_free_window_uses_the_calendar_and_time_picker_components(world):
+    page = world.text({"free_from_date": at(5).strftime("%Y-%m-%d"), "free_from_time": "08:00",
+                       "free_to_date": at(5).strftime("%Y-%m-%d"), "free_to_time": "17:00"})
+    doc = lxml_html.fromstring(page)
+
+    for name in ("free_from_date", "free_to_date"):
+        # date_field: ปฏิทิน cally (ปุ่ม + popover) ค่า ISO อยู่ใน input ซ่อน
+        (hidden,) = doc.xpath(f"//input[@type='hidden'][@name='{name}']")
+        assert hidden.get("value") == at(5).strftime("%Y-%m-%d")
+        assert doc.xpath(f"//*[@data-date-picker][@data-input-id='{name}']//calendar-date")
+    assert doc.xpath("//input[@name='free_from_time'][@value='08:00']")
+    assert doc.xpath("//input[@name='free_to_time'][@value='17:00']")
+    assert not doc.xpath("//input[@type='datetime-local']")
 
 
 def test_prev_next_and_day_links_keep_every_filter(world):

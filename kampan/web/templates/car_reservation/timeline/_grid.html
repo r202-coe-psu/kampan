@@ -58,6 +58,7 @@
           {% endif %}
         </div>
 
+        {% set ns = namespace(row=0) %}
         {% for group in timeline.groups %}
         {% set group_key = group.key or '_none' %}
         <div class="tl-group-head" data-role="group-head" data-group="{{ group_key }}"
@@ -71,6 +72,7 @@
           </button>
         </div>
         {% for row in group.rows %}
+        {% set ns.row = ns.row + 1 %}
         {% set car = row.car %}
         {% if pick %}
         {% set pick_state = 'busy' if not row.selectable else ('elsewhere' if (row.chosen_slot and pick.active_slot and row.chosen_slot != pick.active_slot) else ('chosen' if row.chosen_slot else 'free')) %}
@@ -86,7 +88,9 @@
             <div class="tl-car-text">
               <div class="tl-car-plate" title="{{ car.license_plate }}">{{ car.license_plate }}</div>
               <div class="tl-car-sub">
-                {% if car.seat_count %}<i class="ph ph-armchair" aria-hidden="true"></i> {{ car.seat_count }} ที่นั่ง{% else %}&nbsp;{% endif %}
+                {% set drivers = [] %}
+                {% if not pick %}{% for bar in row.bars if bar.driver_name %}{% set first = bar.driver_name.split()[0] %}{% if first not in drivers %}{% set _ = drivers.append(first) %}{% endif %}{% endfor %}{% endif %}
+                {% if car.seat_count %}{{ car.seat_count }} ที่นั่ง{% endif %}{% if car.seat_count and drivers %} • {% endif %}{% if drivers %}ขับ: {{ drivers | join(', ') }}{% endif %}{% if not car.seat_count and not drivers %}&nbsp;{% endif %}
               </div>
               {% if pick %}
               {% set clash = row.conflict %}
@@ -109,18 +113,28 @@
           <div class="tl-track">
             {% for bar in row.bars %}
             {% set pop_id = id_prefix ~ '-pop-' ~ bar.reservation_id ~ '-' ~ bar.assignment_id %}
-            {% set tip %}{{ bar.label }} · {{ bar.driver_name or 'ยังไม่ระบุ พขร.' }} · {{ bar.status_label }} · {{ bar.departure | format_thai_datetime_short_month }} – {{ bar.return_ | format_thai_datetime_short_month }}{% endset %}
-            <button type="button"
-                    class="tl-bar tl-st-{{ bar.status }} {{ 'is-clipped-left' if bar.clipped_left }} {{ 'is-clipped-right' if bar.clipped_right }}"
-                    data-role="bar" data-status="{{ bar.status }}" data-reservation-id="{{ bar.reservation_id }}"
-                    style="left: min({{ bar.left_pct }}%, calc(100% - var(--tl-min-bar))); width: {{ bar.width_pct }}%; --lane: {{ bar.lane }}"
-                    popovertarget="{{ pop_id }}" title="{{ tip | trim }}">
-              <span class="tl-bar-content">
-                <span class="tl-bar-main">{{ bar.label }}</span>
-                {% if bar.driver_name %}<span class="tl-bar-sub">{{ bar.driver_name }}</span>{% endif %}
-                <span class="tl-bar-badge">{{ bar.status_label }}{% if bar.is_overtime %} · OT{% endif %}</span>
-              </span>
-            </button>
+            {% set tip %}{{ bar.label }} · {{ bar.driver_name or 'ยังไม่ระบุ พขร.' }} · {{ bar.status_label }}{% if bar.is_overtime %} · OT{% endif %} · {{ bar.departure | format_thai_datetime_short_month }} – {{ bar.return_ | format_thai_datetime_short_month }}{% endset %}
+            {# tooltip ของ DaisyUI (.tooltip + .tooltip-content) ห่อแท่ง: ตำแหน่ง/ขนาดแท่งอยู่ที่ตัวห่อ (.tl-tip) ปุ่มแท่งเต็มตัวห่อ
+               สองแถวแรกเปิด tooltip ลงล่าง (ไม่ให้ถูกหัวตารางบัง) แถวอื่นเปิดขึ้นบน #}
+            <div class="tooltip tl-tip {{ 'tooltip-bottom' if ns.row <= 2 else 'tooltip-top' }}"
+                 style="left: min({{ bar.left_pct }}%, calc(100% - var(--tl-min-bar))); width: {{ bar.width_pct }}%; --lane: {{ bar.lane }}">
+              <div class="tooltip-content tl-tipbox" data-role="bar-tooltip">
+                <p class="tl-tipbox-title">{{ bar.label }}</p>
+                <p>พขร. {{ bar.driver_name or 'ยังไม่ระบุ' }}</p>
+                <p>{{ bar.status_label }}{% if bar.is_overtime %} · OT{% endif %}</p>
+                <p>{{ bar.departure | format_thai_datetime_short_month }} – {{ bar.return_ | format_thai_datetime_short_month }}</p>
+              </div>
+              <button type="button"
+                      class="tl-bar tl-st-{{ bar.status }} {{ 'is-clipped-left' if bar.clipped_left }} {{ 'is-clipped-right' if bar.clipped_right }}"
+                      data-role="bar" data-status="{{ bar.status }}" data-reservation-id="{{ bar.reservation_id }}"
+                      popovertarget="{{ pop_id }}" aria-label="{{ tip | trim }}">
+                {# [ชื่อย่อ พขร.] • [ปลายทาง] สถานะดูจากสีของแท่งและคำอธิบายสถานะ รายละเอียดเต็มอยู่ใน tooltip/popover #}
+                <span class="tl-bar-content">
+                  <span class="tl-bar-main">{% if bar.driver_name %}<b>{{ bar.driver_name.split()[0] }}</b><span class="tl-bar-loc"> • {{ bar.label }}</span>{% else %}{{ bar.label }}{% endif %}</span>
+                  {% if bar.is_overtime %}<span class="tl-bar-ot" data-role="bar-ot">OT</span>{% endif %}
+                </span>
+              </button>
+            </div>
             <div id="{{ pop_id }}" popover class="tl-pop tl-st-{{ bar.status }}" data-role="bar-popover">
               <div class="flex items-start justify-between gap-2">
                 <p class="tl-pop-title">{{ bar.location or '-' }}</p>

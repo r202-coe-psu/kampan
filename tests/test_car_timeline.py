@@ -522,6 +522,25 @@ def test_parse_query_reads_every_filter():
     assert filters.free_window == (at(2, 8).replace(month=2), at(2, 17, 30).replace(month=2))
 
 
+def test_parse_query_reads_the_split_calendar_and_time_fields_and_defaults_a_missing_time():
+    _, _, filters = parse(
+        free_from_date="2031-02-02", free_from_time="08:15", free_to_date="2031-02-02", free_to_time="17:30"
+    )
+    assert filters.free_window == (datetime.datetime(2031, 2, 2, 8, 15), datetime.datetime(2031, 2, 2, 17, 30))
+
+    # ใส่แต่วันที่ = ว่างทั้งวัน (เริ่ม 00:00 สิ้นสุด 23:59)
+    _, _, filters = parse(free_from_date="2031-02-02", free_to_date="2031-02-03")
+    assert filters.free_window == (datetime.datetime(2031, 2, 2, 0, 0), datetime.datetime(2031, 2, 3, 23, 59))
+
+    # ช่องแยกมาก่อนรูปแบบเดิม และค่าผิดรูปแบบ/ขาดไปข้างหนึ่งไม่กรอง
+    _, _, filters = parse(free_from="2031-01-01T10:00", free_from_date="", free_to_date="2031-02-03")
+    assert filters.free_window is None
+    _, _, filters = parse(free_from_date="garbage", free_from_time="x", free_to_date="2031-02-03")
+    assert filters.free_window is None
+    _, _, filters = parse(free_from_date="2031-02-03", free_to_date="2031-02-02")
+    assert filters.free_window is None and filters.free_error
+
+
 @pytest.mark.parametrize(
     "args",
     [
@@ -625,3 +644,15 @@ def test_diis_bookings_overlapping_is_scoped_to_org_window_and_car(world):
     assert flow.diis_bookings_overlapping(world.org, at(10, 9), at(10, 10), car=world.car2).count() == 0
     assert flow.diis_bookings_overlapping(world.org, at(10, 12), at(10, 13)).count() == 0
     assert flow.diis_bookings_overlapping(world.other_org, at(10, 9), at(10, 10)).count() == 0
+
+
+def test_status_choices_follow_the_job_lifecycle():
+    assert [key for key, _ in car_timeline.STATUS_CHOICES] == [
+        "active",
+        "pending",
+        "cancel_requested",
+        "completed",
+        "denied",
+        "cancelled",
+    ]
+    assert set(car_timeline.ALL_STATUSES) == set(car_timeline.STATUS_LABELS)

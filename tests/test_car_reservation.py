@@ -645,7 +645,7 @@ def test_dispatcher_form_has_an_overtime_checkbox_and_a_car_dropdown(world):
     assert "กก 1234" in car.text_content()
 
 
-def test_dispatcher_form_orders_driver_table_then_car_then_overtime_then_extra_travelers_then_comment(
+def test_dispatcher_form_orders_car_then_driver_then_overtime_then_extra_travelers_then_workload_then_comment(
     world,
 ):
     car_application = request_at_dispatcher(world, province_scope="out_of_province")
@@ -656,14 +656,40 @@ def test_dispatcher_form_orders_driver_table_then_car_then_overtime_then_extra_t
         .get_data(as_text=True)
     )
 
+    # จิ้มรถ (ซ้าย) -> พนักงานขับรถ (ขวา) -> OT ใต้ช่อง พขร. -> ช่องเพิ่มเติม -> ภาระงานที่ยุบไว้ -> ความเห็น
     positions = [
-        html.index('data-role="driver-workload"'),
         html.index('name="assignments-0-car"'),
+        html.index('name="assignments-0-driver"'),
         html.index('id="assignments-0-is_overtime"'),
         html.index('name="extra_travelers"'),
+        html.index('data-role="driver-workload"'),
         html.index('name="comment"'),
     ]
     assert positions == sorted(positions)
+
+
+def test_dispatcher_form_folds_the_driver_workload_and_summarises_it_under_each_driver(world):
+    car_application = request_at_dispatcher(world)
+
+    html = (
+        world.client_for(world.dispatcher)
+        .get(detail_url(world, car_application))
+        .get_data(as_text=True)
+    )
+
+    doc = lxml_html.fromstring(html)
+    # ตารางภาระงานไม่กินที่บนสุดของโมดอล: ยุบไว้ใน <details> ที่ไม่เปิดเอง
+    (workload,) = doc.xpath("//details[@data-role='driver-workload']")
+    assert workload.get("open") is None
+    assert doc.xpath("//*[@data-role='driver-row'][@data-in-hours][@data-ot][@data-hours][@data-upcoming]")
+    # สรุปภาระงานของ พขร. ที่เลือกอยู่ใต้ช่อง พขร. ของแต่ละคัน (สคริปต์เติมข้อความ)
+    (summary,) = doc.xpath("//*[@data-role='driver-load']")
+    (select,) = doc.xpath("//select[@name='assignments-0-driver']")
+    assert summary.get("data-for") == select.get("id")
+    # หัวส่วนจัดรถบอกจำนวนที่ขอและมีตัวนับ "เลือกแล้ว M/N" ที่เดียว (ไม่ซ้ำกับคำใบ้ในกล่องตาราง)
+    assert "การจัดรถ (ขอ 1 คัน)" in " ".join(doc.xpath("//dialog[@data-role='approve-modal']//h4")[0].text_content().split())
+    assert len(doc.xpath("//dialog[@data-role='approve-modal']//*[@data-role='picker-count']")) == 1
+    assert not doc.xpath("//*[@data-role='vehicle-count-hint']")
 
 
 @pytest.mark.parametrize("request_type", ["airport", "welfare"])
@@ -1472,13 +1498,15 @@ def test_dispatcher_cannot_approve_without_choosing_car_and_driver(world, missin
     client = world.client_for(world.dispatcher)
     response = client.post(approve_url(world, car_application), data=data)
 
-    assert response.status_code == 302
+    # ไม่ redirect: ส่งหน้าเดิมกลับมาพร้อมข้อความในโมดอลอนุมัติที่เปิดค้างไว้
+    assert response.status_code == 200
     car_application.reload()
     assert car_application.current_step == 1
     assert car_application.assignments == []
     assert len(car_application.step_approvals) == 1
-    page = client.get(detail_url(world, car_application))
-    assert "กรุณาเลือกรถและพนักงานขับรถ" in page.get_data(as_text=True)
+    page = response.get_data(as_text=True)
+    assert "กรุณาเลือกรถและพนักงานขับรถ" in page
+    assert "if (!modal.open) modal.showModal();" in page
 
 
 def test_dispatcher_can_only_assign_active_cars_and_drivers_of_the_same_org(
@@ -1509,7 +1537,7 @@ def test_dispatcher_can_only_assign_active_cars_and_drivers_of_the_same_org(
         response = world.client_for(world.dispatcher).post(
             approve_url(world, car_application), data=dispatch_data(car, driver)
         )
-        assert response.status_code == 302
+        assert response.status_code == 200
         car_application.reload()
         assert car_application.current_step == 1, (car.license_plate, driver.first_name)
         assert car_application.assignments == []
@@ -1575,11 +1603,11 @@ def test_a_car_already_booked_in_an_overlapping_time_is_refused(world, blocking_
         approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
     )
 
-    assert response.status_code == 302
+    assert response.status_code == 200
     car_application.reload()
     assert car_application.current_step == 1
     assert car_application.assignments == []
-    html = client.get(detail_url(world, car_application)).get_data(as_text=True)
+    html = response.get_data(as_text=True)
     assert "รถ กก 1234 มีงานช่วงเวลานี้แล้ว" in html
 
 
@@ -1618,8 +1646,10 @@ def test_a_diis_clash_gives_a_plain_message_without_a_link(world):
     car_application = at_dispatcher_with_times(world, DAY, DAY + datetime.timedelta(hours=9))
 
     client = world.client_for(world.dispatcher)
-    client.post(approve_url(world, car_application), data=dispatch_data(world.car, world.driver))
-    html = client.get(detail_url(world, car_application)).get_data(as_text=True)
+    response = client.post(
+        approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
+    )
+    html = response.get_data(as_text=True)
 
     assert "รถ กก 1234 มีงานช่วงเวลานี้แล้ว (ถูกยืมผ่านระบบยืมรถเดิม)" in html
     assert "ดูคำขอที่ชน" not in html
@@ -1665,10 +1695,10 @@ def test_a_car_clash_names_the_other_requester_and_links_to_the_other_request(wo
         approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
     )
 
-    assert response.status_code == 302
+    assert response.status_code == 200
     car_application.reload()
     assert car_application.current_step == 1
-    html = client.get(detail_url(world, car_application)).get_data(as_text=True)
+    html = response.get_data(as_text=True)
     assert "รถ กก 1234 มีงานช่วงเวลานี้แล้ว" in html
     assert world.requester.get_name() in html
     assert f"{(DAY + datetime.timedelta(hours=2)):%d/%m/%Y %H:%M}" in html
@@ -3106,7 +3136,7 @@ def test_dispatch_approve_without_a_driver_choice_is_refused_and_nothing_advance
         },
     )
 
-    assert response.status_code == 302
+    assert response.status_code == 200
     car_application.reload()
     assert car_application.current_step == 1
     assert car_application.assignments == []

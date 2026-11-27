@@ -607,19 +607,86 @@ def test_the_approve_modal_has_the_picker_slot_buttons_and_the_fallback_selects(
     assert group_keys(approve_page(picker_world, reservation))[0] == "ตู้"
 
 
-def test_the_approve_modal_asks_for_the_driver_before_the_car_and_the_picker_comes_last(
-    picker_world,
-):
-    # #74: เลือก พขร. ก่อน แล้วเลือกรถ (ตัวเลือกรถแบบตารางอยู่ท้ายช่องของแต่ละคัน)
+def test_the_approve_modal_orders_slot_toggle_then_picker_then_the_summary_table(picker_world):
+    # แถบสลับคันที่ (บน) -> ตารางเลือกรถ (กลาง) -> ตารางสรุปการจัดรถ: รถ แล้ว พขร. ของแต่ละคัน (ล่างสุด)
     reservation = request_at_dispatcher_for(picker_world, 2)
     page = approve_page(picker_world, reservation)
 
-    driver_0 = page.index('name="assignments-0-driver"')
-    car_0 = page.index('name="assignments-0-car"')
-    driver_1 = page.index('name="assignments-1-driver"')
-    car_1 = page.index('name="assignments-1-car"')
+    toggle = page.index("data-picker-slot")
     picker = page.index('id="car-picker"')
-    assert driver_0 < car_0 < driver_1 < car_1 < picker
+    summary = page.index('data-role="assignment-summary"')
+    car_0 = page.index('name="assignments-0-car"')
+    driver_0 = page.index('name="assignments-0-driver"')
+    car_1 = page.index('name="assignments-1-car"')
+    driver_1 = page.index('name="assignments-1-driver"')
+    assert toggle < picker < summary < car_0 < driver_0 < car_1 < driver_1
+
+
+def test_the_approve_modal_has_a_slot_toggle_and_a_summary_row_per_car(picker_world):
+    reservation = request_at_dispatcher_for(picker_world, 2)
+    doc = lxml_html.fromstring(approve_page(picker_world, reservation))
+
+    # แถบสลับ: ปุ่มต่อคันที่ ไม่ใช่ปุ่ม "เลือกรถ" แบบเดิม
+    tabs = doc.xpath("//div[@data-picker-slot]")
+    assert [t.xpath(".//*[@data-role='slot-label']")[0].text_content().strip() for t in tabs] == [
+        "ยังไม่ได้เลือกรถ"
+    ] * 2
+    assert "คันที่ 2" in tabs[1].text_content()
+    # ตารางสรุป: หนึ่งแถวต่อคัน มีช่องรถ (ผูกกับ <select> ด้วย data-for) ช่อง พขร. และ OT
+    rows = doc.xpath("//*[@data-role='assignment-summary']//*[@data-role='assignment-slot']")
+    assert len(rows) == 2
+    for index, row in enumerate(rows):
+        (select,) = row.xpath(f".//select[@name='assignments-{index}-car']")
+        (summary,) = row.xpath(".//*[@data-role='slot-sum']")
+        assert summary.get("data-for") == select.get("id")
+        assert row.xpath(f".//select[@name='assignments-{index}-driver']")
+        assert row.xpath(f".//input[@name='assignments-{index}-is_overtime']")
+        assert row.xpath(".//*[@data-role='slot-clear']") and row.xpath(".//*[@data-role='slot-type-warning']")
+    # ตัวนับอยู่ที่หัวส่วนจัดรถ ไม่ซ้ำในกล่องตาราง และ legend ช่วงเวลาไม่ใช่กล่องมีขอบที่ดูเหมือน checkbox
+    assert not doc.xpath("//section[@id='car-picker']//*[@data-role='picker-count']")
+    (window,) = doc.xpath("//*[@data-role='picker-window']")
+    assert "ช่วงเวลาคำขอ" in window.text_content()
+
+
+def test_the_whole_picker_table_can_be_toggled_open_and_closed(picker_world):
+    reservation = request_at_dispatcher_for(picker_world, 2)
+    doc = lxml_html.fromstring(approve_page(picker_world, reservation))
+
+    (toggle,) = doc.xpath("//section[@id='car-picker']//button[@data-role='picker-toggle']")
+    assert toggle.get("aria-expanded") == "true"  # เปิดไว้ตั้งแต่แรก
+    (panel,) = doc.xpath("//section[@id='car-picker']//*[@data-role='picker-panel']")
+    assert toggle.get("aria-controls") == panel.get("id")
+    assert panel.get("hidden") is None
+    # ทั้งตาราง (ค้นหา ช่วงเวลา แถวรถ) อยู่ในแผงที่พับได้ ส่วนตารางสรุปรถที่เลือกอยู่นอกแผง (พับตารางเลือกรถแล้วยังเห็นสรุป)
+    for role in ("picker-search", "picker-body", "picker-notice"):
+        assert panel.xpath(f".//*[@data-role='{role}']")
+    assert not panel.xpath(".//*[@data-role='assignment-summary']")
+    (summary,) = doc.xpath("//*[@data-role='assignment-summary']")
+    assert "สรุปรถที่เลือกทั้งหมด" in summary.text_content()
+
+
+def test_the_picker_has_a_plate_search_box_that_is_not_submitted_with_the_form(picker_world):
+    reservation = request_at_dispatcher_for(picker_world, 1)
+    doc = lxml_html.fromstring(approve_page(picker_world, reservation))
+
+    (search,) = doc.xpath("//section[@id='car-picker']//input[@data-role='picker-search']")
+    # ไม่มี name: ค้นหาอย่างเดียว ไม่ถูกส่งไปกับฟอร์มอนุมัติ
+    assert search.get("name") is None
+    # แถวรถมีเลขทะเบียนให้ค้นหา
+    assert all(row.get("data-plate") for row in doc.xpath("//*[@data-role='car-row']"))
+    assert doc.xpath("//*[@data-role='picker-search-empty'][@hidden]")
+
+
+def test_the_picker_has_a_hide_busy_cars_checkbox_that_is_not_submitted_with_the_form(picker_world):
+    reservation = request_at_dispatcher_for(picker_world, 1)
+    doc = lxml_html.fromstring(approve_page(picker_world, reservation))
+
+    (box,) = doc.xpath("//section[@id='car-picker']//input[@data-role='picker-hide-busy']")
+    assert box.get("type") == "checkbox"
+    assert box.get("name") is None  # กรองฝั่งเบราว์เซอร์อย่างเดียว ไม่ถูกส่งไปกับฟอร์ม
+    assert box.get("checked") is not None  # ซ่อนรถที่ไม่ว่างตั้งแต่แรก
+    # แถวรถบอกว่าเลือกได้หรือไม่ให้สคริปต์กรอง
+    assert all(row.get("data-selectable") in ("0", "1") for row in doc.xpath("//*[@data-role='car-row']"))
 
 
 def test_the_approve_modal_marks_cars_held_by_other_requests_and_not_the_request_itself(
@@ -678,8 +745,8 @@ def test_posting_an_occupied_car_directly_is_still_refused_with_the_conflict_lin
     assert reservation.assignments == []
 
 
-def test_a_clash_message_is_an_error_toast_not_a_neutral_info_toast(picker_world):
-    # flash category "danger" ไม่มีใน toast จึงเคยแสดงเป็น info สีเทา (พบตอน QA)
+def test_a_clash_message_stays_inside_the_open_approve_modal_as_an_error(picker_world):
+    # ถูกปฏิเสธแล้วโมดอลต้องไม่ปิด (toast จะถูกโมดอลบัง) แจ้งเป็น alert สีแดงในโมดอลเอง
     reservation = request_at_dispatcher_for(picker_world, 1)
     assigned_request(
         picker_world,
@@ -692,12 +759,58 @@ def test_a_clash_message_is_an_error_toast_not_a_neutral_info_toast(picker_world
     response = picker_world.dispatcher_client.post(
         approve_url(picker_world, reservation),
         data=dispatch_data(picker_world.car2, picker_world.driver),
-        follow_redirects=True,
     )
 
+    assert response.status_code == 200
     html = response.get_data(as_text=True)
-    assert "มีงานช่วงเวลานี้แล้ว" in toast_text(html, "error")
-    assert "มีงานช่วงเวลานี้แล้ว" not in toast_text(html, "info")
+    doc = lxml_html.fromstring(html)
+    (alert,) = doc.xpath("//dialog[@data-role='approve-modal']//*[@data-role='approve-error']")
+    assert alert.get("hidden") is None
+    assert "มีงานช่วงเวลานี้แล้ว" in alert.text_content()
+    assert alert.xpath(".//a[@href]")  # ลิงก์ไปคำขอที่ชนยังเป็น HTML จริง
+    assert "if (!modal.open) modal.showModal();" in html  # โมดอลเปิดค้างไว้
+    # ค่าที่เลือกไว้ยังอยู่ให้แก้ต่อ
+    assert doc.xpath(
+        f"//select[@name='assignments-0-driver']/option[@selected][@value='{picker_world.driver.id}']"
+    )
+    assert "มีงานช่วงเวลานี้แล้ว" not in toast_text(html, "error")
+
+
+def test_the_same_driver_twice_keeps_the_modal_open_with_the_selections(picker_world):
+    reservation = request_at_dispatcher_for(picker_world, 2)
+
+    response = picker_world.dispatcher_client.post(
+        approve_url(picker_world, reservation),
+        data={
+            "comment": "",
+            **slot_data(picker_world.car2, picker_world.driver),
+            **slot_data(picker_world.car, picker_world.driver, index=1),
+        },
+    )
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert flow.DUPLICATE_DRIVER in html
+    assert "if (!modal.open) modal.showModal();" in html
+    doc = lxml_html.fromstring(html)
+    for index, car in ((0, picker_world.car2), (1, picker_world.car)):
+        assert doc.xpath(
+            f"//select[@name='assignments-{index}-car']/option[@selected][@value='{car.id}']"
+        )
+    reservation.reload()
+    assert reservation.assignments == []
+
+
+def test_the_approve_modal_checks_duplicate_drivers_in_the_browser_and_keeps_the_toggle_in_view(
+    picker_world,
+):
+    doc = lxml_html.fromstring(approve_page(picker_world, request_at_dispatcher_for(picker_world, 2)))
+
+    # ใต้ช่อง พขร. ของทุกคันมีที่แจ้งซ้ำ และหัวส่วนจัดรถ + แถบสลับติดบนของโมดอลเสมอ (เลื่อนดูตารางได้โดยไม่เสียแถบสลับ)
+    assert len(doc.xpath("//*[@data-role='driver-dup']")) == 2
+    (panel,) = doc.xpath("//*[@data-role='assignment-panel']")
+    assert "sticky" in panel.get("class").split()
+    assert panel.xpath(".//div[@data-picker-slot]")
 
 
 def test_posting_the_same_car_twice_is_still_refused_by_the_flow(picker_world):
