@@ -1,0 +1,35 @@
+{# แถบนำทางของตารางรถ: ← วันนี้ → ช่วงวันที่ที่ดูอยู่ และตัวเลือกจำนวนวัน
+   ทุกลิงก์พาตัวกรองปัจจุบันไปด้วย (query string) ใช้ได้ทั้งแบบลิงก์ธรรมดาและ htmx (hx-get + hx-push-url)
+   ซ่อน start/days ไว้ในฟอร์มตัวกรองผ่าน attribute form= เพื่อให้ส่งตัวกรองแล้วไม่เด้งกลับไปช่วงเดิม
+   ตอนตอบ htmx (nav_oob) แถบนี้ถูกส่งตามตารางเพื่อแทนที่ตัวเดิม #}
+{% macro NavLink(args, label=None, icon=None, aria=None, extra_class='') %}
+{% set href = url_for('car_reservation.timeline.index', organization_id=organization.id, **args) %}
+<a class="btn btn-ghost font-semibold {{ extra_class }}" href="{{ href }}"
+   {% if aria %}aria-label="{{ aria }}" title="{{ aria }}"{% endif %}
+   hx-get="{{ href }}" hx-target="#timeline-grid" hx-push-url="true">
+  {% if icon %}<i class="ph {{ icon }}"></i>{% endif %}{{ label or '' }}
+</a>
+{% endmacro %}
+<div id="timeline-nav" {% if nav_oob %}hx-swap-oob="true"{% endif %}
+     class="flex flex-wrap items-center justify-between gap-2" data-role="timeline-nav">
+  {% if links.start %}<input type="hidden" form="timeline-filter" name="start" value="{{ links.start }}">{% endif %}
+  <input type="hidden" form="timeline-filter" name="days" value="{{ timeline.day_count }}">
+  <div class="flex flex-wrap items-center gap-2">
+    <div class="join rounded-lg border border-base-300">
+      {{ NavLink(links.prev, icon='ph-caret-left', aria='ช่วงก่อนหน้า', extra_class='join-item btn-square') }}
+      {{ NavLink(links.today, label='วันนี้', extra_class='join-item') }}
+      {{ NavLink(links.next, icon='ph-caret-right', aria='ช่วงถัดไป', extra_class='join-item btn-square') }}
+    </div>
+    <p class="text-lg font-bold" data-role="range-label">
+      {{ timeline.start_date | format_thai_date }}{% if timeline.day_count > 1 %} – {{ timeline.end_date | format_thai_date }}{% endif %}
+    </p>
+  </div>
+  <div role="tablist" class="tabs tabs-box" aria-label="จำนวนวันที่แสดง">
+    {% for value, label, args in links.days %}
+    {% set href = url_for('car_reservation.timeline.index', organization_id=organization.id, **args) %}
+    <a role="tab" class="tab {{ 'tab-active' if value == timeline.day_count }}" data-days="{{ value }}"
+       {% if value == timeline.day_count %}aria-selected="true"{% endif %}
+       href="{{ href }}" hx-get="{{ href }}" hx-target="#timeline-grid" hx-push-url="true">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>

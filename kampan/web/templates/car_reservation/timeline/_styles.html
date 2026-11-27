@@ -1,0 +1,243 @@
+{# CSS ของตารางรถ (ใช้ร่วมกับตัวเลือกรถในฟอร์มจัดรถ: include ครั้งเดียวต่อหน้า)
+   ไม่พึ่ง utility class ใหม่ของ Tailwind ใช้ตัวแปรสีของ DaisyUI ล้วน ตำแหน่ง/ความกว้างแท่งมาจาก inline style #}
+<style>
+  .tl {
+    --tl-car-col: 13rem;
+    --tl-day-min: 3.5rem;
+    --tl-lane: 2.25rem;
+    --tl-min-bar: 2.5rem;
+    --tl-line: color-mix(in oklab, var(--color-base-content) 10%, transparent);
+    --tl-hatch: color-mix(in oklab, var(--color-base-content) 9%, transparent);
+  }
+  @media (max-width: 40rem) { .tl { --tl-car-col: 6.75rem; } .tl-photo { display: none; } }
+
+  .tl-scroll {
+    overflow: auto;
+    max-height: 75vh;
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-box);
+    background: var(--color-base-100);
+  }
+  .tl-flush .tl-scroll { border: 0; border-radius: 0; }
+  .tl-inner { position: relative; min-width: calc(var(--tl-car-col) + var(--tl-days) * var(--tl-day-min)); }
+
+  /* ส่วนหัว: เดือน, วัน, (ชั่วโมง เฉพาะมุมมอง 1 วัน) ติดบนเมื่อเลื่อนลง และมุมซ้ายติดทั้งบนและซ้าย */
+  .tl-head {
+    display: grid;
+    grid-template-columns: var(--tl-car-col) 1fr;
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: var(--color-base-100);
+    border-bottom: 1px solid var(--color-base-300);
+  }
+  .tl-corner {
+    position: sticky;
+    left: 0;
+    z-index: 7;
+    display: flex;
+    align-items: flex-end;
+    padding: .5rem .75rem;
+    font-size: .75rem;
+    font-weight: 600;
+    color: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+    background: var(--color-base-100);
+    border-right: 1px solid var(--color-base-300);
+  }
+  .tl-head-days { display: grid; }
+  .tl-months, .tl-daycells, .tl-hours { display: grid; grid-template-columns: repeat(var(--tl-days), minmax(0, 1fr)); }
+  .tl-month {
+    padding: .2rem .5rem;
+    font-size: .7rem;
+    font-weight: 600;
+    color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+    border-left: 1px solid var(--tl-line);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .tl-daycell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: .25rem 0;
+    line-height: 1.15;
+    font-size: .7rem;
+    border-left: 1px solid var(--tl-line);
+    color: color-mix(in oklab, var(--color-base-content) 65%, transparent);
+  }
+  .tl-daycell b { font-size: .95rem; font-weight: 600; color: var(--color-base-content); }
+  .tl-daycell.is-weekend { background: repeating-linear-gradient(135deg, var(--tl-hatch) 0 4px, transparent 4px 8px); }
+  .tl-daycell.is-holiday { background: color-mix(in oklab, var(--color-error) 10%, var(--color-base-100)); color: var(--color-error); }
+  .tl-daycell.is-holiday b { color: var(--color-error); }
+  .tl-daycell.is-today { background: color-mix(in oklab, var(--color-primary) 14%, var(--color-base-100)); color: var(--color-primary); }
+  .tl-daycell.is-today b {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 1.6rem; height: 1.6rem; border-radius: 9999px;
+    background: var(--color-primary); color: var(--color-primary-content);
+  }
+  .tl-hours { border-top: 1px solid var(--tl-line); }
+  .tl-hour { padding: .1rem .25rem; font-size: .65rem; color: color-mix(in oklab, var(--color-base-content) 55%, transparent); border-left: 1px solid var(--tl-line); }
+
+  /* ตัวตาราง: ชั้นพื้นหลังชั้นเดียว (เส้นแบ่งวัน ลายเสาร์-อาทิตย์ วันหยุด เส้นเวลาปัจจุบัน) อยู่หลังทุกแถว */
+  .tl-body { position: relative; }
+  .tl-bg {
+    position: absolute;
+    top: 0; bottom: 0; right: 0;
+    left: var(--tl-car-col);
+    pointer-events: none;
+    z-index: 0;
+    background-image: linear-gradient(to right, var(--tl-line) 1px, transparent 1px);
+    background-size: calc(100% / var(--tl-days)) 100%;
+  }
+  .tl-band { position: absolute; top: 0; bottom: 0; }
+  .tl-band.is-weekend { background: repeating-linear-gradient(135deg, var(--tl-hatch) 0 4px, transparent 4px 8px); }
+  .tl-band.is-holiday { background: color-mix(in oklab, var(--color-error) 9%, transparent); }
+  .tl-band.is-today { background: color-mix(in oklab, var(--color-primary) 7%, transparent); }
+  .tl-now { position: absolute; top: 0; bottom: 0; border-left: 2px dashed var(--color-error); }
+
+  .tl-group-head {
+    position: relative;
+    z-index: 2;
+    background: color-mix(in oklab, var(--color-base-200) 80%, var(--color-base-100));
+    border-top: 1px solid var(--tl-line);
+    border-bottom: 1px solid var(--color-base-300);
+  }
+  .tl-group-toggle {
+    position: sticky;
+    left: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .4rem .75rem;
+    font-size: .85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .tl-group-toggle i { transition: transform .15s; }
+  .tl-group-toggle[aria-expanded="false"] i { transform: rotate(-90deg); }
+
+  .tl-row {
+    display: grid;
+    grid-template-columns: var(--tl-car-col) 1fr;
+    min-height: calc(var(--tl-lanes) * var(--tl-lane) + 1rem);
+    border-bottom: 1px solid var(--tl-line);
+  }
+  .tl-row[hidden] { display: none; }
+  .tl-car {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-width: 0;
+    padding: .25rem .5rem .25rem .75rem;
+    background: var(--color-base-100);
+    border-right: 1px solid var(--color-base-300);
+  }
+  .tl-photo > div { background: var(--color-base-100); border: 1px solid var(--color-base-300); border-radius: .6rem; color: color-mix(in oklab, var(--color-base-content) 65%, transparent); }
+  .tl-photo .ph { font-size: 1.15rem; }
+  .tl-car-text { position: relative; min-width: 0; line-height: 1.3; }
+  .tl-car-plate { font-weight: 700; font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tl-car-sub { overflow: hidden; text-overflow: ellipsis; font-size: .72rem; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); white-space: nowrap; }
+  /* หน้าตารางรถปกติ: บรรทัดรายละเอียดลอยอยู่ใต้ทะเบียน ไม่ดันให้ทะเบียนขึ้นไปจากกึ่งกลางรูป */
+  .tl:not(.tl-pick) .tl-car-sub { position: absolute; left: 0; right: 0; top: 100%; }
+  /* overflow ต้องไม่ตัด: tooltip ของแท่งยื่นออกนอกแถว (แท่งถูกตัดให้อยู่ในช่วงที่แสดงตั้งแต่ฝั่ง server แล้ว) แถวที่ชี้อยู่ยกขึ้นเหนือแถวข้างเคียง */
+  /* ตอนเมาส์ออก tooltip ยังเฟดออกอีก ~.3 วิ (DaisyUI: delay 75ms + .2s) ถ้าแถวลด z-index ทันที tooltip จะจมใต้แถวข้างเคียงและเส้นเวลาปัจจุบัน
+     กลางทางเฟด เห็นเป็นกล่องถูกตัดครึ่ง จึงหน่วงการลด z-index ไว้จนเฟดจบ (ตอนยกขึ้นไม่หน่วง) */
+  .tl-track { position: relative; z-index: 1; transition: z-index 0s .3s; }
+  .tl-track:has(.tl-tip:hover), .tl-track:has(.tl-tip:focus-within) { z-index: 5; transition-delay: 0s; }
+
+  /* แท่งงาน: พื้นพาสเทลอ่อน ขอบซ้ายหนา 4px ตัวอักษรเข้ม (contrast >= 4.5:1 ตาม WCAG AA)
+     --tone = สีหลักของสถานะ (ขอบซ้าย, legend, popover) --bar-bg / --bar-fg = พื้นและตัวอักษรของแท่ง */
+  /* ตัวห่อ tooltip = ตัวกำหนดตำแหน่ง/ขนาดแท่ง (left/width มาจาก inline style, lane จาก --lane) */
+  .tl-tip {
+    position: absolute;
+    top: calc(.5rem + var(--lane, 0) * var(--tl-lane) + .175rem);
+    height: calc(var(--tl-lane) - .35rem);
+    min-width: var(--tl-min-bar);
+    display: block;
+  }
+  .tl-tipbox { display: flex; flex-direction: column; gap: .125rem; width: max-content; max-width: 16rem; padding: .5rem .65rem; text-align: left; font-size: .75rem; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
+  .tl-tipbox-title { font-weight: 700; font-size: .8rem; }
+  .tl-bar {
+    --tone: var(--color-base-content);
+    --bar-bg: var(--color-base-200);
+    --bar-fg: var(--color-base-content);
+    position: relative;
+    width: 100%;
+    height: 100%;
+    container-type: inline-size;
+    display: block;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+    color: var(--bar-fg);
+    background: var(--bar-bg);
+    border: 0;
+    border-left: 4px solid var(--tone);
+    border-radius: .375rem;
+    /* เส้นขอบบางสีเดียวกับสถานะ: แท่งสั้นที่แทบไม่มีที่ว่างสำหรับข้อความยังเห็นรูปแท่งชัด */
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 35%, transparent);
+    overflow: hidden;
+    transition: box-shadow .12s;
+  }
+  .tl-bar:hover { box-shadow: inset 0 0 0 1px var(--tone), 0 2px 8px color-mix(in oklab, var(--tone) 40%, transparent); }
+  .tl-bar:focus-visible { outline: 2px solid var(--tone); outline-offset: 2px; }
+  .tl-bar.is-clipped-left { border-left-width: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+  .tl-bar.is-clipped-right { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .tl-bar-content { display: flex; align-items: center; gap: .4rem; height: 100%; padding: 0 .5rem; white-space: nowrap; font-size: .75rem; line-height: 1.1; }
+  .tl-bar-main { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .tl-bar-main b { font-weight: 700; }
+  .tl-bar-ot { flex: none; margin-left: auto; padding: 0 .3rem; border: 1px solid currentColor; border-radius: 9999px; font-size: .6rem; font-weight: 700; }
+  /* แท่งแคบ: ตัดปลายทางออกเหลือชื่อ พขร. (ตัดท้ายด้วย …) และลดระยะขอบใน ไม่ซ่อนข้อความทั้งหมดจนแท่งดูว่างเปล่า */
+  @container (max-width: 6rem) { .tl-bar-loc { display: none; } }
+  @container (max-width: 4rem) { .tl-bar-content { padding: 0 .25rem; gap: .2rem; } .tl-bar-ot { display: none; } }
+
+  .tl-st-active { --tone: #059669; --bar-bg: #dcfce7; --bar-fg: #065f46; }
+  .tl-st-pending { --tone: #d97706; --bar-bg: #fef3c7; --bar-fg: #92400e; }
+  .tl-st-cancel_requested { --tone: #ea580c; --bar-bg: #ffedd5; --bar-fg: #9a3412; }
+  .tl-st-completed { --tone: #64748b; --bar-bg: #f1f5f9; --bar-fg: #334155; }
+  /* ไม่อนุมัติ = แดง, ยกเลิก = เทาเข้มลายทแยง (ไม่ใช้สีแดงซ้ำกัน) */
+  .tl-st-denied { --tone: #dc2626; --bar-bg: #fee2e2; --bar-fg: #991b1b; }
+  .tl-st-cancelled { --tone: #475569; --bar-bg: repeating-linear-gradient(135deg, #e2e8f0 0 5px, #f1f5f9 5px 10px); --bar-fg: #1e293b; }
+  .tl-st-cancelled .tl-bar-main, .tl-st-denied .tl-bar-main { text-decoration: line-through; }
+  .tl-chip { display: inline-flex; align-items: center; gap: .4rem; font-size: .75rem; font-weight: 500; }
+  .tl-chip::before { content: ""; width: .6rem; height: .6rem; border-radius: 2px; background: var(--tone); }
+
+  /* popover ของแท่ง (Popover API: อยู่ชั้นบนสุด กลางจอ กด Esc หรือคลิกนอกกล่องเพื่อปิด) */
+  .tl-pop {
+    width: min(23rem, calc(100vw - 2rem));
+    margin: auto; /* Tailwind preflight ตั้ง margin:0 ทับ margin:auto ของ popover จึงชิดมุมซ้ายบน */
+    padding: 1rem;
+    color: var(--color-base-content);
+    background: var(--color-base-100);
+    border: 1px solid var(--color-base-300);
+    border-top: 4px solid var(--tone, var(--color-base-content));
+    border-radius: var(--radius-box);
+    box-shadow: 0 10px 30px color-mix(in oklab, var(--color-base-content) 25%, transparent);
+  }
+  .tl-pop::backdrop { background: color-mix(in oklab, var(--color-base-content) 20%, transparent); }
+  .tl-pop-title { font-weight: 700; font-size: 1rem; overflow-wrap: anywhere; }
+  .tl-pop dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .35rem .75rem; margin: .75rem 0; font-size: .85rem; }
+  .tl-pop dt { color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
+  .tl-pop dd { overflow-wrap: anywhere; }
+
+  /* ตัวกรอง: ปุ่มเลือกแบบ pill (ประเภทรถ/สถานะ) */
+  .tl-pill {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .3rem .8rem; font-size: .8rem; line-height: 1.2; cursor: pointer;
+    border: 1px solid var(--color-base-300); border-radius: 9999px; background: var(--color-base-100);
+    transition: background .12s, border-color .12s;
+  }
+  .tl-pill:hover { background: var(--color-base-200); }
+  .tl-pill:has(input:focus-visible) { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+  .tl-pill:has(input:checked) { border-color: color-mix(in oklab, var(--tone, var(--color-base-content)) 55%, transparent); background: color-mix(in oklab, var(--tone, var(--color-base-content)) 12%, var(--color-base-100)); }
+  .tl-pill.is-status::before { content: ""; width: .5rem; height: .5rem; border-radius: 9999px; background: var(--tone); }
+  .tl-pill.is-status input { position: absolute; opacity: 0; pointer-events: none; }
+  .tl-pill.is-status .ph-check { display: none; font-size: .8rem; }
+  .tl-pill.is-status:has(input:checked) .ph-check { display: inline; }
+  .tl-pill.is-type { --tone: var(--color-primary); }
+  .tl-now-key { display: inline-flex; align-items: center; gap: .4rem; font-size: .75rem; color: color-mix(in oklab, var(--color-base-content) 70%, transparent); }
+  .tl-now-key::before { content: ""; width: 1.1rem; border-top: 2px dashed var(--color-error); }
+</style>

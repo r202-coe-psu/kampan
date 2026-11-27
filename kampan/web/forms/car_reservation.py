@@ -334,15 +334,81 @@ class DomesticReservationForm(CommonReservationForm):
         )
 
 
-class UrgentDomesticReservationForm(DomesticReservationForm):
-    """ผู้จัดรถสร้างใบขอในประเทศเร่งด่วน: ฟิลด์เดียวกับใบปกติ + เลือกรถ พขร. และ OT ในฟอร์มเดียว
+class AssignmentForm(ThaiForm):
+    """หนึ่งชุด (รถ + พนักงานขับรถ + OT) ในฟอร์มจัดรถ: ซ้อนใน FieldList จึงไม่มี CSRF ของตัวเอง
 
-    choices ของรถ/พขร. ตั้งจาก org ตอนสร้างหน้า ส่วนสิทธิ์และเวลาชนกันตรวจที่ engine
+    ชุดที่ว่างทั้งรถและ พขร. คือ "ไม่จัดรถคันนี้" ส่วนชุดที่กรอกครึ่งเดียวถือเป็นความผิดพลาด
+    (ตรวจที่ view) choices ตั้งจาก org ตอนสร้างหน้า ส่วนสิทธิ์และเวลาชนกันตรวจที่ engine
     """
 
     car = fields.SelectField("รถ", choices=[], validate_choice=False)
     driver = fields.SelectField("พนักงานขับรถ", choices=[], validate_choice=False)
     is_overtime = fields.BooleanField("งานนอกเวลา (OT)")
+
+    @property
+    def is_blank(self):
+        return not self.car.data and not self.driver.data
+
+    @property
+    def is_half_filled(self):
+        return bool(self.car.data) != bool(self.driver.data)
+
+
+# จำนวนชุดสูงสุดที่ฟอร์มจัดรถรับ (ใบขอเร่งด่วนของผู้จัดรถแสดงเท่านี้ช่อง)
+MAX_URGENT_ASSIGNMENTS = 5
+
+
+def set_assignment_slots(form, count, car_choices, driver_choices):
+    """ให้ form.assignments มีช่องครบ count ช่อง (เติมช่องว่างท้ายรายการ) และตั้ง choices ทุกช่อง
+
+    ตัวเลือกแรกเป็น "ไม่เลือก" (ค่าว่าง) ช่องที่เกินจำนวนที่ส่งมาก็ยังเรนเดอร์ได้ตอนเปิดหน้า
+    """
+    while len(form.assignments) < count:
+        form.assignments.append_entry()
+    for entry in form.assignments:
+        entry.form.car.choices = [("", "เลือกรถ"), *car_choices]
+        entry.form.driver.choices = [("", "เลือกพนักงานขับรถ"), *driver_choices]
+
+
+def chosen_assignments(form):
+    """(ชุดที่กรอกครบ, มีชุดกรอกครึ่งเดียวหรือไม่) จาก form.assignments โดยข้ามชุดที่ว่างทั้งชุด
+
+    ชุดคือ dict {car_id, driver_id, is_overtime} (ค่า id เป็นสตริงจากฟอร์ม view แปลงเป็น document เอง)
+    """
+    chosen = []
+    half_filled = False
+    for entry in form.assignments:
+        slot = entry.form
+        if slot.is_blank:
+            continue
+        if slot.is_half_filled:
+            half_filled = True
+            continue
+        chosen.append(
+            {
+                "car_id": slot.car.data,
+                "driver_id": slot.driver.data,
+                "is_overtime": slot.is_overtime.data,
+            }
+        )
+    return chosen, half_filled
+
+
+class UrgentDomesticReservationForm(DomesticReservationForm):
+    """ผู้จัดรถสร้างใบขอในประเทศเร่งด่วน: ฟิลด์เดียวกับใบปกติ + จัดรถ (หลายชุด) ในฟอร์มเดียว
+
+    ผู้จัดรถเป็นผู้ขอเอง จึงต้องจัดครบตามจำนวนรถ (vehicle_count) ที่กรอกในฟอร์มเดียวกัน ไม่มีทางลดจำนวน
+    """
+
+    assignments = fields.FieldList(
+        fields.FormField(AssignmentForm), min_entries=0, max_entries=MAX_URGENT_ASSIGNMENTS
+    )
+
+    def validate_vehicle_count(self, field):
+        if field.data and field.data > MAX_URGENT_ASSIGNMENTS:
+            raise validators.ValidationError(
+                f"ใบขอเร่งด่วนจัดรถได้ไม่เกิน {MAX_URGENT_ASSIGNMENTS} คัน"
+            )
 
 
 class InsertJobForm(ThaiFlaskForm):
@@ -800,14 +866,20 @@ def with_id_suffix(form, suffix):
 
 
 class DispatchDecisionForm(ApprovalDecisionForm):
-    """ขั้นผู้จัดรถ: อนุมัติพร้อมระบุรถและพนักงานขับรถ
+    """ขั้นผู้จัดรถ: อนุมัติพร้อมระบุรถและพนักงานขับรถ (หนึ่งชุดต่อรถหนึ่งคัน)
 
+    จำนวนชุดที่แสดงเท่ากับจำนวนรถที่ผู้ขอขอ (view เติมช่องให้) จัดน้อยกว่านั้นต้องใส่ reduce_reason
     choices ตั้งจากรถ/พนักงานขับรถของ org ตอนสร้างหน้า ส่วนการตรวจสิทธิ์และเวลาชนกัน
     อยู่ที่ engine จึงปิดการตรวจ choice ของ wtforms
     """
 
-    car = fields.SelectField("รถ", choices=[], validate_choice=False)
-    driver = fields.RadioField("พนักงานขับรถ", choices=[], validate_choice=False)
+    assignments = fields.FieldList(
+        fields.FormField(AssignmentForm), min_entries=0, max_entries=MAX_VEHICLES
+    )
+    reduce_reason = fields.TextAreaField(
+        "เหตุผลที่จัดรถน้อยกว่าที่ขอ",
+        validators=[validators.Optional(), validators.Length(max=516)],
+    )
     extra_travelers = fields.StringField(
         "ขออนุมัติให้ผู้ร่วมเดินทางไปปฏิบัติงานต่างจังหวัด",
         render_kw={"placeholder": "เช่น นายสมชาย ใจดี, นายสมศักดิ์ รักงาน"},
@@ -819,11 +891,10 @@ class DispatchDecisionForm(ApprovalDecisionForm):
             ),
         ],
     )
-    is_overtime = fields.BooleanField("งานนอกเวลา (OT)")
 
 
 class OvertimeForm(ThaiFlaskForm):
-    """ผู้จัดรถสลับสถานะงานนอกเวลา (OT) ของคำขอที่ active"""
+    """ผู้จัดรถสลับสถานะงานนอกเวลา (OT) ของชุดรถหนึ่งชุด"""
 
     is_overtime = fields.BooleanField("งานนอกเวลา (OT)")
 
@@ -919,6 +990,41 @@ class DriverStatsFilterForm(ThaiFlaskForm):
         "พนักงานขับรถ",
         choices=[],
         render_kw={"onchange": "this.form.submit()"},
+    )
+
+
+class TimelineFilterForm(ThaiFlaskForm):
+    """ตัวกรองหน้าตารางรถ (GET จึงไม่มี CSRF) ค่าทั้งหมดอยู่ใน query string
+
+    สร้างจากค่าที่ผ่าน `car_timeline.parse_query` แล้ว (`data=`) ไม่ผูกกับ request.args ตรง ๆ
+    ค่าที่ผิดรูปแบบจึงไม่ทำให้ฟอร์มแสดงผลพัง; driver choices ตั้งจาก พขร. ของ org ใน view
+    วันเริ่มและจำนวนวัน (start, days) อยู่ในแถบนำทางของหน้า ไม่ใช่ฟอร์มนี้
+    """
+
+    class Meta:
+        csrf = False
+
+    organization_id = fields.HiddenField()
+    vehicle_type = SelectMultipleField(
+        "ประเภทรถ", choices=models.vehicles.VEHICLE_TYPES
+    )
+    q = fields.StringField("ทะเบียน", validators=[validators.Length(max=64)])
+    driver = SelectField("พนักงานขับรถ", choices=[])
+    status = SelectMultipleField(
+        "สถานะ", choices=models.car_reservations.RESERVATION_STATUS_DISPLAY
+    )
+    # "ว่างช่วง" แยกวัน/เวลาเพื่อใช้ปฏิทิน (date_field) และตัวเลือกเวลา (time_picker) ของระบบ
+    free_from_date = fields.DateField(
+        "ว่างช่วง (วันที่เริ่มต้น)", validators=[validators.Optional()]
+    )
+    free_from_time = fields.TimeField(
+        "ว่างช่วง (เวลาเริ่มต้น)", format="%H:%M", validators=[validators.Optional()]
+    )
+    free_to_date = fields.DateField(
+        "ว่างช่วง (วันที่สิ้นสุด)", validators=[validators.Optional()]
+    )
+    free_to_time = fields.TimeField(
+        "ว่างช่วง (เวลาสิ้นสุด)", format="%H:%M", validators=[validators.Optional()]
     )
 
 

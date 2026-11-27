@@ -1,5 +1,6 @@
 {% extends '/car_reservation/base/default-page.html' %}
 {% from '/car_reservation/components/form_section.html' import FormSection %}
+{% from '/car_reservation/timeline/_picker_widget.html' import CarPicker, PickerSlot %}
 
 {% block title %}เพิ่มงานแทรก{% endblock %}
 
@@ -12,14 +13,7 @@
   <div class="card-body gap-8">
     {{ form.csrf_token }}
 
-    {% call FormSection('จัดรถและพนักงานขับรถ', icon='ph-user') %}
-    <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
-      {{ renderer.render_select_field(form.driver) }}
-      {{ renderer.render_select_field(form.car) }}
-    </div>
-    {{ renderer.render_checkbox(form.is_overtime) }}
-    {% endcall %}
-
+    {# เวลามาก่อนรถ: ตัวเลือกรถโหลดตามช่วงเวลาและ พขร. ที่กรอกด้านบน #}
     {% call FormSection('รายละเอียดงาน', icon='ph-map-pin') %}
     <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
       {{ renderer.date_field(form.departure_date) }}
@@ -30,6 +24,20 @@
       {{ renderer.render_field(form.request_reason) }}
       {{ renderer.render_select_field(form.insert_scope) }}
     </div>
+    {% endcall %}
+
+    {% call FormSection('จัดรถและพนักงานขับรถ', icon='ph-user') %}
+    <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
+      {{ renderer.render_select_field(form.driver) }}
+    </div>
+    {# รถของงานหลักที่ พขร. คนนี้ขับอยู่ยังเลือกได้ (งานแทรกใช้รถร่วม) รถของ พขร. คนอื่นที่ทับเวลาเลือกไม่ได้ #}
+    {{ CarPicker(organization, car_picker.timeline, car_picker.picker_error, reload=true, driver_input='driver',
+                 window_inputs=['departure_date', 'departure_time', 'return_date', 'return_time']) }}
+    <div class="relative">
+      {{ renderer.render_select_field(form.car) }}
+      {{ PickerSlot(form.car, 1) }}
+    </div>
+    {{ renderer.render_checkbox(form.is_overtime) }}
     {% endcall %}
 
     {% call FormSection('ผู้ติดต่อรับแจ้งสถานะ', icon='ph-user') %}
@@ -46,4 +54,6 @@
     </div>
   </div>
 </form>
+{% include "/car_reservation/timeline/_picker_styles.html" %}
+{% include "/car_reservation/timeline/_picker_scripts.html" %}
 {% endblock %}

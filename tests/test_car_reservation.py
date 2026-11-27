@@ -207,7 +207,7 @@ def approve_url(world, car_application):
 def step_data(world, key):
     """ฟอร์มอนุมัติของขั้น key (ขั้นผู้จัดรถต้องระบุรถและพนักงานขับรถ)"""
     if key == "dispatcher":
-        return {"comment": "", "car": str(world.car.id), "driver": str(world.driver.id)}
+        return dispatch_data(world.car, world.driver)
     return {"comment": ""}
 
 
@@ -665,14 +665,16 @@ def test_dispatcher_form_has_an_overtime_checkbox_and_a_car_dropdown(world):
     )
 
     doc = lxml_html.fromstring(html)
-    (form,) = doc.xpath("//form[.//*[@name='car']]")
-    (overtime,) = form.xpath(".//input[@type='checkbox'][@name='is_overtime']")
+    (form,) = doc.xpath("//form[.//*[@name='assignments-0-car']]")
+    (overtime,) = form.xpath(
+        ".//input[@type='checkbox'][@name='assignments-0-is_overtime']"
+    )
     assert "checkbox" in overtime.get("class").split()
-    (car,) = form.xpath(".//select[@name='car']")
+    (car,) = form.xpath(".//select[@name='assignments-0-car']")
     assert "กก 1234" in car.text_content()
 
 
-def test_dispatcher_form_orders_driver_table_then_car_then_overtime_then_extra_travelers_then_comment(
+def test_dispatcher_form_orders_car_then_driver_then_overtime_then_extra_travelers_then_workload_then_comment(
     world,
 ):
     car_application = request_at_dispatcher(world, province_scope="out_of_province")
@@ -683,14 +685,40 @@ def test_dispatcher_form_orders_driver_table_then_car_then_overtime_then_extra_t
         .get_data(as_text=True)
     )
 
+    # จิ้มรถ (ซ้าย) -> พนักงานขับรถ (ขวา) -> OT ใต้ช่อง พขร. -> ช่องเพิ่มเติม -> ภาระงานที่ยุบไว้ -> ความเห็น
     positions = [
-        html.index('data-role="driver-workload"'),
-        html.index('name="car"'),
-        html.index('id="is_overtime"'),
+        html.index('name="assignments-0-car"'),
+        html.index('name="assignments-0-driver"'),
+        html.index('id="assignments-0-is_overtime"'),
         html.index('name="extra_travelers"'),
+        html.index('data-role="driver-workload"'),
         html.index('name="comment"'),
     ]
     assert positions == sorted(positions)
+
+
+def test_dispatcher_form_folds_the_driver_workload_and_summarises_it_under_each_driver(world):
+    car_application = request_at_dispatcher(world)
+
+    html = (
+        world.client_for(world.dispatcher)
+        .get(detail_url(world, car_application))
+        .get_data(as_text=True)
+    )
+
+    doc = lxml_html.fromstring(html)
+    # ตารางภาระงานไม่กินที่บนสุดของโมดอล: ยุบไว้ใน <details> ที่ไม่เปิดเอง
+    (workload,) = doc.xpath("//details[@data-role='driver-workload']")
+    assert workload.get("open") is None
+    assert doc.xpath("//*[@data-role='driver-row'][@data-in-hours][@data-ot][@data-hours][@data-upcoming]")
+    # สรุปภาระงานของ พขร. ที่เลือกอยู่ใต้ช่อง พขร. ของแต่ละคัน (สคริปต์เติมข้อความ)
+    (summary,) = doc.xpath("//*[@data-role='driver-load']")
+    (select,) = doc.xpath("//select[@name='assignments-0-driver']")
+    assert summary.get("data-for") == select.get("id")
+    # หัวส่วนจัดรถบอกจำนวนที่ขอและมีตัวนับ "เลือกแล้ว M/N" ที่เดียว (ไม่ซ้ำกับคำใบ้ในกล่องตาราง)
+    assert "การจัดรถ (ขอ 1 คัน)" in " ".join(doc.xpath("//dialog[@data-role='approve-modal']//h4")[0].text_content().split())
+    assert len(doc.xpath("//dialog[@data-role='approve-modal']//*[@data-role='picker-count']")) == 1
+    assert not doc.xpath("//*[@data-role='vehicle-count-hint']")
 
 
 @pytest.mark.parametrize("request_type", ["airport", "welfare"])
@@ -1350,8 +1378,19 @@ def test_inbox_never_lists_requests_of_another_organization(
     assert str(foreign.id) not in html
 
 
-def dispatch_data(car, driver, comment=""):
-    return {"comment": comment, "car": str(car.id), "driver": str(driver.id)}
+def slot_data(car, driver, index=0, is_overtime=False):
+    """ช่องรถคันที่ index+1 ของฟอร์มจัดรถ (assignments-N-car/driver/is_overtime)"""
+    data = {
+        f"assignments-{index}-car": str(car.id),
+        f"assignments-{index}-driver": str(driver.id),
+    }
+    if is_overtime:
+        data[f"assignments-{index}-is_overtime"] = "y"
+    return data
+
+
+def dispatch_data(car, driver, comment="", is_overtime=False):
+    return {"comment": comment, **slot_data(car, driver, is_overtime=is_overtime)}
 
 
 def request_at_dispatcher(world, **submit_args):
@@ -1375,12 +1414,15 @@ def test_dispatcher_who_is_also_a_driver_can_assign_themselves(world):
     assert f'value="{world.dispatcher.id}"' in form_page.get_data(as_text=True)
     response = world.client_for(world.dispatcher).post(
         approve_url(world, car_application),
-        data={**step_data(world, "dispatcher"), "driver": str(world.dispatcher.id)},
+        data={
+            **step_data(world, "dispatcher"),
+            "assignments-0-driver": str(world.dispatcher.id),
+        },
     )
 
     assert response.status_code == 302
     car_application.reload()
-    assert car_application.driver == world.dispatcher
+    assert car_application.drivers == [world.dispatcher]
 
 
 def test_dispatcher_step_logs_the_assignment_as_changes_and_skips_what_stayed_the_same(
@@ -1406,8 +1448,7 @@ def test_dispatcher_step_logs_overtime_and_extra_travelers_when_set(world):
     world.client_for(world.dispatcher).post(
         approve_url(world, car_application),
         data={
-            **dispatch_data(world.car, world.driver),
-            "is_overtime": "y",
+            **dispatch_data(world.car, world.driver, is_overtime=True),
             "extra_travelers": "นายสมชาย",
         },
     )
@@ -1427,8 +1468,8 @@ def test_dispatcher_assigns_car_and_driver_then_everyone_sees_them_on_the_detail
     assert response.status_code == 302
 
     car_application.reload()
-    assert car_application.car == world.car
-    assert car_application.driver == world.driver
+    assert car_application.cars == [world.car]
+    assert car_application.drivers == [world.driver]
     assert car_application.current_step == 2
     page = world.client_for(world.requester).get(detail_url(world, car_application))
     html = page.get_data(as_text=True)
@@ -1443,12 +1484,12 @@ def test_dispatcher_ticks_overtime_at_the_dispatcher_step_and_the_detail_shows_i
 
     response = world.client_for(world.dispatcher).post(
         approve_url(world, car_application),
-        data={**dispatch_data(world.car, world.driver), "is_overtime": "y"},
+        data=dispatch_data(world.car, world.driver, is_overtime=True),
     )
     assert response.status_code == 302
 
     car_application.reload()
-    assert car_application.is_overtime is True
+    assert car_application.has_overtime is True
     html = (
         world.client_for(world.requester)
         .get(detail_url(world, car_application))
@@ -1465,7 +1506,7 @@ def test_dispatch_without_ticking_overtime_is_an_in_hours_job(world):
     )
 
     car_application.reload()
-    assert car_application.is_overtime is False
+    assert car_application.has_overtime is False
     html = (
         world.client_for(world.requester)
         .get(detail_url(world, car_application))
@@ -1479,21 +1520,22 @@ def test_dispatcher_cannot_approve_without_choosing_car_and_driver(world, missin
     car_application = request_at_dispatcher(world)
     data = dispatch_data(world.car, world.driver)
     if missing in ("car", "both"):
-        data["car"] = ""
+        data["assignments-0-car"] = ""
     if missing in ("driver", "both"):
-        data["driver"] = ""
+        data["assignments-0-driver"] = ""
 
     client = world.client_for(world.dispatcher)
     response = client.post(approve_url(world, car_application), data=data)
 
-    assert response.status_code == 302
+    # ไม่ redirect: ส่งหน้าเดิมกลับมาพร้อมข้อความในโมดอลอนุมัติที่เปิดค้างไว้
+    assert response.status_code == 200
     car_application.reload()
     assert car_application.current_step == 1
-    assert car_application.car is None
-    assert car_application.driver is None
+    assert car_application.assignments == []
     assert len(car_application.step_approvals) == 1
-    page = client.get(detail_url(world, car_application))
-    assert "กรุณาเลือกรถและพนักงานขับรถ" in page.get_data(as_text=True)
+    page = response.get_data(as_text=True)
+    assert "กรุณาเลือกรถและพนักงานขับรถ" in page
+    assert "if (!modal.open) modal.showModal();" in page
 
 
 def test_dispatcher_can_only_assign_active_cars_and_drivers_of_the_same_org(
@@ -1524,11 +1566,10 @@ def test_dispatcher_can_only_assign_active_cars_and_drivers_of_the_same_org(
         response = world.client_for(world.dispatcher).post(
             approve_url(world, car_application), data=dispatch_data(car, driver)
         )
-        assert response.status_code == 302
+        assert response.status_code == 200
         car_application.reload()
         assert car_application.current_step == 1, (car.license_plate, driver.first_name)
-        assert car_application.car is None
-        assert car_application.driver is None
+        assert car_application.assignments == []
 
     world.client_for(world.dispatcher).post(
         approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
@@ -1558,8 +1599,11 @@ def assigned_request(world, departure, return_, status="active", car=None, drive
         status=status,
         route_snapshot=["supervisor", "dispatcher", "vehicle_unit_head"],
         current_step=2,
-        car=car,
-        driver=driver,
+        assignments=(
+            [models.CarAssignment(car=car, driver=driver)]
+            if car is not None or driver is not None
+            else []
+        ),
     ).save()
 
 
@@ -1588,11 +1632,11 @@ def test_a_car_already_booked_in_an_overlapping_time_is_refused(world, blocking_
         approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
     )
 
-    assert response.status_code == 302
+    assert response.status_code == 200
     car_application.reload()
     assert car_application.current_step == 1
-    assert car_application.car is None
-    html = client.get(detail_url(world, car_application)).get_data(as_text=True)
+    assert car_application.assignments == []
+    html = response.get_data(as_text=True)
     assert "รถ กก 1234 มีงานช่วงเวลานี้แล้ว" in html
 
 
@@ -1614,7 +1658,122 @@ def test_a_car_lent_through_diis_for_the_same_time_cannot_be_dispatched(world):
 
     car_application.reload()
     assert car_application.current_step == 1
-    assert car_application.car is None
+    assert car_application.assignments == []
+
+
+def test_a_diis_clash_gives_a_plain_message_without_a_link(world):
+    models.vehicle_applications.CarApplication(
+        organization=world.org,
+        car=world.car,
+        location="สนามบินหาดใหญ่",
+        status="active",
+        using_type="general",
+        request_reason="ไปราชการ",
+        departure_datetime=DAY + datetime.timedelta(hours=2),
+        return_datetime=DAY + datetime.timedelta(hours=6),
+    ).save()
+    car_application = at_dispatcher_with_times(world, DAY, DAY + datetime.timedelta(hours=9))
+
+    client = world.client_for(world.dispatcher)
+    response = client.post(
+        approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
+    )
+    html = response.get_data(as_text=True)
+
+    assert "รถ กก 1234 มีงานช่วงเวลานี้แล้ว (ถูกยืมผ่านระบบยืมรถเดิม)" in html
+    assert "ดูคำขอที่ชน" not in html
+    car_application.reload()
+    with pytest.raises(flow.FlowError) as raised:
+        flow.approve(car_application, world.dispatcher, car=world.car, driver=world.driver)
+    assert not isinstance(raised.value, flow.CarConflictError)
+
+
+def test_a_free_car_is_dispatched_when_another_job_ends_before_this_one_starts(world):
+    assigned_request(
+        world,
+        DAY - datetime.timedelta(hours=5),
+        DAY,  # กลับเวลาเดียวกับที่งานนี้ออก: ไม่ทับ
+        car=world.car,
+        driver=world.add_driver("Other", "Driver"),
+    )
+    car_application = at_dispatcher_with_times(world, DAY, DAY + datetime.timedelta(hours=9))
+
+    response = world.client_for(world.dispatcher).post(
+        approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.current_step == 2
+    assert car_application.cars == [world.car]
+
+
+def test_a_car_clash_names_the_other_requester_and_links_to_the_other_request(world):
+    other_driver = world.add_driver("Other", "Driver")
+    blocking = assigned_request(
+        world,
+        DAY + datetime.timedelta(hours=2),
+        DAY + datetime.timedelta(hours=6),
+        car=world.car,
+        driver=other_driver,
+    )
+    car_application = at_dispatcher_with_times(world, DAY, DAY + datetime.timedelta(hours=9))
+
+    client = world.client_for(world.dispatcher)
+    response = client.post(
+        approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
+    )
+
+    assert response.status_code == 200
+    car_application.reload()
+    assert car_application.current_step == 1
+    html = response.get_data(as_text=True)
+    assert "รถ กก 1234 มีงานช่วงเวลานี้แล้ว" in html
+    assert world.requester.get_name() in html
+    assert f"{(DAY + datetime.timedelta(hours=2)):%d/%m/%Y %H:%M}" in html
+    # ลิงก์เป็น HTML จริง ไม่ถูก escape เป็นข้อความ
+    assert f'href="{detail_url(world, blocking)}"'.replace("&", "&amp;") in html
+    assert "&lt;a " not in html
+
+
+def test_the_clash_message_escapes_what_users_typed(world):
+    world.requester.first_name = "<b>Evil</b>"
+    world.requester.save()
+    assigned_request(
+        world,
+        DAY + datetime.timedelta(hours=2),
+        DAY + datetime.timedelta(hours=6),
+        car=world.car,
+        driver=world.add_driver("Other", "Driver"),
+    )
+    car_application = at_dispatcher_with_times(world, DAY, DAY + datetime.timedelta(hours=9))
+
+    client = world.client_for(world.dispatcher)
+    client.post(
+        approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
+    )
+    html = client.get(detail_url(world, car_application)).get_data(as_text=True)
+
+    assert "<b>Evil</b>" not in html
+    assert "&lt;b&gt;Evil&lt;/b&gt;" in html
+
+
+def test_the_clash_error_carries_the_conflicting_request(world):
+    blocking = assigned_request(
+        world,
+        DAY + datetime.timedelta(hours=2),
+        DAY + datetime.timedelta(hours=6),
+        car=world.car,
+        driver=world.add_driver("Other", "Driver"),
+    )
+    car_application = at_dispatcher_with_times(world, DAY, DAY + datetime.timedelta(hours=9))
+    car_application.reload()
+
+    with pytest.raises(flow.CarConflictError) as raised:
+        flow.approve(car_application, world.dispatcher, car=world.car, driver=world.driver)
+
+    assert raised.value.conflict == blocking
+    assert raised.value.car == world.car
 
 
 def test_two_dispatchers_booking_the_same_car_at_once_leave_it_booked_once(world):
@@ -1644,7 +1803,7 @@ def test_two_dispatchers_booking_the_same_car_at_once_leave_it_booked_once(world
 
     second.reload()
     assert second.current_step == 1
-    assert second.car is None
+    assert second.assignments == []
     assert [a.step_key for a in second.step_approvals] == ["supervisor"]
 
 
@@ -1674,7 +1833,7 @@ def test_approving_again_with_the_step_already_decided_does_not_approve_the_next
     assert response.status_code == 302
     car_application.reload()
     assert car_application.current_step == 1
-    assert car_application.car is None
+    assert car_application.assignments == []
 
 
 def test_a_driver_with_an_overlapping_job_can_still_be_assigned_another_car(world):
@@ -1700,7 +1859,7 @@ def test_a_driver_with_an_overlapping_job_can_still_be_assigned_another_car(worl
     assert response.status_code == 302
     car_application.reload()
     assert car_application.current_step == 2
-    assert car_application.driver == world.driver
+    assert car_application.drivers == [world.driver]
 
 
 @pytest.mark.parametrize(
@@ -1734,7 +1893,7 @@ def test_bookings_that_do_not_overlap_or_are_not_live_do_not_block_assignment(
 
     car_application.reload()
     assert car_application.current_step == 2
-    assert car_application.car == world.car
+    assert car_application.cars == [world.car]
 
 
 def test_assignment_is_recorded_in_the_audit_log_with_plate_and_driver(world):
@@ -1760,8 +1919,7 @@ def test_car_and_driver_are_ignored_outside_the_dispatcher_step(world):
     assert response.status_code == 302
     car_application.reload()
     assert car_application.current_step == 1
-    assert car_application.car is None
-    assert car_application.driver is None
+    assert car_application.assignments == []
     page = world.client_for(world.supervisor).get(detail_url(world, car_application))
     # ฟอร์มของผู้อนุมัติขั้นนี้ไม่มีช่องเลือกรถ/พนักงานขับรถ
     assert 'name="car"' not in page.get_data(as_text=True)
@@ -1781,7 +1939,7 @@ def test_dispatcher_detail_offers_only_assignable_cars_and_drivers_in_the_approv
         .get_data(as_text=True)
     )
 
-    assert 'name="car"' in html and 'name="driver"' in html
+    assert 'name="assignments-0-car"' in html and 'name="assignments-0-driver"' in html
     assert "กก 1234 (เก๋ง)" in html
     assert "Driver One" in html
     assert "คค 1111" not in html
@@ -1835,12 +1993,20 @@ def request_with_car_assigned(world):
     )
     assert response.status_code == 302
     car_application.reload()
-    assert car_application.car == world.car
+    assert car_application.cars == [world.car]
     return car_application
 
 
-def overtime_url(world, car_application):
-    return f"{BASE}/{car_application.id}/overtime?organization_id={world.org.id}"
+def assignment_id_of(reservation, assignment=None):
+    """assignment_id ของชุดที่ระบุ (ไม่ระบุ = ชุดแรก)"""
+    return (assignment or reservation.first_assignment).assignment_id
+
+
+def overtime_url(world, car_application, assignment=None):
+    return (
+        f"{BASE}/{car_application.id}/overtime/"
+        f"{assignment_id_of(car_application, assignment)}?organization_id={world.org.id}"
+    )
 
 
 def test_dispatcher_toggles_overtime_while_later_approvers_still_decide_and_it_is_audit_logged(
@@ -1854,14 +2020,14 @@ def test_dispatcher_toggles_overtime_while_later_approvers_still_decide_and_it_i
         car=world.car,
         driver=world.driver,
     )
-    assert car_application.is_overtime is False
+    assert car_application.has_overtime is False
     client = world.client_for(world.dispatcher)
 
     response = client.post(overtime_url(world, car_application), data={"is_overtime": "y"})
 
     assert response.status_code == 302
     car_application.reload()
-    assert car_application.is_overtime is True
+    assert car_application.has_overtime is True
     assert car_application.audit_logs[-1].action == "overtime_changed"
     assert car_application.audit_logs[-1].actor == world.dispatcher
     assert car_application.audit_logs[-1].comment == "ตั้งเป็นงานนอกเวลา (OT)"
@@ -1869,7 +2035,7 @@ def test_dispatcher_toggles_overtime_while_later_approvers_still_decide_and_it_i
     client.post(overtime_url(world, car_application), data={})
 
     car_application.reload()
-    assert car_application.is_overtime is False
+    assert car_application.has_overtime is False
     assert car_application.audit_logs[-1].comment == "ตั้งเป็นงานในเวลา"
 
 
@@ -1891,8 +2057,9 @@ def test_overtime_toggle_is_the_wtforms_checkbox_and_reflects_the_saved_state(wo
         return doc, box
 
     doc, box = checkbox()
-    assert (box.get("id"), box.get("name"), box.get("checked")) == ("is_overtime", "is_overtime", None)
-    assert doc.xpath("//form[@data-role='overtime-form']//label[@for='is_overtime']")
+    field_id = f"is_overtime-{car_application.first_assignment.assignment_id}"
+    assert (box.get("id"), box.get("name"), box.get("checked")) == (field_id, "is_overtime", None)
+    assert doc.xpath(f"//form[@data-role='overtime-form']//label[@for='{field_id}']")
 
     client.post(overtime_url(world, car_application), data={"is_overtime": "y"})
 
@@ -1937,7 +2104,7 @@ def test_only_a_dispatcher_can_toggle_overtime(world):
         assert response.status_code in (302, 403)
 
     car_application.reload()
-    assert car_application.is_overtime is False
+    assert car_application.has_overtime is False
 
 
 @pytest.mark.parametrize("status", ["active", "completed"])
@@ -1962,7 +2129,7 @@ def test_overtime_is_locked_once_the_request_is_fully_approved(world, status):
 
     assert response.status_code in (302, 403)
     car_application.reload()
-    assert car_application.is_overtime is False
+    assert car_application.has_overtime is False
 
 
 def test_cancelling_after_a_car_is_assigned_asks_the_dispatcher_to_acknowledge(world):
@@ -2087,7 +2254,7 @@ def test_car_and_driver_are_blocked_until_the_cancel_is_confirmed_then_released(
 
     waiting.reload()
     assert waiting.current_step == 2
-    assert waiting.car == world.car
+    assert waiting.cars == [world.car]
 
 
 def test_only_a_dispatcher_role_member_can_confirm_a_cancel(world):
@@ -2826,9 +2993,15 @@ def workload_job(world, driver, departure, hours, status="completed", **extra):
         car=world.car,
         driver=driver,
     )
-    for name, value in extra.items():
-        setattr(job, name, value)
+    set_job_fields(job, extra)
     return job.save()
+
+
+def set_job_fields(job, fields):
+    """ช่องของชุด (OT เวลาเริ่ม/ปิด ฯลฯ) ตั้งที่ชุดแรก ช่องอื่นตั้งที่คำขอ"""
+    for name, value in fields.items():
+        target = job.assignments[0] if name in models.CarAssignment._fields else job
+        setattr(target, name, value)
 
 
 def workload_rows(world, window_start=None, window_end=None):
@@ -2947,11 +3120,18 @@ def test_dispatcher_detail_lists_drivers_least_loaded_first_and_marks_the_busy_o
     ]
     assert html.count('data-role="busy-badge"') == 1
     assert 'data-role="workload-dashboard-link"' in html
+    # ช่องเลือก พขร. ของแต่ละคันบอกว่าคนไหนมีงานชนด้วย
+    labels = {
+        o.get("value"): o.text_content()
+        for o in lxml_html.fromstring(html).xpath(
+            "//select[@name='assignments-0-driver']/option"
+        )
+    }
+    assert "มีงานชน" in labels[str(busy.id)]
+    assert "มีงานชน" not in labels[str(idle.id)]
 
 
-def test_dispatcher_driver_radios_are_rendered_by_the_wtforms_radio_field_in_workload_order(
-    world,
-):
+def test_dispatcher_driver_select_lists_drivers_in_workload_order_with_their_load(world):
     idle = world.add_driver("Idle", "Driver")
     car_application = request_at_dispatcher(world)
 
@@ -2963,16 +3143,13 @@ def test_dispatcher_driver_radios_are_rendered_by_the_wtforms_radio_field_in_wor
 
     doc = lxml_html.fromstring(html)
     rows = doc.xpath("//*[@data-role='driver-row']")
-    radios = [row.xpath(".//input[@type='radio']")[0] for row in rows]
-    # id ของ RadioField คือ driver-<ลำดับ> และ value เป็น id ของ พขร. ในแถวนั้น (เรียงตามภาระงาน)
-    assert [(r.get("id"), r.get("name"), r.get("value")) for r in radios] == [
-        (f"driver-{index}", "driver", row.get("data-driver-id"))
-        for index, row in enumerate(rows)
-    ]
-    assert {r.get("value") for r in radios} == {str(idle.id), str(world.driver.id)}
-    for radio in radios:
-        assert doc.xpath(f"//label[@for='{radio.get('id')}']")
-        assert "radio-primary" in radio.get("class")
+    (select,) = doc.xpath("//select[@name='assignments-0-driver']")
+    options = [(o.get("value"), o.text_content().strip()) for o in select.xpath("./option")]
+    # ตัวเลือกแรกคือ "ไม่เลือก" ที่เหลือเรียงตามภาระงานเหมือนตารางข้อมูลด้านบน ติดป้ายชื่อและจำนวนงาน
+    assert options[0][0] == ""
+    assert [value for value, _ in options[1:]] == [row.get("data-driver-id") for row in rows]
+    assert {value for value, _ in options[1:]} == {str(idle.id), str(world.driver.id)}
+    assert dict(options)[str(idle.id)] == "Idle Driver · 0 งาน"
 
 
 def test_dispatch_approve_without_a_driver_choice_is_refused_and_nothing_advances(
@@ -2982,13 +3159,16 @@ def test_dispatch_approve_without_a_driver_choice_is_refused_and_nothing_advance
 
     response = world.client_for(world.dispatcher).post(
         approve_url(world, car_application),
-        data={"car": str(world.car.id), "driver": "not-a-driver-id"},
+        data={
+            "assignments-0-car": str(world.car.id),
+            "assignments-0-driver": "not-a-driver-id",
+        },
     )
 
-    assert response.status_code == 302
+    assert response.status_code == 200
     car_application.reload()
     assert car_application.current_step == 1
-    assert car_application.driver is None
+    assert car_application.assignments == []
 
 
 URGENT_URL = f"{BASE}/urgent"
@@ -3004,8 +3184,8 @@ def urgent_data(world, days_ahead=1, **overrides):
     data.update(
         contact_name="ผู้ใช้รถ ตัวจริง",
         contact_email="actual.user@example.com",
-        car=str(world.car.id),
-        driver=str(world.driver.id),
+        vehicle_count="1",
+        **slot_data(world.car, world.driver),
     )
     data.update(overrides)
     return data
@@ -3015,7 +3195,7 @@ def test_dispatcher_creates_an_urgent_request_that_skips_to_the_physical_directo
     world,
 ):
     response = world.client_for(world.dispatcher).post(
-        urgent_url(world), data=urgent_data(world, is_overtime="y")
+        urgent_url(world), data=urgent_data(world, **{"assignments-0-is_overtime": "y"})
     )
     assert response.status_code == 302, response.get_data(as_text=True)
 
@@ -3026,9 +3206,9 @@ def test_dispatcher_creates_an_urgent_request_that_skips_to_the_physical_directo
     assert reservation.route_snapshot == ["dispatcher", "physical_director"]
     assert reservation.current_step == 1
     assert reservation.status == "pending"
-    assert reservation.car == world.car
-    assert reservation.driver == world.driver
-    assert reservation.is_overtime is True
+    assert reservation.cars == [world.car]
+    assert reservation.drivers == [world.driver]
+    assert reservation.has_overtime is True
     assert reservation.contact_email == "actual.user@example.com"
     [dispatch] = reservation.step_approvals
     assert (dispatch.step_key, dispatch.decision, dispatch.decided_by) == (
@@ -3265,9 +3445,9 @@ def test_dispatcher_adds_an_insert_job_that_is_active_at_once_and_logged(insert_
     assert job.province_scope == "in_province"
     assert job.insert_scope == "in_province"
     assert job.creator == insert_world.dispatcher
-    assert job.car == insert_world.second_car
-    assert job.driver == insert_world.driver
-    assert job.is_overtime is True
+    assert job.cars == [insert_world.second_car]
+    assert job.drivers == [insert_world.driver]
+    assert job.has_overtime is True
     assert job.location == "สนามบินหาดใหญ่"
     assert job.contact_email == "actual.user@example.com"
     assert job.departure_datetime == DAY + datetime.timedelta(hours=2)
@@ -3308,10 +3488,10 @@ def test_driver_starts_and_closes_an_insert_job_with_its_own_mileage(insert_worl
     client = insert_world.client_for(insert_world.driver)
 
     started = client.post(
-        f"{TASKS_BASE}/{job.id}/start?organization_id={insert_world.org.id}"
+        f"{TASKS_BASE}/{job.id}/start/{assignment_id_of(job)}?organization_id={insert_world.org.id}"
     )
     closed = client.post(
-        f"{TASKS_BASE}/{job.id}/close?organization_id={insert_world.org.id}",
+        f"{TASKS_BASE}/{job.id}/close/{assignment_id_of(job)}?organization_id={insert_world.org.id}",
         data={
             "mileage_out": "500",
             "mileage_in": "512",
@@ -3324,11 +3504,11 @@ def test_driver_starts_and_closes_an_insert_job_with_its_own_mileage(insert_worl
     assert closed.status_code == 302, closed.get_data(as_text=True)
     job.reload()
     assert job.status == "completed"
-    assert job.started_at is not None
-    assert job.distance_km == 12
+    assert job.first_assignment.started_at is not None
+    assert job.first_assignment.distance_km == 12
     insert_world.main_job.reload()
     assert insert_world.main_job.status == "active"
-    assert insert_world.main_job.last_mileage is None
+    assert insert_world.main_job.first_assignment.last_mileage is None
 
 
 @pytest.mark.parametrize("scope", ["out_of_province", "abroad", ""])
@@ -3407,6 +3587,75 @@ def test_insert_job_for_a_car_that_is_already_booked_is_refused(insert_world):
     assert insert_jobs(insert_world).count() == 0
 
 
+def test_insert_job_may_reuse_the_car_of_the_same_drivers_main_job(insert_world):
+    # main_job: world.car + world.driver 08:00-17:00 ทับกับงานแทรก 10:00-11:30
+    response = post_insert(insert_world, car=str(insert_world.car.id))
+
+    assert response.status_code == 302, response.get_data(as_text=True)
+    [job] = insert_jobs(insert_world)
+    assert job.cars == [insert_world.car]
+    assert job.drivers == [insert_world.driver]
+
+
+def test_insert_job_is_refused_when_a_different_driver_holds_the_car(insert_world):
+    other = insert_world.add_driver("Other", "Driver")
+    blocking = assigned_request(
+        insert_world,
+        DAY + datetime.timedelta(hours=1),
+        DAY + datetime.timedelta(hours=4),
+        car=insert_world.second_car,
+        driver=other,
+    )
+
+    response = post_insert(insert_world)
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert insert_jobs(insert_world).count() == 0
+    assert "รถ ขข 5678 มีงานช่วงเวลานี้แล้ว" in html
+    assert insert_world.requester.get_name() in html
+    assert f'href="{detail_url(insert_world, blocking)}"'.replace("&", "&amp;") in html
+
+
+def test_insert_job_reusing_the_main_job_car_is_still_refused_if_another_driver_holds_it(
+    insert_world,
+):
+    # รถของงานหลักถูกงานของ พขร. อีกคนจองทับช่วงงานแทรกด้วย: ยกเว้นเฉพาะงานของ พขร. คนเดียวกัน
+    assigned_request(
+        insert_world,
+        DAY + datetime.timedelta(hours=2),
+        DAY + datetime.timedelta(hours=4),
+        car=insert_world.car,
+        driver=insert_world.add_driver("Other", "Driver"),
+    )
+
+    response = post_insert(insert_world, car=str(insert_world.car.id))
+
+    assert response.status_code == 200
+    assert insert_jobs(insert_world).count() == 0
+
+
+def test_insert_job_is_refused_when_the_car_is_lent_through_diis(insert_world):
+    models.vehicle_applications.CarApplication(
+        organization=insert_world.org,
+        car=insert_world.second_car,
+        location="สนามบินหาดใหญ่",
+        status="active",
+        using_type="general",
+        request_reason="ไปราชการ",
+        departure_datetime=DAY + datetime.timedelta(hours=1),
+        return_datetime=DAY + datetime.timedelta(hours=4),
+    ).save()
+
+    response = post_insert(insert_world)
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert insert_jobs(insert_world).count() == 0
+    assert "รถ ขข 5678 มีงานช่วงเวลานี้แล้ว (ถูกยืมผ่านระบบยืมรถเดิม)" in html
+    assert "ดูคำขอที่ชน" not in html
+
+
 @pytest.mark.parametrize("who", ["requester", "supervisor", "stranger"])
 def test_only_a_dispatcher_can_open_or_submit_the_insert_form(insert_world, who):
     client = insert_world.client_for(getattr(insert_world, who))
@@ -3458,14 +3707,14 @@ CLOSED_AT = datetime.datetime(2030, 3, 10, 17, 0)
 def test_close_confirmation_turns_into_auto_confirmed_after_3_days_without_a_reply(
     now, expected
 ):
-    reservation = models.CarReservation(completed_at=CLOSED_AT)
+    reservation = models.CarAssignment(completed_at=CLOSED_AT)
 
     assert reservation.close_confirmation_status(now) == expected
 
 
 @pytest.mark.parametrize("answer", ["confirmed", "disputed"])
 def test_an_answered_close_confirmation_stays_as_answered_after_3_days(answer):
-    reservation = models.CarReservation(
+    reservation = models.CarAssignment(
         completed_at=CLOSED_AT, close_confirmation=answer
     )
 
@@ -3476,7 +3725,7 @@ def test_an_answered_close_confirmation_stays_as_answered_after_3_days(answer):
 
 
 def test_a_trip_that_is_not_closed_has_no_close_confirmation_status():
-    reservation = models.CarReservation()
+    reservation = models.CarAssignment()
 
     assert reservation.close_confirmation_status(CLOSED_AT) is None
 
@@ -3495,15 +3744,22 @@ def closed_trip(world, closed_ago=datetime.timedelta(days=1), **extra):
         car=world.car,
         driver=world.driver,
     )
-    job.started_at = completed - datetime.timedelta(hours=3)
-    job.completed_at = completed
-    for name, value in extra.items():
-        setattr(job, name, value)
+    set_job_fields(
+        job,
+        {
+            "started_at": completed - datetime.timedelta(hours=3),
+            "completed_at": completed,
+            **extra,
+        },
+    )
     return job.save()
 
 
-def confirmation_url(world, reservation):
-    return f"{BASE}/{reservation.id}/close_confirmation?organization_id={world.org.id}"
+def confirmation_url(world, reservation, assignment=None):
+    return (
+        f"{BASE}/{reservation.id}/close_confirmation/"
+        f"{assignment_id_of(reservation, assignment)}?organization_id={world.org.id}"
+    )
 
 
 def confirmation_section(world, reservation, user=None):
@@ -3519,8 +3775,8 @@ def test_requester_sees_the_recorded_trip_times_and_the_two_answer_buttons(world
 
     section = confirmation_section(world, job)
 
-    assert job.started_at.strftime("%d/%m/%Y %H:%M") in section
-    assert job.completed_at.strftime("%d/%m/%Y %H:%M") in section
+    assert job.first_assignment.started_at.strftime("%d/%m/%Y %H:%M") in section
+    assert job.first_assignment.completed_at.strftime("%d/%m/%Y %H:%M") in section
     assert 'value="correct"' in section
     assert 'value="incorrect"' in section
     assert 'name="actual_end_date"' in section
@@ -3536,9 +3792,9 @@ def test_requester_confirms_the_recorded_times_are_correct(world):
 
     assert response.status_code == 302, response.get_data(as_text=True)
     job.reload()
-    assert job.close_confirmation == "confirmed"
-    assert job.close_confirmed_by == world.requester
-    assert job.close_confirmed_at is not None
+    assert job.first_assignment.close_confirmation == "confirmed"
+    assert job.first_assignment.close_confirmed_by == world.requester
+    assert job.first_assignment.close_confirmed_at is not None
     assert job.audit_logs[-1].action == "close_confirmed"
     assert job.audit_logs[-1].actor == world.requester
     assert 'data-status="confirmed"' in confirmation_section(world, job)
@@ -3566,10 +3822,10 @@ def test_requester_disputes_the_closing_time_and_dispatchers_are_emailed(
 
     assert response.status_code == 302, response.get_data(as_text=True)
     job.reload()
-    assert job.close_confirmation == "disputed"
-    assert job.close_confirmed_by == world.requester
-    assert job.close_reported_end == CONFIRM_ENDED_AT.replace(hour=20, minute=30)
-    assert job.close_dispute_note == "พขร. กดปิดงานช้า"
+    assert job.first_assignment.close_confirmation == "disputed"
+    assert job.first_assignment.close_confirmed_by == world.requester
+    assert job.first_assignment.close_reported_end == CONFIRM_ENDED_AT.replace(hour=20, minute=30)
+    assert job.first_assignment.close_dispute_note == "พขร. กดปิดงานช้า"
     assert job.audit_logs[-1].action == "close_disputed"
     assert "20:30" in job.audit_logs[-1].comment
     assert 'data-status="disputed"' in confirmation_section(world, job)
@@ -3586,7 +3842,7 @@ def test_disputing_without_the_actual_end_time_is_refused(world, mock_redis_queu
 
     assert response.status_code == 302
     job.reload()
-    assert job.close_confirmation is None
+    assert job.first_assignment.close_confirmation is None
     assert email_jobs(mock_redis_queue, "close_disputed") == []
 
 
@@ -3618,7 +3874,7 @@ def test_the_requester_can_answer_only_once(world):
 
     assert again.status_code in (302, 403)
     job.reload()
-    assert job.close_confirmation == "disputed"
+    assert job.first_assignment.close_confirmation == "disputed"
     assert [log.action for log in job.audit_logs] == ["close_disputed"]
     assert 'value="correct"' not in confirmation_section(world, job)
 
@@ -3636,7 +3892,7 @@ def test_after_3_days_without_an_answer_the_close_is_auto_confirmed_and_closed_t
     assert 'value="correct"' not in section
     assert response.status_code in (302, 403)
     job.reload()
-    assert job.close_confirmation is None
+    assert job.first_assignment.close_confirmation is None
     assert email_jobs(mock_redis_queue, "close_disputed") == []
 
 
@@ -3654,13 +3910,13 @@ def test_only_the_creator_can_answer_the_close_confirmation(world, who):
 
     assert response.status_code in (302, 403)
     job.reload()
-    assert job.close_confirmation is None
+    assert job.first_assignment.close_confirmation is None
     assert 'value="correct"' not in confirmation_section(
         world, job, user=getattr(world, who)
     )
 
 
-@pytest.mark.parametrize("status", ["active", "pending", "cancelled"])
+@pytest.mark.parametrize("status", ["pending", "cancelled"])
 def test_only_a_closed_trip_can_be_answered(world, status):
     job = closed_trip(world, status=status)
 
@@ -3670,7 +3926,7 @@ def test_only_a_closed_trip_can_be_answered(world, status):
 
     assert response.status_code in (302, 403)
     job.reload()
-    assert job.close_confirmation is None
+    assert job.first_assignment.close_confirmation is None
 
 
 def test_when_the_creator_is_the_dispatcher_only_an_admin_can_answer(
@@ -3687,7 +3943,7 @@ def test_when_the_creator_is_the_dispatcher_only_an_admin_can_answer(
     assert refused.status_code in (302, 403)
     assert other.status_code in (302, 403)
     job.reload()
-    assert job.close_confirmation is None
+    assert job.first_assignment.close_confirmation is None
 
     answered = world.client_for(org_admin).post(
         confirmation_url(world, job), data={"decision": "correct"}
@@ -3695,8 +3951,8 @@ def test_when_the_creator_is_the_dispatcher_only_an_admin_can_answer(
 
     assert answered.status_code == 302
     job.reload()
-    assert job.close_confirmation == "confirmed"
-    assert job.close_confirmed_by == org_admin
+    assert job.first_assignment.close_confirmation == "confirmed"
+    assert job.first_assignment.close_confirmed_by == org_admin
 
 
 def test_a_system_admin_can_answer_for_a_trip_created_by_the_dispatcher(
@@ -3711,7 +3967,7 @@ def test_a_system_admin_can_answer_for_a_trip_created_by_the_dispatcher(
 
     assert answered.status_code == 302
     job.reload()
-    assert job.close_confirmation == "confirmed"
+    assert job.first_assignment.close_confirmation == "confirmed"
 
 
 def inbox_rows(world, user):
@@ -3849,7 +4105,7 @@ def test_denying_with_next_but_without_a_reason_is_still_refused(world):
     assert car_application.current_step == 0
 
 
-def test_dispatcher_driver_picker_has_no_horizontal_scroll_and_one_radio_per_driver(world):
+def test_dispatcher_driver_workload_is_a_read_only_table_with_one_row_per_driver(world):
     second = world.add_driver("Second", "Driver")
     car_application = request_at_dispatcher(world)
 
@@ -3864,15 +4120,14 @@ def test_dispatcher_driver_picker_has_no_horizontal_scroll_and_one_radio_per_dri
     # ตารางกว้างกว่าจอมือถือ: ต้องไม่มีทั้งตารางและตัวห่อที่เลื่อนแนวนอน
     assert not picker.xpath(".//table")
     assert not picker.xpath(".//*[contains(concat(' ', normalize-space(@class), ' '), ' overflow-x-auto ')]")
-    # radio field เดียวต่อคน (ไม่ render ซ้ำสำหรับมือถือ/เดสก์ท็อป ไม่งั้นส่ง driver สองค่า)
-    radios = picker.xpath(".//input[@type='radio'][@name='driver']")
-    assert sorted(r.get("value") for r in radios) == sorted([str(world.driver.id), str(second.id)])
-    assert len({r.get("id") for r in radios}) == len(radios)
+    # ตารางให้ข้อมูลอย่างเดียว: เลือก พขร. ที่ช่องของแต่ละคัน ไม่มี input ในตาราง
+    assert not picker.xpath(".//input | .//select")
     rows = picker.xpath(".//*[@data-role='driver-row']")
-    assert [r.get("data-driver-id") for r in rows] == [r.get("value") for r in radios]
+    assert sorted(r.get("data-driver-id") for r in rows) == sorted(
+        [str(world.driver.id), str(second.id)]
+    )
     for row in rows:
         assert row.get("data-busy") in ("true", "false")
-        assert len(row.xpath(".//input[@type='radio'][@name='driver']")) == 1
         text = " ".join(row.text_content().split())
         # สถิติครบอยู่ในแถวเดียวกัน (บรรทัดย่อบนมือถือ) พร้อมป้ายสถานะ
         for label in ("ในเวลา", "OT", "ชม.", "ที่จะมาถึง", "ว่าง"):
@@ -3920,6 +4175,8 @@ def test_state_changing_posts_refuse_a_request_without_a_csrf_token(
     world, create_user, assign_user_to_org, csrf_enabled
 ):
     reservation = world.submit_request()
+    reservation.assignments = [models.CarAssignment(car=world.car, driver=world.driver)]
+    reservation.save()
     admin = create_user("Org", "Admin")
     assign_user_to_org(admin, world.org, roles=["admin"])
     csrf_enabled()

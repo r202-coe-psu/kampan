@@ -15,6 +15,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user
+from markupsafe import Markup, escape
 
 from kampan import models, utils
 from kampan.web import acl, forms
@@ -23,6 +24,7 @@ module = Blueprint("requests", __name__, url_prefix="/requests")
 
 ANY_ORGANIZATION_ROLE = [role for role, _ in models.organizations.ORGANIZATION_ROLES]
 flow = utils.car_reservation_flow
+car_timeline = utils.car_timeline
 finance = utils.car_reservation_finance
 
 
@@ -32,6 +34,34 @@ def car_choice_label(car):
     if car.seat_count:
         details.append(f"{car.seat_count} ที่นั่ง")
     return f"{car.license_plate} ({', '.join(details)})"
+
+
+def flash_flow_error(error):
+    """flash ข้อความของ FlowError (ดู flow_error_message)"""
+    flash(flow_error_message(error), "error")
+
+
+def flow_error_message(error):
+    """ข้อความของ FlowError: รถชนกับคำขออื่นให้ลิงก์ไปหน้ารายละเอียดของคำขอนั้น
+
+    Markup ไม่ถูก Jinja escape ซ้ำ จึงต้อง escape ค่าที่ผู้ใช้กรอก (ชื่อผู้ขอ ทะเบียน) เอง
+    """
+    if not isinstance(error, flow.CarConflictError):
+        return str(error)
+    link = url_for(
+        "car_reservation.requests.detail",
+        request_id=error.conflict.id,
+        organization_id=g.organization.id,
+    )
+    return Markup(
+        "รถ {plate} มีงานช่วงเวลานี้แล้ว "
+        '(ผู้ขอ {name} เวลา {window}) <a href="{link}" class="link font-bold">ดูคำขอที่ชน</a>'
+    ).format(
+        plate=error.car.license_plate,
+        name=error.requester_name,
+        window=error.window,
+        link=link,
+    )
 
 
 def get_request_or_404(request_id):
@@ -249,7 +279,7 @@ def create():
         form, organization, request_type
     )
     if submitted and not flow.has_division_head(organization, division):
-        flash("ฝ่ายของคุณยังไม่มีหัวหน้าฝ่าย กรุณาติดต่อผู้ดูแลระบบ", "danger")
+        flash("ฝ่ายของคุณยังไม่มีหัวหน้าฝ่าย กรุณาติดต่อผู้ดูแลระบบ", "error")
     elif submitted:
         reservation = models.CarReservation(
             organization=organization,
@@ -296,6 +326,104 @@ def object_id_or_none(value):
     return ObjectId(value) if ObjectId.is_valid(value) else None
 
 
+def car_choices_for(organization):
+    return [
+        (str(car.id), car_choice_label(car))
+        for car in flow.assignable_cars(organization)
+    ]
+
+
+def driver_choices_for(organization):
+    return [
+        (str(driver.id), driver.get_name())
+        for driver in flow.assignable_drivers(organization)
+    ]
+
+
+def workload_label(row):
+    """ชื่อ พขร. พร้อมภาระงาน (จำนวนงานย้อนหลัง) และป้ายมีงานชน ไว้เป็นตัวเลือกของช่อง พขร."""
+    label = f"{row.driver.get_name()} · {row.in_hours_jobs + row.ot_jobs} งาน"
+    if row.busy:
+        label += " · มีงานชน"
+    return label
+
+
+def load_assignments(organization, chosen):
+    """แปลงชุดที่ฟอร์มส่งมา (id เป็นสตริง) เป็น [{car, driver, is_overtime}] ที่ engine รับ
+
+    รถต้องอยู่ใน org นี้ id ที่หาไม่เจอเป็น None ซึ่ง engine จะปฏิเสธเป็น "กรุณาเลือกรถและพนักงานขับรถ"
+    """
+    return [
+        {
+            "car": models.vehicles.Car.objects(
+                id=item["car_id"], organization=organization
+            ).first()
+            if ObjectId.is_valid(item["car_id"])
+            else None,
+            "driver": models.User.objects(id=item["driver_id"]).first()
+            if ObjectId.is_valid(item["driver_id"])
+            else None,
+            "is_overtime": item["is_overtime"],
+        }
+        for item in chosen
+    ]
+
+
+def notify_drivers(reservation):
+    """แจ้ง พขร. ทุกคนของคำขอในระบบว่าได้รับมอบหมายงาน (driver_assigned ไม่มีอีเมล)"""
+    utils.car_reservation_email.notify_in_app(reservation, "driver_assigned")
+
+
+def requested_kind_of(reservation):
+    """ประเภทรถที่ผู้ขอขอในใบขอ (ใบขอที่ไม่มีช่องนี้ เช่น งานแทรก คืน "")"""
+    return getattr(reservation.details, "vehicle_kind", "") or ""
+
+
+def warn_if_vehicle_type_differs(reservation):
+    """flash เตือน (ไม่บล็อก) เมื่อรถที่จัดมีประเภทต่างจากที่ผู้ขอขอ รถที่ไม่ระบุประเภทไม่นับว่าต่าง"""
+    kind = requested_kind_of(reservation)
+    if not kind:
+        return
+    different = [
+        f"{car.license_plate} ({car.vehicle_type})"
+        for car in reservation.cars
+        if car.vehicle_type and car.vehicle_type != kind
+    ]
+    if different:
+        flash(
+            f"รถที่จัดไม่ตรงกับประเภทที่ผู้ขอขอ (ขอ {kind}): {', '.join(different)}",
+            "warning",
+        )
+
+
+def picker_window(form):
+    """(เวลาออก, เวลากลับ) จากช่องวัน/เวลาของฟอร์ม ช่องไหนยังว่างหรือผิดรูปแบบคืน None ทั้งคู่"""
+    parts = (
+        form.departure_date.data,
+        form.departure_time.data,
+        form.return_date.data,
+        form.return_time.data,
+    )
+    if any(part is None for part in parts):
+        return None, None
+    return (
+        datetime.datetime.combine(parts[0], parts[1]),
+        datetime.datetime.combine(parts[2], parts[3]),
+    )
+
+
+def picker_selection(values):
+    """(selected, active_slot) ของตัวเลือกรถจาก id รถของแต่ละช่อง: ช่องที่กำลังเลือกคือช่องว่างช่องแรก"""
+    selected = [value if ObjectId.is_valid(value or "") else "" for value in values]
+    active = next((n for n, value in enumerate(selected, start=1) if not value), 1)
+    return selected, active
+
+
+URGENT_ASSIGNMENT_MISMATCH = (
+    "กรุณาเลือกรถและพนักงานขับรถให้ครบ {count} คัน (ทุกคันต้องเลือกทั้งรถและพนักงานขับรถ)"
+)
+
+
 @module.route("/urgent", methods=["GET", "POST"])
 @acl.organization_roles_required("dispatcher")
 def create_urgent():
@@ -309,17 +437,21 @@ def create_urgent():
     if request.args.get("type", request_type) != request_type:
         abort(404)  # คำขอเร่งด่วนมีเฉพาะใบขอในประเทศ
     form = forms.car_reservation.UrgentDomesticReservationForm()
-    form.car.choices = [
-        (str(car.id), car_choice_label(car)) for car in flow.assignable_cars(organization)
-    ]
-    form.driver.choices = [
-        (str(driver.id), driver.get_name())
-        for driver in flow.assignable_drivers(organization)
-    ]
+    forms.car_reservation.set_assignment_slots(
+        form,
+        forms.car_reservation.MAX_URGENT_ASSIGNMENTS,
+        car_choices_for(organization),
+        driver_choices_for(organization),
+    )
 
     submitted, _, _ = validate_submission(
         form, organization, request_type, urgent_by_dispatcher=True
     )
+    chosen, half_filled = forms.car_reservation.chosen_assignments(form)
+    if submitted and (half_filled or len(chosen) != form.vehicle_count.data):
+        # ผู้จัดรถเป็นผู้ขอเอง จึงต้องจัดครบตามจำนวนรถที่กรอกในฟอร์มเดียวกัน (ไม่มีทางลดจำนวน)
+        form.vehicle_count.errors.append(URGENT_ASSIGNMENT_MISMATCH.format(count=form.vehicle_count.data))
+        submitted = False
     if submitted:
         reservation = models.CarReservation(
             organization=organization,
@@ -339,19 +471,15 @@ def create_urgent():
             flow.submit_urgent(
                 reservation,
                 user,
-                car=models.vehicles.Car.objects(
-                    id=object_id_or_none(form.car.data), organization=organization
-                ).first(),
-                driver=models.User.objects(
-                    id=object_id_or_none(form.driver.data)
-                ).first(),
-                is_overtime=form.is_overtime.data,
+                assignments=load_assignments(organization, chosen),
             )
         except flow.FlowError as error:
-            flash(str(error), "danger")
+            flash_flow_error(error)
         else:
             utils.car_reservation_email.notify(reservation, "approved")
+            notify_drivers(reservation)
             flash("สร้างคำขอเร่งด่วนเรียบร้อยแล้ว รอผู้อำนวยการกองกายภาพอนุมัติ", "success")
+            warn_if_vehicle_type_differs(reservation)
             return redirect(
                 url_for(
                     "car_reservation.requests.detail",
@@ -360,6 +488,15 @@ def create_urgent():
                 )
             )
 
+    # ตัวเลือกรถแบบตาราง: ครั้งแรกยังไม่มีเวลาจึงเป็นคำใบ้ ส่งกลับมาแก้หลังฟอร์มไม่ผ่านก็แสดงตารางตามเวลาที่กรอก
+    selected, active_slot = picker_selection(entry.form.car.data for entry in form.assignments)
+    timeline, picker_error = car_timeline.picker_or_hint(
+        organization,
+        *picker_window(form),
+        kind=form.vehicle_kind.data or "",
+        selected=selected,
+        active_slot=active_slot,
+    )
     return render_template(
         "/car_reservation/requests/form.html",
         organization=organization,
@@ -368,6 +505,7 @@ def create_urgent():
         request_type=request_type,
         request_type_label="ขอใช้รถเร่งด่วน (ผู้จัดรถสร้างแทนผู้ใช้รถ)",
         urgent_by_dispatcher=True,
+        car_picker={"timeline": timeline, "picker_error": picker_error},
     )
 
 
@@ -381,13 +519,8 @@ def create_insert():
         abort(403)  # system admin ผ่านตัว decorator แต่ไม่ได้ถือ role ผู้จัดรถ
 
     form = forms.car_reservation.InsertJobForm()
-    form.car.choices = [
-        (str(car.id), car_choice_label(car)) for car in flow.assignable_cars(organization)
-    ]
-    form.driver.choices = [
-        (str(driver.id), driver.get_name())
-        for driver in flow.assignable_drivers(organization)
-    ]
+    form.car.choices = car_choices_for(organization)
+    form.driver.choices = driver_choices_for(organization)
 
     if form.validate_on_submit():
         reservation = models.CarReservation(
@@ -419,8 +552,11 @@ def create_insert():
                 is_overtime=form.is_overtime.data,
             )
         except flow.FlowError as error:
-            flash(str(error), "danger")
+            flash_flow_error(error)
         else:
+            # งานแทรก active ทันที: แจ้ง พขร. เหมือนคำขอที่อนุมัติครบ (อีเมลถึงผู้ขอและ พขร. + แจ้งเตือนในระบบ)
+            utils.car_reservation_email.notify(reservation, "active")
+            notify_drivers(reservation)
             flash("เพิ่มงานแทรกเรียบร้อยแล้ว", "success")
             return redirect(
                 url_for(
@@ -430,10 +566,19 @@ def create_insert():
                 )
             )
 
+    selected, active_slot = picker_selection([form.car.data])
+    timeline, picker_error = car_timeline.picker_or_hint(
+        organization,
+        *picker_window(form),
+        driver_id=object_id_or_none(form.driver.data),
+        selected=selected,
+        active_slot=active_slot,
+    )
     return render_template(
         "/car_reservation/requests/insert.html",
         organization=organization,
         form=form,
+        car_picker={"timeline": timeline, "picker_error": picker_error},
     )
 
 
@@ -457,26 +602,60 @@ def stepper(reservation):
     return steps
 
 
+def assignment_cards(reservation, user):
+    """ข้อมูลที่การ์ดของแต่ละชุด (รถ + พขร.) ในหน้ารายละเอียดต้องใช้ ตามลำดับชุด"""
+    return [
+        {
+            "assignment": assignment,
+            "index": index,
+            "can_set_overtime": flow.can_set_overtime(reservation, user, assignment),
+            "overtime_form": forms.car_reservation.OvertimeForm(
+                is_overtime=assignment.is_overtime
+            ),
+            "close_status": assignment.close_confirmation_status(),
+            "can_confirm_close": flow.can_confirm_close(reservation, user, assignment),
+            "close_form": forms.car_reservation.CloseConfirmationForm(),
+        }
+        for index, assignment in enumerate(reservation.assignments, start=1)
+    ]
+
+
 @module.route("/<request_id>")
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def detail(request_id):
-    reservation = get_request_or_404(request_id)
+    return render_detail(get_request_or_404(request_id))
+
+
+def render_detail(reservation, approve_error=None):
+    """หน้ารายละเอียดคำขอ approve_error = ข้อความผิดพลาดจากการกดอนุมัติ: เปิดโมดอลอนุมัติค้างไว้พร้อมค่าที่เลือกไว้เดิม"""
+    user = current_user._get_current_object()
     current_key = flow.current_step_key(reservation)
+    required_count = models.car_reservations.required_vehicle_count(reservation)
+    car_picker = None
     if current_key == "dispatcher":
         form = forms.car_reservation.DispatchDecisionForm()
-        form.car.choices = [
-            (str(car.id), car_choice_label(car))
-            for car in flow.assignable_cars(g.organization)
-        ]
         workload = flow.driver_workload(
             g.organization,
             now=datetime.datetime.now(),
             window_start=reservation.departure_datetime,
             window_end=reservation.return_datetime or reservation.departure_datetime,
         )
-        form.driver.choices = [
-            (str(row.driver.id), row.driver.get_name()) for row in workload
-        ]
+        forms.car_reservation.set_assignment_slots(
+            form,
+            required_count,
+            car_choices_for(g.organization),
+            [(str(row.driver.id), workload_label(row)) for row in workload],
+        )
+        if flow.can_act(reservation, user):
+            # ตัวเลือกรถแบบตาราง: ช่วงของคำขอคงที่ ไม่นับคำขอนี้เองว่าชน
+            picker_timeline, picker_error = car_timeline.picker_or_hint(
+                g.organization,
+                reservation.departure_datetime,
+                reservation.return_datetime,
+                kind=requested_kind_of(reservation),
+                exclude_id=reservation.id,
+            )
+            car_picker = {"timeline": picker_timeline, "picker_error": picker_error}
     else:
         form = forms.car_reservation.ApprovalDecisionForm()
         workload = []
@@ -487,37 +666,27 @@ def detail(request_id):
         reservation=reservation,
         steps=stepper(reservation),
         current_step_label=flow.step_label(current_key) if current_key else "",
-        can_act=flow.can_act(reservation, current_user._get_current_object()),
-        can_view_mileage_photos=flow.can_view_mileage_photos(
-            reservation, current_user._get_current_object()
-        ),
+        can_act=flow.can_act(reservation, user),
+        can_view_mileage_photos=flow.can_view_mileage_photos(reservation, user),
         asks_extra_travelers=flow.asks_extra_travelers(reservation),
-        can_print_paper=flow.can_print_paper(
-            reservation, current_user._get_current_object()
-        ),
-        can_edit=flow.can_edit(reservation, current_user._get_current_object()),
-        can_cancel=flow.can_cancel(
-            reservation, current_user._get_current_object()
-        ),
-        can_confirm_cancel=flow.can_confirm_cancel(
-            reservation, current_user._get_current_object()
-        ),
+        can_print_paper=flow.can_print_paper(reservation, user),
+        can_edit=flow.can_edit(reservation, user),
+        can_cancel=flow.can_cancel(reservation, user),
+        can_confirm_cancel=flow.can_confirm_cancel(reservation, user),
         cancel_form=forms.car_reservation.CancelRequestForm(),
-        can_set_overtime=flow.can_set_overtime(
-            reservation, current_user._get_current_object()
-        ),
-        overtime_form=forms.car_reservation.OvertimeForm(obj=reservation),
+        assignment_cards=assignment_cards(reservation, user),
+        required_vehicle_count=required_count,
+        requested_vehicle_kind=requested_kind_of(reservation),
+        off_campus=any(a.closed_off_campus for a in reservation.assignments),
         form=form,
         workload=workload,
+        approve_error=approve_error,
+        duplicate_messages={"car": flow.DUPLICATE_CAR, "driver": flow.DUPLICATE_DRIVER},
+        **({"car_picker": car_picker} if car_picker else {}),
         deny_form=forms.car_reservation.DenyDecisionForm(),
-        close_status=reservation.close_confirmation_status(),
         close_confirmation_days=models.car_reservations.CLOSE_CONFIRMATION_DAYS,
-        can_confirm_close=flow.can_confirm_close(
-            reservation, current_user._get_current_object()
-        ),
-        close_form=forms.car_reservation.CloseConfirmationForm(),
         finance_documents=finance.documents_for_reservation(reservation)
-        if finance.can_issue(g.organization, current_user._get_current_object())
+        if finance.can_issue(g.organization, user)
         else [],
         finance_saved=finance.saved_docs(reservation),
     )
@@ -600,18 +769,26 @@ def project_file(request_id):
     )
 
 
-@module.route("/<request_id>/mileage_photo/<side>")
+def get_assignment_or_404(reservation, assignment_id):
+    assignment = reservation.get_assignment(assignment_id)
+    if assignment is None:
+        abort(404)
+    return assignment
+
+
+@module.route("/<request_id>/mileage_photo/<assignment_id>/<side>")
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
-def mileage_photo(request_id, side):
-    """รูปเลขไมล์ที่ พขร. ถ่ายตอนปิดงาน (side = in ขากลับ; out ก่อนออก มีเฉพาะงานเก่า)"""
+def mileage_photo(request_id, assignment_id, side):
+    """รูปเลขไมล์ที่ พขร. ของชุดนี้ถ่ายตอนปิดงาน (side = in ขากลับ; out ก่อนออก มีเฉพาะงานเก่า)"""
     reservation = get_request_or_404(request_id)
+    assignment = get_assignment_or_404(reservation, assignment_id)
     if not flow.can_view_mileage_photos(
         reservation, current_user._get_current_object()
     ):
         abort(403)
     photo = {
-        "out": reservation.mileage_photo_out,
-        "in": reservation.mileage_photo_in,
+        "out": assignment.mileage_photo_out,
+        "in": assignment.mileage_photo_in,
     }.get(side)
     if not photo:
         abort(404)
@@ -620,19 +797,29 @@ def mileage_photo(request_id, side):
     )
 
 
-@module.route("/<request_id>/paper")
+@module.route("/<request_id>/paper", defaults={"assignment_id": None})
+@module.route("/<request_id>/paper/<assignment_id>")
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
-def paper(request_id):
-    """ใบขอใช้รถ (PDF) ตามแบบฟอร์มทางการของประเภทใบขอ"""
+def paper(request_id, assignment_id):
+    """ใบขอใช้รถ (PDF) ตามแบบฟอร์มทางการของประเภทใบขอ หนึ่งใบต่อชุด (ไม่ระบุชุด = ชุดแรก)"""
     reservation = get_request_or_404(request_id)
     if not flow.can_print_paper(reservation, current_user._get_current_object()):
         abort(403)
+    if assignment_id is None:
+        assignment = reservation.first_assignment
+    else:
+        assignment = get_assignment_or_404(reservation, assignment_id)
+    pdf = utils.car_reservation_paper.render_pdf(reservation, assignment)
+    filename = pdf_filename(PAPER_FILE_LABELS[reservation.request_type], reservation)
+    if len(reservation.assignments) > 1 and assignment is not None:
+        # หนึ่งใบต่อชุด: ชื่อไฟล์บอกลำดับชุด (คำขอคันเดียวใช้ชื่อเดิม)
+        filename = filename.removesuffix(".pdf") + f"_{reservation.assignments.index(assignment) + 1}.pdf"
     return send_file(
-        io.BytesIO(utils.car_reservation_paper.render_pdf(reservation)),
+        io.BytesIO(pdf),
         mimetype="application/pdf",
         # ปุ่มดาวน์โหลดส่ง download=1 ส่วนตัวอย่างในหน้าเปิดแบบ inline
         as_attachment=request.args.get("download") == "1",
-        download_name=pdf_filename(PAPER_FILE_LABELS[reservation.request_type], reservation),
+        download_name=filename,
     )
 
 
@@ -689,49 +876,43 @@ def approve(request_id):
     if form.step.data and form.step.data != str(reservation.current_step):
         return already_handled(reservation)
 
-    assignment = {}
+    user = current_user._get_current_object()
+    extra = {}
+    required_before = models.car_reservations.required_vehicle_count(reservation)
     if dispatching:
-        assignment = {
-            "car": models.vehicles.Car.objects(
-                id=form.car.data, organization=g.organization
-            ).first()
-            if ObjectId.is_valid(form.car.data)
-            else None,
-            "driver": models.User.objects(id=form.driver.data).first()
-            if ObjectId.is_valid(form.driver.data)
-            else None,
+        chosen, half_filled = forms.car_reservation.chosen_assignments(form)
+        if half_filled:
+            # ชุดที่เลือกรถหรือ พขร. อย่างเดียว: ผู้ที่ไม่ใช่ผู้จัดรถไม่ควรรู้ว่าฟอร์มนี้ตรวจอะไร
+            if not flow.can_act(reservation, user):
+                abort(403)
+            return render_detail(reservation, approve_error=flow.CAR_AND_DRIVER_REQUIRED)
+        extra = {
+            "assignments": load_assignments(g.organization, chosen),
+            "reduce_reason": (form.reduce_reason.data or "").strip(),
             "extra_travelers": (form.extra_travelers.data or "").strip(),
-            "is_overtime": form.is_overtime.data,
         }
     try:
-        flow.approve(
-            reservation,
-            current_user._get_current_object(),
-            comment=form.comment.data or "",
-            **assignment,
-        )
+        flow.approve(reservation, user, comment=form.comment.data or "", **extra)
     except flow.ConcurrentChangeError:
         return already_handled(reservation)
     except flow.FlowError as error:
-        if not dispatching or not flow.can_act(
-            reservation, current_user._get_current_object()
-        ):
+        if not dispatching or not flow.can_act(reservation, user):
             abort(403)
-        flash(str(error), "danger")
-        return redirect(
-            url_for(
-                "car_reservation.requests.detail",
-                request_id=reservation.id,
-                organization_id=g.organization.id,
-            )
-        )
+        # แสดงข้อผิดพลาดในโมดอลอนุมัติเอง (ไม่ redirect) เพื่อไม่ให้ฟอร์มปิดและค่าที่เลือกไว้หาย
+        reservation.reload()
+        return render_detail(reservation, approve_error=flow_error_message(error))
 
     utils.car_reservation_email.notify(
         reservation, "active" if reservation.status == "active" else "approved"
     )
     if dispatching:
-        utils.car_reservation_email.notify_in_app(reservation, "driver_assigned")
+        notify_drivers(reservation)
+        if models.car_reservations.required_vehicle_count(reservation) < required_before:
+            # จัดรถน้อยกว่าที่ขอ (flow ลงประวัติ vehicle_count_reduced แล้ว): แจ้งผู้ขอพร้อมเหตุผล
+            utils.car_reservation_email.notify(reservation, "vehicle_count_reduced")
     flash("บันทึกการอนุมัติเรียบร้อยแล้ว", "success")
+    if dispatching:
+        warn_if_vehicle_type_differs(reservation)
     return redirect(
         inbox_url_if_requested(form)
         or url_for(
@@ -757,7 +938,7 @@ def deny(request_id):
     if not flow.can_act(reservation, current_user._get_current_object()):
         abort(403)
     if not form.validate_on_submit():
-        flash("กรุณาระบุเหตุผลที่ไม่อนุมัติ", "danger")
+        flash("กรุณาระบุเหตุผลที่ไม่อนุมัติ", "error")
         return redirect_to_detail
 
     try:
@@ -774,10 +955,11 @@ def deny(request_id):
     return redirect(inbox_url) if inbox_url else redirect_to_detail
 
 
-@module.route("/<request_id>/overtime", methods=["POST"])
+@module.route("/<request_id>/overtime/<assignment_id>", methods=["POST"])
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
-def overtime(request_id):
+def overtime(request_id, assignment_id):
     reservation = get_request_or_404(request_id)
+    assignment = get_assignment_or_404(reservation, assignment_id)
     form = forms.car_reservation.OvertimeForm()
     if not form.validate_on_submit():
         abort(400)
@@ -785,6 +967,7 @@ def overtime(request_id):
         flow.set_overtime(
             reservation,
             current_user._get_current_object(),
+            assignment,
             form.is_overtime.data,
         )
     except flow.ConcurrentChangeError:
@@ -852,13 +1035,14 @@ def confirm_cancel(request_id):
     )
 
 
-@module.route("/<request_id>/close_confirmation", methods=["POST"])
+@module.route("/<request_id>/close_confirmation/<assignment_id>", methods=["POST"])
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
-def close_confirmation(request_id):
-    """ผู้ขอยืนยันเวลาเริ่ม/ปิดงานที่ พขร. บันทึก (ตอบได้ครั้งเดียว)"""
+def close_confirmation(request_id, assignment_id):
+    """ผู้ขอยืนยันเวลาเริ่ม/ปิดงานที่ พขร. ของชุดนี้บันทึก (ตอบได้ครั้งเดียวต่อชุด)"""
     reservation = get_request_or_404(request_id)
+    assignment = get_assignment_or_404(reservation, assignment_id)
     user = current_user._get_current_object()
-    if not flow.can_confirm_close(reservation, user):
+    if not flow.can_confirm_close(reservation, user, assignment):
         abort(403)
     form = forms.car_reservation.CloseConfirmationForm()
     if not form.validate_on_submit():
@@ -881,12 +1065,13 @@ def close_confirmation(request_id):
         flow.confirm_close(
             reservation,
             user,
+            assignment,
             correct=correct,
             reported_end=reported_end,
             note=form.note.data or "",
         )
     except flow.FlowError as error:
-        flash(str(error), "danger")
+        flash(str(error), "error")
         return redirect_to_detail
     if not correct:
         utils.car_reservation_email.notify(reservation, "close_disputed")

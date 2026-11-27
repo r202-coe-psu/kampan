@@ -37,6 +37,7 @@ def world(app, create_org, create_user, assign_user_to_org, login_as, create_car
         organization=org,
         car=None,
         driver=None,
+        assignments=None,
     ):
         return models.CarReservation(
             organization=organization,
@@ -50,8 +51,13 @@ def world(app, create_org, create_user, assign_user_to_org, login_as, create_car
             status=status,
             route_snapshot=["supervisor", "dispatcher", "vehicle_unit_head"],
             current_step=1,
-            car=car,
-            driver=driver,
+            assignments=assignments
+            if assignments is not None
+            else (
+                [models.CarAssignment(car=car, driver=driver)]
+                if car is not None or driver is not None
+                else []
+            ),
         ).save()
 
     s.reservation = reservation
@@ -179,6 +185,57 @@ def test_modal_shows_trip_car_driver_status_stepper_and_link_to_the_request(worl
         f"/car_reservation/requests/{reservation.id}?organization_id={world.org.id}"
         in html
     )
+
+
+def two_car_reservation(world, create_car, create_user, assign_user_to_org):
+    second_driver = create_user("Second", "Calendar")
+    assign_user_to_org(second_driver, world.org, roles=["driver"])
+    second_car = create_car(world.org, "ขข 9999", vehicle_type="ตู้")
+    reservation = world.reservation(
+        location="เชียงใหม่",
+        assignments=[
+            models.CarAssignment(car=world.car, driver=world.driver),
+            models.CarAssignment(car=second_car, driver=second_driver, is_overtime=True),
+        ],
+    )
+    return reservation, second_car, second_driver
+
+
+def test_event_title_lists_the_plates_of_every_assignment(
+    world, create_car, create_user, assign_user_to_org
+):
+    reservation, _, _ = two_car_reservation(world, create_car, create_user, assign_user_to_org)
+    single = world.reservation(location="ภูเก็ต", car=world.car, driver=world.driver)
+
+    titles = {event["id"]: event["title"] for event in world.events()}
+
+    assert titles[str(reservation.id)] == "08:30 น. เชียงใหม่ (กก 1234, ขข 9999)"
+    assert titles[str(single.id)] == "08:30 น. ภูเก็ต (กก 1234)"  # คันเดียวหน้าตาเดิม
+
+
+def test_modal_lists_every_assignment_with_its_car_driver_and_overtime(
+    world, create_car, create_user, assign_user_to_org
+):
+    reservation, second_car, second_driver = two_car_reservation(
+        world, create_car, create_user, assign_user_to_org
+    )
+
+    html = world.client.get(modal_url(world, reservation)).get_data(as_text=True)
+
+    assert html.count('data-role="assignment"') == 2
+    assert html.count('data-role="assigned-car"') == 2
+    assert html.count('data-role="assigned-driver"') == 2
+    assert "กก 1234" in html and "ขข 9999" in html
+    assert world.driver.get_name() in html and second_driver.get_name() in html
+    assert html.count('data-role="overtime-badge"') == 1  # เฉพาะชุดที่ผู้จัดรถติ๊ก OT
+
+
+def test_modal_of_a_request_without_assignments_has_no_assignment_rows(world):
+    reservation = world.reservation(status="pending")
+
+    html = world.client.get(modal_url(world, reservation)).get_data(as_text=True)
+
+    assert 'data-role="assignment"' not in html
 
 
 def test_modal_stepper_marks_where_a_pending_request_is_in_its_route(world):

@@ -1,0 +1,117 @@
+{# ตัวเลือกรถแบบตารางสำหรับฟอร์มจัดรถ (#79 ส่วน B) แทนที่การเลือกจาก <select> ของรถ
+
+   ใช้สองส่วน:
+     CarPicker(...)  ตารางตัวเดียวต่อฟอร์ม (วางเหนือช่องรถ) พร้อมสรุป "เลือกแล้ว M/N" และข้อความแจ้งเตือน
+                     show_count=false = ไม่แสดงสรุปในหัวตาราง (ฟอร์มวาง [data-role="picker-count"] ไว้ที่หัวส่วน "การจัดรถ" เอง)
+     PickerSlot(...) ช่อง "รถที่เลือก" ของแต่ละคัน (วางในการ์ดของช่อง แทน <select> รถเดิม) เป็นช่องแสดงผล ไม่ใช่ปุ่มสั่งงาน:
+                     ว่างอยู่แสดงคำใบ้ให้จิ้มเลือกจากตาราง เลือกแล้วแสดงป้ายทะเบียน (กดเพื่อสลับช่องที่กำลังเลือกเมื่อขอหลายคัน)
+   แล้ว include _picker_styles.html และ _picker_scripts.html หนึ่งครั้งต่อหน้า (หลังฟอร์ม)
+
+   Progressive enhancement: <select> ของรถยังอยู่ใน HTML เป็นช่องที่ฟอร์มส่งจริง (ไม่มี JS ก็ใช้ได้ server ตรวจเหมือนเดิม)
+   ส่วนของตัวเลือก (container และปุ่มช่อง) ซ่อนอยู่จนกว่า JS จะเริ่มทำงาน แล้ว JS จึงซ่อน <select> และขับค่าของมันแทน
+
+   โหลดใหม่ด้วย htmx (reload=true: ฟอร์มที่ผู้จัดรถกรอกเวลาเอง): ค่าพารามิเตอร์ของ endpoint อยู่ใน input ซ่อนใน #car-picker-params
+   (ผูกกับ form="car-picker-aux" ที่ไม่มีอยู่จริง เพื่อไม่ถูกส่งไปกับฟอร์มหลัก) JS คัดลอกค่าจากช่องของฟอร์มมาใส่แล้วยิง change
+   container ฟัง change นั้นด้วย hx-trigger แล้วสลับ #car-picker-body #}
+{% macro CarPicker(organization, timeline, picker_error, kind="", exclude_id="", requested=none, requested_input="",
+                   reload=false, window_inputs=none, kind_input="", driver_input="", show_count=true) %}
+<section id="car-picker" class="tl-picker flex flex-col gap-2" data-role="car-picker" hidden
+         data-kind="{{ kind or '' }}"
+         {% if requested is not none %}data-requested="{{ requested }}"{% endif %}
+         {% if requested_input %}data-requested-input="{{ requested_input }}"{% endif %}
+         {% if kind_input %}data-kind-input="{{ kind_input }}"{% endif %}
+         {% if driver_input %}data-driver-input="{{ driver_input }}"{% endif %}
+         {% if window_inputs %}data-window-inputs="{{ window_inputs | join(',') }}"{% endif %}
+         {% if reload %}
+         hx-get="{{ url_for('car_reservation.timeline.picker', organization_id=organization.id, exclude=(exclude_id or none)) }}"
+         hx-trigger="change from:#car-picker-params delay:300ms"
+         hx-include="#car-picker-params input"
+         hx-target="#car-picker-body" hx-swap="innerHTML" hx-sync="this:replace"
+         {% endif %}>
+  {# หัวตาราง = ปุ่ม toggle เปิด/ปิดทั้งตาราง (ค้นหา ตาราง และข้อความแจ้งเตือนอยู่ใน #car-picker-panel) #}
+  <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+    <button type="button" class="tl-picker-toggle" data-role="picker-toggle" aria-expanded="true" aria-controls="car-picker-panel">
+      <i class="ph ph-caret-down tl-picker-caret" aria-hidden="true"></i>
+      <i class="ph ph-table" aria-hidden="true"></i> ตารางเวลาว่างของรถ
+      <span class="text-xs font-normal text-base-content/60" data-role="picker-toggle-hint">(กดเพื่อซ่อน)</span>
+    </button>
+    {% if show_count %}<p class="text-sm" data-role="picker-count" {% if requested is none and not requested_input %}hidden{% endif %}></p>{% endif %}
+  </div>
+  <div id="car-picker-panel" class="flex flex-col gap-2" data-role="picker-panel">
+  <p class="text-sm text-base-content/70" data-role="picker-active">กดแถวรถที่ว่างในตารางเพื่อเลือก (กดแถวที่เลือกแล้วซ้ำเพื่อยกเลิก)</p>
+  {# ค้นหารถในตารางตามเลขทะเบียน (กรองฝั่งเบราว์เซอร์ ไม่มี name จึงไม่ถูกส่งไปกับฟอร์ม) #}
+  <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+    <label class="input input-sm w-full sm:w-72">
+      <i class="ph ph-magnifying-glass text-base-content/50" aria-hidden="true"></i>
+      <input type="search" class="grow" data-role="picker-search" placeholder="ค้นหาเลขทะเบียน" autocomplete="off" maxlength="64" aria-label="ค้นหารถจากเลขทะเบียน">
+    </label>
+    {# กรองฝั่งเบราว์เซอร์เช่นเดียวกับช่องค้นหา (ไม่มี name จึงไม่ถูกส่งไปกับฟอร์ม) #}
+    <label class="label cursor-pointer gap-2 text-sm text-base-content">
+      <input type="checkbox" class="checkbox checkbox-sm" data-role="picker-hide-busy" checked>
+      ซ่อนรถที่ไม่ว่าง
+    </label>
+  </div>
+  <div role="status" class="alert alert-warning alert-soft py-2 text-sm" data-role="picker-notice" hidden></div>
+  {% if reload %}
+  <div id="car-picker-params" data-role="picker-params" hidden>
+    {% for name in ('start', 'end', 'kind', 'driver', 'selected', 'slot') %}
+    <input type="hidden" form="car-picker-aux" name="{{ name }}" value="">
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div id="car-picker-body" data-role="picker-body" aria-live="polite">
+    {% include "/car_reservation/timeline/_picker.html" %}
+  </div>
+  <p class="tl-pick-hint" data-role="picker-search-empty" hidden><i class="ph ph-magnifying-glass" aria-hidden="true"></i> ไม่พบรถที่ตรงกับเงื่อนไขที่เลือก</p>
+  </div>
+</section>
+{% endmacro %}
+
+{# ช่อง "รถที่เลือก" ของแต่ละคัน: field = ช่อง <select> รถของช่องนั้น (ไม่ผ่านช่องนี้ก็ยังส่งค่าจาก <select> ได้)
+   ไม่ใช่ปุ่มสั่งงานแบบเดิม: ผู้ใช้จิ้มเลือกที่แถวในตาราง ช่องนี้แค่แสดงผลลัพธ์ (JS ใส่ data-filled / data-active) #}
+{% macro PickerSlot(field, number) %}
+<div class="tl-slot flex flex-col gap-1.5" data-picker-slot data-select-id="{{ field.id }}" data-slot-number="{{ number }}" hidden>
+  <span class="text-sm font-medium">รถที่เลือก</span>
+  <div class="flex items-center gap-1">
+    <button type="button" class="tl-slot-pick" data-role="slot-button">
+      <i class="ph ph-car" aria-hidden="true"></i>
+      <span data-role="slot-label">จิ้มเลือกรถจากตารางด้านล่าง</span>
+    </button>
+    <button type="button" class="btn btn-ghost btn-sm btn-square" data-role="slot-clear" aria-label="ล้างรถที่เลือก" title="ล้างรถที่เลือก" hidden>
+      <i class="ph ph-x" aria-hidden="true"></i>
+    </button>
+  </div>
+  <span class="badge badge-warning badge-soft" data-role="slot-type-warning" hidden>
+    <i class="ph ph-warning" aria-hidden="true"></i> รถคนละประเภทกับที่ขอ
+  </span>
+</div>
+{% endmacro %}
+
+{# แถบสลับ "คันที่ N" ของโมดอลอนุมัติ: เลือกว่ากำลังจิ้มรถให้คันไหน (ช่องรถจริง <select> และสรุปอยู่ในตารางสรุปการจัดรถท้ายฟอร์ม)
+   ป้ายทะเบียน ปุ่มล้าง และคำเตือนประเภทรถของคันนั้นอยู่ที่ SlotSummary(field) ผูกกันด้วย data-for = id ของ <select> รถ #}
+{% macro SlotTab(field, number) %}
+<div class="tl-slot" data-picker-slot data-select-id="{{ field.id }}" data-slot-number="{{ number }}" hidden>
+  <button type="button" class="tl-slot-tab" data-role="slot-button">
+    <span class="tl-slot-tab-no">คันที่ {{ number }}</span>
+    <span class="tl-slot-tab-plate" data-role="slot-label" data-empty="ยังไม่ได้เลือกรถ">ยังไม่ได้เลือกรถ</span>
+  </button>
+</div>
+{% endmacro %}
+
+{# ช่องแสดง "รถที่เลือก" ในแถวของตารางสรุป (แทน <select> รถที่ JS ซ่อนไว้): กดเพื่อสลับไปเลือกรถให้คันนี้ #}
+{% macro SlotSummary(field) %}
+<div class="tl-slot-sum flex flex-col gap-1" data-role="slot-sum" data-for="{{ field.id }}" hidden>
+  <div class="flex items-center gap-1">
+    <button type="button" class="tl-slot-pick" data-role="slot-summary">
+      <i class="ph ph-car" aria-hidden="true"></i>
+      <span data-role="slot-summary-label">ยังไม่ได้เลือกรถ</span>
+    </button>
+    <button type="button" class="btn btn-ghost btn-sm btn-square" data-role="slot-clear" aria-label="ล้างรถที่เลือก" title="ล้างรถที่เลือก" hidden>
+      <i class="ph ph-x" aria-hidden="true"></i>
+    </button>
+  </div>
+  <span class="badge badge-warning badge-soft" data-role="slot-type-warning" hidden>
+    <i class="ph ph-warning" aria-hidden="true"></i> รถคนละประเภทกับที่ขอ
+  </span>
+</div>
+{% endmacro %}

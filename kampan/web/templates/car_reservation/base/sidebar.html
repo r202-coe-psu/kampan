@@ -29,6 +29,10 @@
     <li class="menu-title">การจอง</li>
     {{ MenuItem(['car_reservation.calendar.index'], 'ph-calendar-dots', 'ปฏิทินการจองรถ',
                 url_for('car_reservation.calendar.index', organization_id=organization.id)) }}
+    {% if can_view_timeline %}
+    {{ MenuItem(['car_reservation.timeline.index'], 'ph-rows', 'ตารางรถ',
+                url_for('car_reservation.timeline.index', organization_id=organization.id)) }}
+    {% endif %}
     {% if can_request %}
     {{ MenuItem(['car_reservation.requests.index'], 'ph-list-bullets', 'คำขอของฉัน',
                 url_for('car_reservation.requests.index', organization_id=organization.id)) }}

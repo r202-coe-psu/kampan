@@ -240,6 +240,7 @@ CAR_RESERVATION_TYPES = [
     "car_reservation_cancelled",
     "car_reservation_completed",
     "car_reservation_close_disputed",
+    "car_reservation_vehicle_count_reduced",
 ]
 
 
@@ -278,7 +279,14 @@ def test_index_filters_templates_by_car_reservation_system(app, login_as, email_
     assert "แจ้งผู้อนุมัติ" not in tbody
 
 
-def _reservation(car=None, driver=None, audit_logs=(), status="pending"):
+def _assignment(car, driver):
+    return SimpleNamespace(car=car, driver=driver)
+
+
+def _reservation(car=None, driver=None, audit_logs=(), status="pending", assignments=None):
+    """ไม่ระบุ assignments แต่ระบุ car/driver = ชุดเดียว; ไม่ระบุทั้งคู่ = ยังไม่จัดรถ"""
+    if assignments is None:
+        assignments = [_assignment(car, driver)] if car or driver else []
     return SimpleNamespace(
         id="abc123",
         organization=SimpleNamespace(id="org1", name="Org"),
@@ -292,8 +300,10 @@ def _reservation(car=None, driver=None, audit_logs=(), status="pending"):
         status=status,
         route_snapshot=["supervisor", "dispatcher"],
         current_step=1,
-        car=car,
-        driver=driver,
+        assignments=assignments,
+        cars=[a.car for a in assignments if a.car is not None],
+        drivers=[a.driver for a in assignments if a.driver is not None],
+        details=None,
         request_reason="ประชุม",
         audit_logs=list(audit_logs),
     )
@@ -333,6 +343,52 @@ def test_car_reservation_variables_carry_trip_details_as_text():
 def test_car_reservation_feedback_url_is_empty_until_a_car_is_assigned():
     sent = car_reservation_email.template_variables(_reservation(), "http://x")
     assert sent["feedback_url"] == ""
+
+
+def _car(car_id, plate):
+    return SimpleNamespace(id=car_id, license_plate=plate)
+
+
+def test_car_reservation_variables_join_every_car_and_driver_and_list_a_link_per_car():
+    reservation = _reservation(
+        assignments=[
+            _assignment(_car("car1", "กก 1111"), _person("driver one")),
+            _assignment(_car("car2", "ขข 2222"), _person("driver two")),
+        ],
+        status="active",
+    )
+
+    sent = car_reservation_email.template_variables(reservation, "http://x")
+
+    assert sent["car_plate"] == "กก 1111, ขข 2222"
+    assert sent["driver_name"] == "driver one, driver two"
+    assert sent["assigned_vehicle_count"] == 2
+    assert sent["feedback_links"] == [
+        {"car_plate": "กก 1111", "url": "http://x/car_reservation/cars/car1/feedback?reservation_id=abc123"},
+        {"car_plate": "ขข 2222", "url": "http://x/car_reservation/cars/car2/feedback?reservation_id=abc123"},
+    ]
+    # feedback_url คือลิงก์ของรถคันแรก (template เดิมที่เขียนไว้ยังใช้ได้)
+    assert sent["feedback_url"] == sent["feedback_links"][0]["url"]
+
+
+def test_car_reservation_variables_report_the_requested_count_from_the_reduction_log():
+    reduced = SimpleNamespace(
+        action="vehicle_count_reduced",
+        comment="รถไม่พอ",
+        changes=[SimpleNamespace(field="vehicle_count", old="3", new="2")],
+    )
+    reservation = _reservation(
+        assignments=[
+            _assignment(_car("car1", "กก 1111"), _person("driver one")),
+            _assignment(_car("car2", "ขข 2222"), _person("driver two")),
+        ],
+        audit_logs=[reduced],
+    )
+
+    sent = car_reservation_email.template_variables(reservation, "http://x")
+
+    assert (sent["requested_vehicle_count"], sent["assigned_vehicle_count"]) == (3, 2)
+    assert sent["comment"] == "รถไม่พอ"
 
 
 def test_org_sees_only_email_systems_of_its_enabled_modules():

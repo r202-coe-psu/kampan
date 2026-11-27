@@ -24,17 +24,22 @@ def chosen_period(value):
 
 
 def feedback_by_job(organization, jobs):
-    """{id งาน: {"count", "average", "template_ids"}} และคะแนนเฉลี่ยรวม จากแบบประเมินของงานเหล่านี้
+    """{(id คำขอ, id รถ): {"count", "average", "template_ids"}} และคะแนนเฉลี่ยรวม จากแบบประเมินของงานเหล่านี้
 
+    แบบประเมินผูกกับคู่ (คำขอ, รถ) คำขอที่จัดรถหลายคันจึงมีผลแยกต่อชุด และงานของ พขร. แต่ละคน
+    (job.feedback_key) ได้เฉพาะผลของรถคันของตัวเอง
     average = ค่าเฉลี่ยคำตอบแบบคะแนน (1-5) ทุกข้อ งานที่ไม่มีคำตอบแบบคะแนนได้ None
     """
     per_job = {}
     all_scores = []
+    wanted = {job.feedback_key for job in jobs}
     responses = models.CarFeedbackResponse.objects(
         organization=organization, car_reservation__in=[job.id for job in jobs]
-    ).only("car_reservation", "feedback_template", "answers").no_dereference()
+    ).only("car_reservation", "car", "feedback_template", "answers").no_dereference()
     for response in responses:
-        key = response.car_reservation.id
+        key = (response.car_reservation.id, getattr(response.car, "id", response.car))
+        if key not in wanted:
+            continue
         entry = per_job.setdefault(key, {"count": 0, "scores": [], "template_ids": []})
         entry["count"] += 1
         template_id = response.feedback_template.id

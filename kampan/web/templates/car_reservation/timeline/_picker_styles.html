@@ -1,0 +1,97 @@
+{# CSS ของตัวเลือกรถในฟอร์มจัดรถ: ต่อจาก CSS ของตารางรถ (include ครั้งเดียวต่อหน้า แทน _styles.html) #}
+{% include "/car_reservation/timeline/_styles.html" %}
+<style>
+  .tl-picker { --pk-window: var(--color-primary); }
+  .tl-picker.htmx-request [data-role="picker-body"] { opacity: .55; transition: opacity .15s; }
+
+  /* หัวตารางเลือกรถ = ปุ่ม toggle เปิด/ปิดทั้งตาราง */
+  .tl-picker-toggle { display: inline-flex; align-items: center; gap: .4rem; font-weight: 600; cursor: pointer; text-align: left; }
+  .tl-picker-toggle:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: var(--radius-field); }
+  .tl-picker-caret { transition: transform .15s; }
+  .tl-picker-toggle[aria-expanded="false"] .tl-picker-caret { transform: rotate(-90deg); }
+  [data-role="picker-panel"][hidden] { display: none; }
+
+  .tl-pick-hint {
+    display: flex; align-items: center; gap: .5rem; padding: .75rem 1rem; font-size: .875rem;
+    border: 1px dashed var(--color-base-300); border-radius: var(--radius-box);
+    background: var(--color-base-200); color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
+  }
+  .tl-pick-window { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; font-size: .8rem; }
+  /* legend ของแถบช่วงเวลาคำขอ: แถบสีทึบเล็ก ๆ (ไม่ใช่กล่องมีขอบ ซึ่งดูเหมือน checkbox ที่ต้องติ๊ก) */
+  .tl-pick-window-chip { width: 1.4rem; height: .45rem; border-radius: 9999px; background: var(--pk-window); opacity: .55; }
+
+  /* ตารางในฟอร์ม: คอลัมน์รถกว้างขึ้นให้พอใส่ป้ายไม่ว่าง/ผู้ขอ และเตี้ยกว่าหน้าตารางรถ */
+  .tl-pick { --tl-car-col: 15rem; --tl-lane: 1.75rem; }
+  @media (max-width: 40rem) { .tl-pick { --tl-car-col: 9.5rem; } }
+  .tl-pick .tl-scroll { max-height: 55vh; }
+  .tl-pick .tl-row { min-height: calc(var(--tl-lanes) * var(--tl-lane) + .75rem); }
+  .tl-pick .tl-tip { top: calc(.375rem + var(--lane, 0) * var(--tl-lane) + .15rem); height: calc(var(--tl-lane) - .3rem); }
+
+  /* แถบไฮไลต์ช่วงของคำขอ พาดทุกแถว (อยู่ในชั้นพื้นหลังเดียวกับเส้นแบ่งวัน) */
+  .tl-window {
+    position: absolute; top: 0; bottom: 0;
+    background: color-mix(in oklab, var(--pk-window) 6%, transparent);
+    border-left: 2px solid var(--pk-window);
+    border-right: 2px solid var(--pk-window);
+    min-width: 2px;
+  }
+
+  .tl-car-pick { display: flex; flex-direction: column; align-items: flex-start; gap: .15rem; margin-top: .15rem; font-size: .68rem; line-height: 1.25; white-space: normal; }
+  .tl-car-pick:empty { display: none; }
+  .tl-car-clash { overflow-wrap: anywhere; color: color-mix(in oklab, var(--color-base-content) 75%, transparent); }
+  .tl-pick-status { font-weight: 600; color: var(--color-primary); }
+  .tl-pick-status:empty { display: none; }
+
+  .tl-pick .tl-row[data-selectable="1"] .tl-car { cursor: pointer; }
+  .tl-pick .tl-row[data-selectable="1"]:hover .tl-car { background: var(--color-base-200); }
+  .tl-pick .tl-car:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+  .tl-pick .tl-row.is-busy .tl-car { cursor: not-allowed; }
+  .tl-pick .tl-row.is-busy .tl-car-plate,
+  .tl-pick .tl-row.is-busy .tl-photo { opacity: .55; }
+  .tl-pick .tl-row[data-pick-state="elsewhere"] .tl-car {
+    cursor: not-allowed;
+    background: color-mix(in oklab, var(--color-primary) 5%, var(--color-base-100));
+    box-shadow: inset 4px 0 0 color-mix(in oklab, var(--color-primary) 35%, transparent);
+  }
+  .tl-pick .tl-row[data-pick-state="chosen"] .tl-car {
+    background: color-mix(in oklab, var(--color-primary) 12%, var(--color-base-100));
+    box-shadow: inset 4px 0 0 var(--color-primary);
+  }
+
+  /* ช่อง "รถที่เลือก": หน้าตาเหมือนช่องกรอก (ว่าง = ขอบประ + คำใบ้, เลือกแล้ว = ป้ายทะเบียน) ช่องที่กำลังเลือกให้เด่น
+     ซ่อน <select> เดิมแบบที่ยังโฟกัส/ขึ้นข้อความตรวจฟอร์มได้ */
+  .tl-slot-pick {
+    flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: .5rem; text-align: left;
+    min-height: 2.5rem; padding: 0 .75rem; font-size: .9rem; cursor: pointer;
+    color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+    background: var(--color-base-100); border: 1px dashed var(--color-base-300); border-radius: var(--radius-field);
+  }
+  .tl-slot-pick:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+  .tl-slot[data-filled="1"] .tl-slot-pick, .tl-slot-sum[data-filled="1"] .tl-slot-pick {
+    font-weight: 700; color: var(--color-base-content); border-style: solid;
+    background: color-mix(in oklab, var(--color-success) 10%, var(--color-base-100));
+    border-color: color-mix(in oklab, var(--color-success) 55%, transparent);
+  }
+  .tl-slot[data-active="1"] .tl-slot-pick, .tl-slot-sum[data-active="1"] .tl-slot-pick { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); }
+  .tl-slot-sum[hidden] { display: none; }
+
+  /* แถบสลับคันที่กำลังเลือก (toggle) ของโมดอลอนุมัติ: คันที่ใช้งานอยู่เด่น คันที่เลือกรถแล้วแสดงทะเบียนสีเขียว */
+  .tl-slot-tab {
+    display: inline-flex; align-items: center; gap: .5rem; min-height: 2.25rem; padding: .25rem .75rem; font-size: .85rem; cursor: pointer;
+    background: var(--color-base-100); border: 1px solid var(--color-base-300); border-radius: var(--radius-field);
+  }
+  .tl-slot-tab:hover { background: var(--color-base-200); }
+  .tl-slot-tab:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+  .tl-slot-tab-no { font-weight: 600; }
+  .tl-slot-tab-plate { color: color-mix(in oklab, var(--color-base-content) 55%, transparent); }
+  .tl-slot[data-filled="1"] .tl-slot-tab-plate { font-weight: 700; color: color-mix(in oklab, var(--color-success) 70%, black); }
+  .tl-slot[data-filled="1"] .tl-slot-tab-plate::before { content: "\2713\00a0"; }
+  .tl-slot[data-active="1"] .tl-slot-tab {
+    border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary);
+    background: color-mix(in oklab, var(--color-primary) 8%, var(--color-base-100));
+  }
+  .tl-driver-load { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .5rem; font-size: .75rem; color: color-mix(in oklab, var(--color-base-content) 65%, transparent); }
+  .tl-driver-load[hidden] { display: none; }
+  [data-role="assignment-slot"].is-picking { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); }
+  .pk-select-hidden { position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; opacity: 0; }
+</style>

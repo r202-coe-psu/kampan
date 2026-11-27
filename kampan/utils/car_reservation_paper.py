@@ -107,19 +107,18 @@ def _money(value):
     return text[:-3] if text.endswith(".00") else text
 
 
-def _trip_report_context(reservation):
-    """ช่อง "เลข ก.ม. ออก/กลับ รวมระยะทาง เป็นเงิน" ท้ายใบ: เติมเมื่อ พขร. ปิดงานแล้วเท่านั้น"""
-    distance = reservation.distance_km
-    if distance is None:
+def _trip_report_context(assignment):
+    """ช่อง "เลข ก.ม. ออก/กลับ รวมระยะทาง เป็นเงิน" ท้ายใบ: เติมเมื่อ พขร. ของชุดนี้ปิดงานแล้วเท่านั้น"""
+    if assignment is None or assignment.distance_km is None:
         return {}
     context = {
-        "km_out": reservation.last_mileage_before,
-        "km_in": reservation.last_mileage,
-        "km_total": distance,
+        "km_out": assignment.last_mileage_before,
+        "km_in": assignment.last_mileage,
+        "km_total": assignment.distance_km,
     }
-    if reservation.cost_baht is not None:
-        context["trip_cost"] = _money(reservation.cost_baht)
-    start, end = reservation.started_at, reservation.completed_at
+    if assignment.cost_baht is not None:
+        context["trip_cost"] = _money(assignment.cost_baht)
+    start, end = assignment.started_at, assignment.completed_at
     if start and end:
         minutes = max(int((end - start).total_seconds()), 0) // 60
         context.update(
@@ -131,8 +130,16 @@ def _trip_report_context(reservation):
     return context
 
 
-def build_context(reservation):
-    car_type = (reservation.car.vehicle_type if reservation.car else "") or ""
+def build_context(reservation, assignment=None):
+    """ข้อมูลที่เติมลงใบขอ: รถ พขร. และรายงานปิดงานมาจาก assignment ที่ระบุ ที่เหลือมาจากคำขอ
+
+    ไม่ระบุ assignment = ชุดแรก (คำขอที่ยังไม่จัดรถไม่มีชุด ช่องรถและ พขร. ว่าง)
+    """
+    if assignment is None:
+        assignment = reservation.first_assignment
+    car = assignment.car if assignment else None
+    driver = assignment.driver if assignment else None
+    car_type = (car.vehicle_type if car else "") or ""
     unit = reservation.requester_unit or (
         reservation.division.name if reservation.division else ""
     )
@@ -145,11 +152,11 @@ def build_context(reservation):
         "passengers": reservation.passenger_number,
         "pickup_place": reservation.pickup_place,
         "pickup_time": reservation.pickup_time,
-        "car_plate": (reservation.car.license_plate if reservation.car else "") or "",
+        "car_plate": (car.license_plate if car else "") or "",
         "car_type": car_type,
         "car_type_other": car_type if car_type not in AIRPORT_CAR_TYPES else "",
         "car_type_is_other": "other" if car_type not in (*AIRPORT_CAR_TYPES, "") else "",
-        "driver_name": _user_name(reservation.driver),
+        "driver_name": _user_name(driver),
         "extra_travelers": reservation.extra_travelers,
         "created": thai_date(reservation.created_date),
         **_date_parts("created", reservation.created_date),
@@ -167,7 +174,7 @@ def build_context(reservation):
     if reservation.return_datetime:
         context["ret_time"] = reservation.return_datetime.strftime("%H:%M")
         context.update(_date_parts("ret", reservation.return_datetime))
-    context.update(_trip_report_context(reservation))
+    context.update(_trip_report_context(assignment))
     context.update(_details_context(reservation))
     return context
 
@@ -306,14 +313,17 @@ def _draw_overlay(layout, context, signers, page_width, page_height):
     return PdfReader(buffer).pages[0]
 
 
-def render_pdf(reservation):
-    """PDF ของแบบฟอร์มตามประเภทใบขอ พร้อมข้อมูลคำขอ ชื่อ/ตำแหน่ง/วันที่และลายเซ็นของขั้นที่อนุมัติแล้ว"""
+def render_pdf(reservation, assignment=None):
+    """PDF ของแบบฟอร์มตามประเภทใบขอ พร้อมข้อมูลคำขอ ชื่อ/ตำแหน่ง/วันที่และลายเซ็นของขั้นที่อนุมัติแล้ว
+
+    หนึ่งใบต่อชุด (รถ + พขร.) ไม่ระบุ assignment = ชุดแรก
+    """
     ensure_font()
     layout = LAYOUTS[reservation.request_type]
     page = PdfReader(str(PAPERS_DIR / layout.filename)).pages[0]
     overlay = _draw_overlay(
         layout,
-        build_context(reservation),
+        build_context(reservation, assignment),
         approved_signers(reservation),
         float(page.mediabox.width),
         float(page.mediabox.height),

@@ -104,10 +104,14 @@ def world(app, create_org, create_user, assign_user_to_org, login_as, create_car
             status=status,
             route_snapshot=["supervisor", "dispatcher"],
             current_step=2,
-            car=s.car,
-            driver=s.driver,
-            started_at=datetime.datetime(2026, 11, 20, 8, 40),
-            completed_at=datetime.datetime(2026, 11, 20, 16, 10),
+            assignments=[
+                models.CarAssignment(
+                    car=s.car,
+                    driver=s.driver,
+                    started_at=datetime.datetime(2026, 11, 20, 8, 40),
+                    completed_at=datetime.datetime(2026, 11, 20, 16, 10),
+                )
+            ],
         ).save()
 
     s.reservation = reservation
@@ -265,13 +269,65 @@ def test_detail_page_hides_the_documents_for_airport_and_unfinished_trips(world)
 
 def test_trip_hours_come_from_the_actual_start_and_close_times(world):
     reservation = world.reservation()
-    reservation.started_at = datetime.datetime(2026, 11, 20, 8, 0)
-    reservation.completed_at = datetime.datetime(2026, 11, 21, 12, 30)
+    assignment = reservation.assignments[0]
+    assignment.started_at = datetime.datetime(2026, 11, 20, 8, 0)
+    assignment.completed_at = datetime.datetime(2026, 11, 21, 12, 30)
 
     assert utils.car_reservation_finance.trip_duration(reservation) == (1, 4)
 
-    reservation.started_at = reservation.completed_at = None
+    assignment.started_at = assignment.completed_at = None
     assert utils.car_reservation_finance.trip_duration(reservation) == (0, 8)
+
+
+def test_a_request_without_assignments_falls_back_to_the_planned_times_and_no_payee(world):
+    reservation = world.reservation()
+    reservation.assignments = []
+
+    assert utils.car_reservation_finance.trip_duration(reservation) == (0, 8)
+    assert utils.car_reservation_finance.payee_name(reservation) == ""
+
+
+def test_finance_uses_the_first_assignment_for_the_payee_and_the_trip_times(
+    world, create_user, create_car
+):
+    # ใบเบิกยังเป็นใบเดียวต่อคำขอ: ชื่อผู้เบิกและเวลาทริปมาจากชุดแรก (หลาย พขร. อยู่ใน #80)
+    reservation = world.reservation()
+    reservation.assignments.append(
+        models.CarAssignment(
+            car=create_car(world.org, "ขข 9999"),
+            driver=create_user("สมหมาย", "ขับเก่ง"),
+            started_at=datetime.datetime(2026, 11, 22, 6, 0),
+            completed_at=datetime.datetime(2026, 11, 25, 22, 0),
+        )
+    )
+    reservation.save()
+    finance = utils.car_reservation_finance
+
+    assert finance.payee_name(reservation) == world.driver.get_name()
+    assert finance.trip_period(reservation) == (
+        datetime.datetime(2026, 11, 20, 8, 40),
+        datetime.datetime(2026, 11, 20, 16, 10),
+    )
+    assert finance.trip_duration(reservation) == (0, 7)
+
+
+def test_finance_paper_prints_the_first_assignments_driver_name(world, create_user, create_car):
+    reservation = world.reservation()
+    reservation.assignments.append(
+        models.CarAssignment(
+            car=create_car(world.org, "ขข 9999"), driver=create_user("สมหมาย", "ขับเก่ง")
+        )
+    )
+    reservation.save()
+
+    response = world.client_for(world.head).post(
+        finance_url(world, reservation, "travel"), data=finance_data()
+    )
+
+    text = pdf_text(response)
+    assert response.mimetype == "application/pdf"
+    assert world.driver.get_name() in text
+    assert "สมหมาย" not in text
 
 
 def test_travel_times_printed_are_the_actual_start_and_end_the_duration_is_counted_from(

@@ -46,25 +46,45 @@ def driver_required(func):
     return wrapped
 
 
-def my_tasks(status):
-    return models.CarReservation.objects(
+def my_tasks(status, closed):
+    """งาน (DriverJob) ของ พขร. ที่ล็อกอินอยู่ เฉพาะชุดของตัวเอง
+
+    คำขอหนึ่งใบมีได้หลายชุดและหลาย พขร. จึงเลือกทีละชุด (assignment) ไม่ใช่ทีละคำขอ:
+    closed=False ได้ชุดของตัวเองที่ยังไม่ปิด (ชุดที่ปิดแล้วไม่ใช่งานค้างแม้คำขอยัง active เพราะอีกคันยังไม่ปิด)
+    closed=True ได้ชุดของตัวเองที่ปิดแล้ว
+    """
+    me = current_user._get_current_object()
+    reservations = models.CarReservation.objects(
         organization=g.organization,
-        driver=current_user._get_current_object(),
-        status=status,
+        assignments__driver=me,
+        status__in=status,
     )
+    return [
+        flow.DriverJob(reservation, assignment)
+        for reservation in reservations
+        for assignment in reservation.assignments
+        if assignment.driver is not None
+        and assignment.driver.id == me.id
+        and assignment.is_closed == closed
+    ]
 
 
 @module.route("/")
 @driver_required
 def index():
-    active_tasks = list(my_tasks("active").order_by("departure_datetime"))
+    active_tasks = sorted(
+        my_tasks(["active"], closed=False), key=lambda task: task.departure_datetime
+    )
+    completed_tasks = sorted(
+        my_tasks(["active", "completed"], closed=True),
+        key=lambda task: task.departure_datetime,
+        reverse=True,
+    )[:RECENT_COMPLETED_LIMIT]
     return render_template(
         "/car_reservation/tasks/index.html",
         organization=g.organization,
         active_tasks=active_tasks,
-        completed_tasks=my_tasks("completed").order_by("-departure_datetime")[
-            :RECENT_COMPLETED_LIMIT
-        ],
+        completed_tasks=completed_tasks,
     )
 
 
@@ -105,39 +125,49 @@ def get_task_or_404(task_id):
     return task
 
 
-@module.route("/<task_id>/start", methods=["POST"])
+def get_assignment_or_404(task, assignment_id):
+    assignment = task.get_assignment(assignment_id)
+    if assignment is None:
+        abort(404)
+    return assignment
+
+
+@module.route("/<task_id>/start/<assignment_id>", methods=["POST"])
 @driver_required
-def start(task_id):
+def start(task_id, assignment_id):
     task = get_task_or_404(task_id)
+    assignment = get_assignment_or_404(task, assignment_id)
     if not FlaskForm().validate_on_submit():
         abort(400)
     user = current_user._get_current_object()
-    if not flow.can_start(task, user):
+    if not flow.can_start(task, user, assignment):
         abort(403)
-    flow.start_trip(task, user)
+    flow.start_trip(task, user, assignment)
     flash(f"เริ่มงาน {task.location} แล้ว", "success")
     return redirect(
         url_for("car_reservation.tasks.index", organization_id=g.organization.id)
     )
 
 
-@module.route("/<task_id>/close", methods=["GET", "POST"])
+@module.route("/<task_id>/close/<assignment_id>", methods=["GET", "POST"])
 @driver_required
-def close(task_id):
+def close(task_id, assignment_id):
     task = get_task_or_404(task_id)
+    assignment = get_assignment_or_404(task, assignment_id)
     user = current_user._get_current_object()
-    if not flow.can_close(task, user):
+    if not flow.can_close(task, user, assignment):
         abort(403)
 
     form = forms.car_reservation.TripCloseForm()
-    if request.method == "GET" and task.car is not None:
+    if request.method == "GET" and assignment.car is not None:
         # เลขไมล์สูงสุดของรถ (งานอื่นอาจปิดไปก่อน) คนขับแก้ได้ถ้าเลขออกจริงต่ำกว่า
-        form.mileage_out.data = task.car.last_mileage
+        form.mileage_out.data = assignment.car.last_mileage
     if form.validate_on_submit():
         try:
-            flow.close_trip(
+            completed = flow.close_trip(
                 task,
                 user,
+                assignment,
                 mileage_out=form.mileage_out.data,
                 mileage_in=form.mileage_in.data,
                 expense_case=form.expense_case.data,
@@ -149,9 +179,11 @@ def close(task_id):
         except flow.MileageError as error:
             form.mileage_in.errors = [*form.mileage_in.errors, str(error)]
         except flow.FlowError as error:
-            flash(str(error), "danger")
+            flash(str(error), "error")
         else:
-            utils.car_reservation_email.notify(task, "completed")
+            if completed:
+                # ชุดสุดท้ายที่ปิดเป็นคนปิดคำขอ: แจ้งผู้ขอ (และขอให้ประเมิน) ครั้งเดียว
+                utils.car_reservation_email.notify(task, "completed")
             flash("ปิดงานเรียบร้อยแล้ว", "success")
             return redirect(
                 url_for(
@@ -162,5 +194,6 @@ def close(task_id):
         "/car_reservation/tasks/close.html",
         organization=g.organization,
         task=task,
+        assignment=assignment,
         form=form,
     )

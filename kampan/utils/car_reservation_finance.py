@@ -272,10 +272,27 @@ class FinanceData:
         )
 
 
+def payee_assignment(reservation):
+    """ชุด (รถ + พขร.) ที่ใบเบิกใช้อ้างอิง: ชุดแรกเสมอ
+
+    ใบเบิกยังเป็นใบเดียวต่อคำขอ ชื่อผู้เบิกและเวลาทริปจึงใช้ พขร. ของชุดแรกไปก่อน
+    การออกใบเบิกแยกตาม พขร. หลายคนอยู่ใน issue #80 (นอกขอบเขต #73)
+    """
+    return reservation.first_assignment
+
+
+def payee_name(reservation):
+    assignment = payee_assignment(reservation)
+    return assignment.driver.get_name() if assignment and assignment.driver else ""
+
+
 def trip_period(reservation):
-    """(ออก, กลับ) ของทริป: เวลาเริ่ม-ปิดงานจริง ถ้าไม่มีใช้เวลาออก-กลับตามใบขอ"""
-    start = reservation.started_at or reservation.departure_datetime
-    end = reservation.completed_at or reservation.return_datetime or start
+    """(ออก, กลับ) ของทริป: เวลาเริ่ม-ปิดงานจริงของชุดแรก ถ้าไม่มีใช้เวลาออก-กลับตามใบขอ"""
+    assignment = payee_assignment(reservation)
+    started = assignment.started_at if assignment else None
+    completed = assignment.completed_at if assignment else None
+    start = started or reservation.departure_datetime
+    end = completed or reservation.return_datetime or start
     return start, end
 
 
@@ -464,7 +481,7 @@ def _reservation_page1(pdf, doc, reservation, data):
     put(pdf, data.memo_number, MEMO_NUMBER, rows["memo"], "left")
     if data.memo_date:
         put(pdf, thai_date(data.memo_date), MEMO_DATE, rows["memo"])
-    put(pdf, reservation.driver.get_name() if reservation.driver else "", NAME, rows["name"])
+    put(pdf, payee_name(reservation), NAME, rows["name"])
     put(pdf, reservation.extra_travelers, WITH_CELL, rows["with"], "left")
 
     purpose = f"{reservation.request_reason} ณ {reservation.location}".strip()
@@ -502,18 +519,18 @@ def _reservation_page1(pdf, doc, reservation, data):
     put(pdf, money(data.total), AMOUNT_CELL, rows["total"], "right")
     if data.evidence_count:
         put(pdf, data.evidence_count, EVIDENCE_CELL, rows["evidence"])
-    put(pdf, reservation.driver.get_name() if reservation.driver else "", SIGNER_CELL, rows["signer"])
+    put(pdf, payee_name(reservation), SIGNER_CELL, rows["signer"])
 
 
 def _reservation_page2(pdf, doc, reservation, data):
     rows = PAGE2_ROWS[doc]
     put(pdf, money(data.total), PAGE2_RECEIVED_CELL, rows["received"], "right")
     put(pdf, f"({thai_baht_text(data.total)})", PAGE2_WORDS_CELL, rows["words"])
-    put(pdf, reservation.driver.get_name() if reservation.driver else "", PAGE2_PAYEE_CELL, rows["payee"])
+    put(pdf, payee_name(reservation), PAGE2_PAYEE_CELL, rows["payee"])
 
 
 def _receipt_page(pdf, reservation, data):
-    put(pdf, reservation.driver.get_name() if reservation.driver else "", RECEIPT_NAME, RECEIPT_NAME_LINE)
+    put(pdf, payee_name(reservation), RECEIPT_NAME, RECEIPT_NAME_LINE)
     for index, ((rate, days), amount) in enumerate(zip(data.meal_rows, data.meal_amounts)):
         line = RECEIPT_FIRST_ROW + LINE_STEP * index
         description = f"เงินช่วยเหลือค่าอาหาร พขร. ({money(rate)} บาท x {_count(days)} วัน)"

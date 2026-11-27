@@ -31,6 +31,7 @@ EVENTS = (
     "cancelled",
     "completed",
     "close_disputed",
+    "vehicle_count_reduced",
 )
 
 # template ของระบบ (fallback) อยู่ในไฟล์ ส่วน template ที่แอดมินองค์กรแก้ได้
@@ -62,27 +63,42 @@ def _role_members(reservation, role):
     return car_reservation_flow.members_with_role(reservation.organization, role)
 
 
+def _drivers_of(reservation):
+    """พขร. ของทุกชุดในคำขอ ไม่ซ้ำ (เรียงตามชุด)"""
+    drivers = []
+    for driver in reservation.drivers:
+        if driver not in drivers:
+            drivers.append(driver)
+    return drivers
+
+
 def people_for(reservation, event):
-    """ผู้ใช้ที่ต้องรู้เหตุการณ์นี้ (ใช้ทั้งอีเมลและแจ้งเตือนในระบบ)"""
+    """ผู้ใช้ที่ต้องรู้เหตุการณ์นี้ (ใช้ทั้งอีเมลและแจ้งเตือนในระบบ)
+
+    คำขอหลายคันมี พขร. หลายคน: เหตุการณ์ที่ถึง พขร. ส่งถึงทุกคน ส่วน completed ส่งถึงผู้ขอครั้งเดียว
+    (view เรียกเมื่อชุดสุดท้ายปิดงาน)
+    """
     if event == "submitted":
         people = _division_heads(reservation)
     elif event == "approved":
         key = car_reservation_flow.current_step_key(reservation)
         people = _role_members(reservation, key) if key else []
     elif event == "active":
-        people = [reservation.creator, reservation.driver]
+        people = [reservation.creator, *_drivers_of(reservation)]
     elif event == "denied":
         people = [reservation.creator]
     elif event == "cancel_requested":
         people = _role_members(reservation, "dispatcher")
     elif event == "cancelled":
-        people = [reservation.creator, reservation.driver]
+        people = [reservation.creator, *_drivers_of(reservation)]
     elif event == "completed":
         people = [reservation.creator]
     elif event == "close_disputed":
         people = _role_members(reservation, "dispatcher")
     elif event == "driver_assigned":
-        people = [reservation.driver]
+        people = _drivers_of(reservation)
+    elif event == "vehicle_count_reduced":
+        people = [reservation.creator]
     else:
         people = []
     return people
@@ -141,6 +157,7 @@ IN_APP_TITLES = {
     "completed": "ปิดงานเที่ยวรถแล้ว",
     "close_disputed": "ผู้ขอโต้แย้งการปิดงาน",
     "driver_assigned": "คุณได้รับมอบหมายงานขับรถ",
+    "vehicle_count_reduced": "ผู้จัดรถจัดรถให้น้อยกว่าที่ขอ",
 }
 
 
@@ -154,6 +171,7 @@ OWN_ACTION_TITLES = {
     "cancelled": "คุณยกเลิกคำขอใช้รถแล้ว",
     "completed": "คุณปิดงานเที่ยวรถแล้ว",
     "close_disputed": "คุณโต้แย้งการปิดงานแล้ว",
+    "vehicle_count_reduced": "คุณจัดรถน้อยกว่าที่ผู้ขอขอ",
 }
 
 
@@ -185,7 +203,13 @@ def notify_in_app(reservation, event, actor=None):
         )
 
 
-_COMMENT_ACTIONS = ("denied", "cancel_requested", "cancelled", "close_disputed")
+_COMMENT_ACTIONS = (
+    "denied",
+    "cancel_requested",
+    "cancelled",
+    "close_disputed",
+    "vehicle_count_reduced",
+)
 
 
 def _latest_comment(reservation):
@@ -195,9 +219,39 @@ def _latest_comment(reservation):
     return "-"
 
 
+def _requested_vehicle_count(reservation):
+    """จำนวนรถที่ผู้ขอขอ: ถ้าผู้จัดรถเคยลดจำนวน ใช้ค่าเดิมในประวัติ ไม่งั้นตามใบขอ"""
+    for log in reversed(reservation.audit_logs):
+        if log.action == "vehicle_count_reduced":
+            for change in log.changes:
+                if change.field == "vehicle_count":
+                    return int(change.old)
+    return models.car_reservations.required_vehicle_count(reservation)
+
+
+def _feedback_links(reservation, host_url):
+    """หน้าประเมินสาธารณะของรถแต่ละคัน เลือกเที่ยวนี้เป็นค่าตั้งต้น (ว่างถ้ายังไม่จัดรถ)"""
+    return [
+        {
+            "car_plate": assignment.car.license_plate,
+            "url": (
+                f"{host_url}/car_reservation/cars/{assignment.car.id}/feedback"
+                f"?reservation_id={reservation.id}"
+            ),
+        }
+        for assignment in reservation.assignments
+        if assignment.car is not None
+    ]
+
+
 def template_variables(reservation, host_url):
-    """ตัวแปรที่ใช้ใน {{ ... }} ของอีเมลระบบจองรถ (ต้องตรง EMAIL_TEMPLATE_VARIABLES)"""
+    """ตัวแปรที่ใช้ใน {{ ... }} ของอีเมลระบบจองรถ (ต้องตรง EMAIL_TEMPLATE_VARIABLES)
+
+    car_plate / driver_name คั่นด้วย ", " ตามลำดับชุด (คันเดียวได้ค่าเดียวเหมือนเดิม)
+    feedback_url = ลิงก์ของรถคันแรก (ไว้ใช้กับ template ที่เขียนไว้แล้ว) feedback_links = ทุกคัน
+    """
     step_key = car_reservation_flow.current_step_key(reservation)
+    feedback_links = _feedback_links(reservation, host_url)
     return {
         "organization_name": reservation.organization.name,
         "requester_name": reservation.creator.get_name(),
@@ -216,21 +270,18 @@ def template_variables(reservation, host_url):
             reservation.status
         ],
         "step_label": car_reservation_flow.step_label(step_key) if step_key else "-",
-        "car_plate": reservation.car.license_plate if reservation.car else "",
-        "driver_name": reservation.driver.get_name() if reservation.driver else "",
+        "car_plate": ", ".join(car.license_plate for car in reservation.cars),
+        "driver_name": ", ".join(driver.get_name() for driver in reservation.drivers),
+        "requested_vehicle_count": _requested_vehicle_count(reservation),
+        "assigned_vehicle_count": len(reservation.assignments),
         "reason": reservation.request_reason,
         "comment": _latest_comment(reservation),
         "request_url": (
             f"{host_url}/car_reservation/requests/{reservation.id}"
             f"?organization_id={reservation.organization.id}"
         ),
-        # หน้าประเมินสาธารณะของรถคันนั้น เลือกเที่ยวนี้เป็นค่าตั้งต้น (ว่างถ้ายังไม่จัดรถ)
-        "feedback_url": (
-            f"{host_url}/car_reservation/cars/{reservation.car.id}/feedback"
-            f"?reservation_id={reservation.id}"
-            if reservation.car
-            else ""
-        ),
+        "feedback_url": feedback_links[0]["url"] if feedback_links else "",
+        "feedback_links": feedback_links,
     }
 
 

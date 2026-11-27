@@ -52,8 +52,16 @@ def world(app, create_org, create_user, assign_user_to_org, login_as, create_car
         + "".join(f"&{key}={value}" for key, value in query.items())
     )
 
-    def job(driver, departure, hours, status="completed", mileage=None, **extra):
-        """งานของ driver ออกเดินทาง departure กลับหลัง hours ชม. (mileage = (กม. ออก, กม. กลับ))"""
+    def job(driver, departure, hours, status="completed", mileage=None, car=None, **extra):
+        """งานของ driver ออกเดินทาง departure กลับหลัง hours ชม. (mileage = (กม. ออก, กม. กลับ))
+
+        is_overtime/started_at/completed_at เป็นของชุด (assignment) ที่เหลือเป็นของคำขอ
+        """
+        assignment_fields = {
+            key: extra.pop(key)
+            for key in ("is_overtime", "started_at", "completed_at")
+            if key in extra
+        }
         reservation = models.CarReservation(
             organization=org,
             creator=s.requester,
@@ -66,12 +74,12 @@ def world(app, create_org, create_user, assign_user_to_org, login_as, create_car
             status=status,
             route_snapshot=["supervisor", "dispatcher"],
             current_step=2,
-            car=s.car,
-            driver=driver,
             **extra,
         )
+        assignment = models.CarAssignment(car=car or s.car, driver=driver, **assignment_fields)
         if mileage:
-            reservation.last_mileage_before, reservation.last_mileage = mileage
+            assignment.last_mileage_before, assignment.last_mileage = mileage
+        reservation.assignments = [assignment]
         return reservation.save()
 
     s.job = job
@@ -319,6 +327,64 @@ def test_driver_dashboard_shows_feedback_of_their_jobs_and_links_admins_to_the_f
     assert 'data-role="open-feedback"' not in as_dispatcher
     assert f"/car_reservation/feedback/{template.id}/view?" in as_admin
     assert f"car_reservation_id={rated.id}" in as_admin
+
+
+def test_feedback_joins_the_drivers_dashboard_on_the_reservation_and_car_pair(
+    world, create_car, create_feedback_template, create_feedback_response, make_question, make_answer
+):
+    """คำขอ 2 คัน: ผลประเมินของรถ B ไม่ไปโผล่ที่งานของ พขร. ชุดรถ A"""
+    now = datetime.datetime.now()
+    second_car = create_car(world.org, "ขข 9999")
+    trip = world.job(world.driver, now - 2 * DAY, 3, mileage=(100, 160))
+    trip.assignments.append(
+        models.CarAssignment(
+            car=second_car, driver=world.other_driver, last_mileage_before=10, last_mileage=95
+        )
+    )
+    trip.save()
+    question = make_question("score")
+    template = create_feedback_template(world.org, [world.car, second_car], questions=[question])
+    for car, score in ((world.car, 5), (second_car, 1), (second_car, 1)):
+        create_feedback_response(
+            template, car, car_reservation=trip, answers=[make_answer(question, score=score)]
+        )
+
+    alpha = driver_page(world, world.org_admin, world.driver).get_data(as_text=True)
+    bravo = driver_page(world, world.org_admin, world.other_driver).get_data(as_text=True)
+
+    assert "1 ผลตอบรับ" in alpha and "2 ผลตอบรับ" not in alpha
+    assert re.search(r'data-field="average-score">\s*5\.00\s*<', alpha)
+    assert f"car_id={world.car.id}" in alpha and f"car_id={second_car.id}" not in alpha
+    assert "2 ผลตอบรับ" in bravo
+    assert re.search(r'data-field="average-score">\s*1\.00\s*<', bravo)
+    assert f"car_id={second_car.id}" in bravo
+    # แถวงานแสดงรถและระยะทางของชุดตัวเอง
+    assert "ขข 9999" in bravo and "กก 1234" not in bravo
+    assert "<td class=\"text-right tabular-nums\">85</td>" in bravo
+
+
+def test_feedback_by_job_keys_responses_by_reservation_and_car(
+    world, create_car, create_feedback_template, create_feedback_response, make_question, make_answer
+):
+    from kampan.utils import car_reservation_flow as flow
+    from kampan.web.views.car_reservation import stats
+
+    now = datetime.datetime.now()
+    second_car = create_car(world.org, "ขข 9999")
+    trip = world.job(world.driver, now - DAY, 2)
+    trip.assignments.append(models.CarAssignment(car=second_car, driver=world.other_driver))
+    trip.save()
+    question = make_question("score")
+    template = create_feedback_template(world.org, [world.car, second_car], questions=[question])
+    create_feedback_response(
+        template, second_car, car_reservation=trip, answers=[make_answer(question, score=3)]
+    )
+    done, _ = flow.driver_jobs(world.org, world.driver, now=now, since=now - 7 * DAY)
+
+    per_job, overall = stats.feedback_by_job(world.org, done)
+
+    assert per_job == {}  # รถ A ของคำขอนี้ยังไม่มีผลประเมิน แม้รถ B จะมี
+    assert overall is None
 
 
 def test_driver_dashboard_is_404_for_someone_who_is_not_a_driver(world):
